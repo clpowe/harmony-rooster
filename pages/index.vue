@@ -19,9 +19,10 @@
 			>
 				<p class="uppercase text-base md:text-xl mb-2">Harmony Rooster LLC</p>
 				<h1
-					class="!leading-[0.9em] text-3xl text-balance uppercase md:text-7xl xl:text-8xl"
-					>Providing <span class="text-primary">Compassionate</span> In-Home
-					<span class="text-accent">Care</span></h1
+					class="!leading-[0.9em] text-5xl sm:text-7xl text-wrap md:text-balance uppercase md:text-7xl xl:text-8xl"
+					>Providing
+					<span class="text-primary">Compassionate</span>
+					In-Home <span class="text-accent">Care</span></h1
 				>
 			</div>
 			<div class="justify-start md:ml-[50%] flex flex-col gap-4 md:gap-8">
@@ -40,7 +41,7 @@
 		<div class="flex flex-col gap-8 md:flex-row">
 			<section class="bg-white rounded-2xl p-8 space-y-8 md:max-w-80">
 				<div>
-					<h2 class="mb-4">Our <span class="text-primary">Services</span></h2>
+					<h2 class="mb-4">Our <span>Services</span></h2>
 					<p
 						>Harmony Rooster, LLC is here to help. Our team of dedicated and
 						qualified caregivers provides a helping hand with a variety of
@@ -74,15 +75,15 @@
 				>
 			</section>
 
-			<section>
-				<h2>Meet our team</h2>
+			<section class="p-8 space-y-4">
+				<h2>Meet our <span>team</span></h2>
 				<p
 					>Our caregivers are not just qualified; they are compassionate and
 					dedicated to making a difference in the lives of our clients. They
 					undergo rigorous background checks, training, and ongoing education to
 					ensure they provide the highest quality of care.</p
 				>
-				<ul>
+				<ul class="flex gap-4">
 					<li>
 						<article>
 							<img src="https://picsum.photos/200" alt="" />
@@ -190,12 +191,21 @@
 </template>
 
 <style>
+	h1 {
+		line-break: auto;
+	}
+
 	h2 {
 		@apply uppercase text-4xl xl:text-5xl;
+
+		span {
+			@apply text-primary;
+		}
 	}
 
 	p {
 		@apply text-slate-500;
+		max-width: 75ch;
 	}
 
 	.service-item {
