@@ -82,7 +82,7 @@
   }
 
   html {
-    @apply overflow-hidden
+    @apply overflow-x-hidden
   }
 
   body {
