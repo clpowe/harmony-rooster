@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
  
+
+@font-face {
+  font-family: "Verdana";
+  src: url("../fonts/Verdana.ttf");
+  font-weight: 400;
+}
+
+
 @layer base {
   :root {
     --background: 0 0% 96%;
@@ -17,7 +25,7 @@
     --card-foreground: 195 94% 25%;
  
     --border: 0 0% 92%;
-    --input: 0 0% 92%;
+    --input: 195 94% 25%;
  
     --primary: 195 94% 25%;
     --primary-foreground:  0 0% 96%;
@@ -26,7 +34,7 @@
     --secondary-foreground: 195 94% 25%;
  
     --accent: 38 87% 45%;
-    --accent-foreground: 195 94% 25%;
+    --accent-foreground: 0 0% 91%;
  
     --destructive: 8 65% 56%;
     --destructive-foreground:  0 0% 96%;
@@ -73,6 +81,7 @@
     @apply border-border;
   }
   body {
+    font-family: 'Verdana';
     @apply bg-background text-slate-800;
   }
 }

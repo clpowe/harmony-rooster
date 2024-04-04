@@ -1,14 +1,26 @@
 <template>
-	<main>
-		<section>
-			<p>Harmony Rooster LLC</p>
-			<h1>Providing Compassionate In-Home Care</h1>
-			<p
-				>We offer compassionate, non-emergency in-home care services designed to
-				promote independence, dignity, and overall well-being.</p
+	<main class="container">
+		<section class="flex flex-col gap-8">
+			<div
+				class="max-w-[25ch] md:max-w-[55ch] justify-start xl:max-w-[75ch] text-slate-600"
 			>
-			<button>Contact us</button>
-			<button>Free Consoltation</button>
+				<p class="uppercase">Harmony Rooster LLC</p>
+				<h1
+					class="!leading-[0.9em] text-4xl text-balance uppercase md:text-7xl xl:text-8xl"
+					>Providing <span class="text-primary">Compassionate</span> In-Home
+					<span class="text-accent">Care</span></h1
+				>
+			</div>
+			<div class="justify-start md:self-end flex flex-col gap-8">
+				<p class="italic text-slate-400 max-w-md leading-6"
+					>We offer compassionate, non-emergency in-home care services designed
+					to promote independence, dignity, and overall well-being.</p
+				>
+				<div class="flex gap-4 flex-wrap">
+					<Button>Contact us</Button>
+					<Button variant="outline">Free Consoltation</Button>
+				</div>
+			</div>
 		</section>
 
 		<section>
