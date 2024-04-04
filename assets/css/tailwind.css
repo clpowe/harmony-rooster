@@ -80,8 +80,13 @@
   * {
     @apply border-border;
   }
+
+  html {
+    @apply overflow-hidden
+  }
+
   body {
     font-family: 'Verdana';
-    @apply bg-background text-slate-800;
+    @apply bg-background text-slate-800 overflow-hidden;
   }
 }
