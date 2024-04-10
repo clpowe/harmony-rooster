@@ -168,9 +168,9 @@
 				<h2 class="mb-4">About <span>Us</span></h2>
 				<p class="max-w-[75ch]">
 					Harmony Rooster, LLC is a locally owned and operated company based in
-					Tampa, Florida. The company was founded by [Owner Names], who are
-					passionate about providing exceptional in-home care services that
-					empower individuals to live their best lives.</p
+					Tampa, Florida. The company was founded by Derek and Cynthia Robinson,
+					who are passionate about providing exceptional in-home care services
+					that empower individuals to live their best lives.</p
 				>
 			</div>
 			<img
