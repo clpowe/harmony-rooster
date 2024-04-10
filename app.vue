@@ -2,8 +2,8 @@
 	<div>
 		<header>
 			<p>Harmony Rooster</p>
-			<button>Lets Chat</button>
-			<button>813-888-8888</button>
+			<Button>Lets Chat</Button>
+			<Button>813-888-8888</Button>
 		</header>
 		<NuxtPage />
 		<footer>

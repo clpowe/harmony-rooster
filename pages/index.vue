@@ -3,6 +3,41 @@
 	import Care from '../assets/images/Care.svg'
 	import Cook from '../assets/images/Cook.svg'
 	import Medication from '../assets/images/Medication.svg'
+
+	// Accordian
+	const defaultValue = 'question-1'
+
+	const accordionQuestions = [
+		{
+			value: 'question-1',
+			title: 'What is hame care?',
+			content: 'Yes. It adheres to the WAI-ARIA design pattern.'
+		},
+		{
+			value: 'question-2',
+			title: 'Who is eligible?',
+			content:
+				"Yes. It's unstyled by default, giving you freedom over the look and feel."
+		},
+		{
+			value: 'question-3',
+			title: 'How much does it cost?',
+			content:
+				'Yes! You can use the transition prop to configure the animation.'
+		},
+		{
+			value: 'question-4',
+			title: 'Is this covered by medicare?',
+			content:
+				'Yes! You can use the transition prop to configure the animation.'
+		},
+		{
+			value: 'question-5',
+			title: 'Do you take insurance?',
+			content:
+				'Yes! You can use the transition prop to configure the animation.'
+		}
+	]
 </script>
 
 <template>
@@ -145,63 +180,36 @@
 			/>
 		</section>
 
-		<section class="bg-white rounded-2xl p-8 flex faq">
+		<section class="bg-white rounded-2xl p-8 flex mb-12 faq">
 			<div>
-				<h2>Frequently Asked <span>Questions</span></h2>
+				<h2
+					><span class="text-accent">Frequently</span> Asked
+					<span>Questions</span></h2
+				>
 				<p>Find answers to common questions about our services</p>
 			</div>
 			<div>
-				<ul>
-					<li>
-						<h3>How can I get started?</h3>
-						<p
-							>Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-							Recusandae, asperiores mollitia, quas aut temporibus tempora
-							eligendi quos consequuntur fuga vel hic dolore expedita, provident
-							officiis architecto soluta impedit! Consectetur, non!</p
-						>
-					</li>
-					<li>
-						<h3>How can I get started?</h3>
-						<p
-							>Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-							Recusandae, asperiores mollitia, quas aut temporibus tempora
-							eligendi quos consequuntur fuga vel hic dolore expedita, provident
-							officiis architecto soluta impedit! Consectetur, non!</p
-						>
-					</li>
-					<li>
-						<h3>How can I get started?</h3>
-						<p
-							>Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-							Recusandae, asperiores mollitia, quas aut temporibus tempora
-							eligendi quos consequuntur fuga vel hic dolore expedita, provident
-							officiis architecto soluta impedit! Consectetur, non!</p
-						>
-					</li>
-					<li>
-						<h3>How can I get started?</h3>
-						<p
-							>Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-							Recusandae, asperiores mollitia, quas aut temporibus tempora
-							eligendi quos consequuntur fuga vel hic dolore expedita, provident
-							officiis architecto soluta impedit! Consectetur, non!</p
-						>
-					</li>
-					<li>
-						<h3>How can I get started?</h3>
-						<p
-							>Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-							Recusandae, asperiores mollitia, quas aut temporibus tempora
-							eligendi quos consequuntur fuga vel hic dolore expedita, provident
-							officiis architecto soluta impedit! Consectetur, non!</p
-						>
-					</li>
-				</ul>
+				<Accordion
+					type="single"
+					class="w-full"
+					collapsible
+					:default-value="defaultValue"
+				>
+					<AccordionItem
+						v-for="item in accordionQuestions"
+						:key="item.value"
+						:value="item.value"
+					>
+						<AccordionTrigger>{{ item.title }}</AccordionTrigger>
+						<AccordionContent>
+							{{ item.content }}
+						</AccordionContent>
+					</AccordionItem>
+				</Accordion>
 			</div>
 		</section>
 
-		<section>
+		<section class="bg-white rounded-2xl p-8">
 			<h2>Contact Us</h2>
 			<p>have a question? We’re here to help!</p>
 
@@ -255,12 +263,13 @@
 	.faq {
 		display: flex;
 		flex-direction: column;
+		gap: 1rem;
 	}
 
 	@container main (inline-size > 65ch) {
 		.faq {
-			flex-direction: row;
-			background-color:;
+			display: grid;
+			grid-template-columns: 1fr 60%;
 		}
 	}
 </style>
