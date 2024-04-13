@@ -68,7 +68,6 @@
 				>
 				<div class="flex gap-4 flex-wrap">
 					<Button size="sm">Contact us</Button>
-					<Button size="sm" variant="outline">Free Consoltation</Button>
 				</div>
 			</div>
 		</section>
@@ -110,7 +109,7 @@
 				>
 			</section>
 
-			<section class="p-8 space-y-4 overflow-hidden">
+			<section class="p-4 md:p-8 space-y-4 overflow-hidden">
 				<h2 class="mb-4">Meet our <span>team</span></h2>
 				<p class=""
 					>Our caregivers are not just qualified; they are compassionate and
@@ -180,7 +179,7 @@
 			/>
 		</section>
 
-		<section class="bg-white rounded-2xl p-8 flex mb-12 faq">
+		<section class="bg-white rounded-2xl p-8 flex mb-12 twoCol">
 			<div>
 				<h2
 					><span class="text-accent">Frequently</span> Asked
@@ -209,19 +208,13 @@
 			</div>
 		</section>
 
-		<section class="bg-white rounded-2xl p-8">
-			<h2>Contact Us</h2>
-			<p>have a question? We’re here to help!</p>
+		<section class="bg-white rounded-2xl p-8 flex mb-12 twoCol">
+			<div>
+				<h2>Contact <span>Us</span> </h2>
+				<p>have a question? We’re here to help!</p>
+			</div>
 
-			<form action="">
-				<label for="name">Name</label>
-				<input type="text" name="name" id="name" />
-				<label for="email">Email</label>
-				<input type="email" name="email" id="email" />
-				<label for="message">Message</label>
-				<textarea name="message" id="message"></textarea>
-				<button type="submit">Submit</button>
-			</form>
+			<ContactForm />
 		</section>
 	</main>
 </template>
@@ -260,14 +253,14 @@
 		container-name: main;
 	}
 
-	.faq {
+	.twoCol {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
 	}
 
 	@container main (inline-size > 65ch) {
-		.faq {
+		.twoCol {
 			display: grid;
 			grid-template-columns: 1fr 60%;
 		}
