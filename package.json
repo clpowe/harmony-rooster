@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@builder.io/sdk-vue": "^1.0.22",
     "@radix-icons/vue": "^1.0.0",
     "@vee-validate/zod": "^4.12.6",
     "@vueuse/core": "^10.9.0",
@@ -20,6 +21,7 @@
     "radix-vue": "^1.6.1",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
+    "ufo": "^1.5.3",
     "vee-validate": "^4.12.6",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0",

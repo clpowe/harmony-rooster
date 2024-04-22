@@ -1,11 +1,7 @@
 <script setup>
-	import Rooster from '../assets/images/Rooster.svg'
 	import Care from '../assets/images/Care.svg'
 	import Cook from '../assets/images/Cook.svg'
 	import Medication from '../assets/images/Medication.svg'
-
-	// Accordian
-	const defaultValue = 'question-1'
 
 	const accordionQuestions = [
 		{
