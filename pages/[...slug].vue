@@ -5,13 +5,19 @@
 				Page title:
 				{{ content?.data?.title || 'Unpublished' }}
 			</div>
-			<Content :model="page" :content="content" :api-key="apiKey" />
+			<Content
+				:model="page"
+				:content="content"
+				:api-key="apiKey"
+				:customComponents="getRegisteredComponents()"
+			/>
 		</div>
 		<div v-else>Content not Found</div>
 	</div>
 </template>
 
 <script setup>
+	import { registeredComponents } from '../components/registeredComponents.js'
 	import { Content, isPreviewing, fetchOneEntry } from '@builder.io/sdk-vue'
 
 	// TODO: enter your public API key
@@ -40,5 +46,8 @@
 			const nuxtApp = useNuxtApp()
 			nuxtApp.ssrContext.event.res.statusCode = 404
 		}
+	}
+	const getRegisteredComponents = () => {
+		return registeredComponents
 	}
 </script>

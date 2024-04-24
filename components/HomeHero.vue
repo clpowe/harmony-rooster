@@ -1,5 +1,10 @@
-<script setup>
+<script setup lang="ts">
 	import Rooster from '../assets/images/Rooster.svg'
+
+	defineProps<{
+		title?: string
+		paragraph?: string
+	}>()
 </script>
 
 <template>
@@ -11,12 +16,12 @@
 			class="left-3/4 md:block h-48 absolute md:h-60 md:left-1/4 md:bottom-12 -z-10 opacity-60"
 		/>
 		<div class="justify-start max-w-[75ch] text-slate-700">
-			<p class="uppercase text-base md:text-xl mb-2">Harmony Rooster LLC</p>
-			<h1 class="!leading-[0.9em] text-wrap md:text-balance uppercase"
+			<h1 class="uppercase text-base md:text-xl mb-2">{{ title }}</h1>
+			<h2 class="!leading-[0.9em] text-wrap md:text-balance uppercase"
 				>Providing <br />
 				<span class="text-primary">Compassionate </span>
 				<br />
-				In-Home <span class="text-accent">Care</span></h1
+				In-Home <span class="text-accent">Care</span></h2
 			>
 		</div>
 		<div
@@ -24,8 +29,7 @@
 		>
 			<p
 				class="italic text-slate-500 max-w-md text-sm sm:text-sm md:text-xl md:max-w-lg"
-				>We offer compassionate, non-emergency in-home care services designed to
-				promote independence, dignity, and overall well-being.</p
+				>{{ paragraph }}</p
 			>
 			<div class="flex gap-4 flex-wrap">
 				<Button size="sm">Contact us</Button>

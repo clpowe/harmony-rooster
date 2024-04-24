@@ -34,11 +34,57 @@
 				'Yes! You can use the transition prop to configure the animation.'
 		}
 	]
+
+	import { Content, fetchOneEntry, isPreviewing } from '@builder.io/sdk-vue'
+
+	import HomeHero from '../components/HomeHero.vue'
+
+	// Register your Builder components
+	const REGISTERED_COMPONENTS = [
+		{
+			component: HomeHero,
+			name: 'HomeHero',
+			inputs: [
+				{
+					name: 'title',
+					type: 'string',
+					defaultValue: 'Harmony Rooster LLC'
+				},
+				{
+					name: 'paragraph',
+					type: 'longText',
+					defaultValue: ''
+				}
+			]
+		}
+	]
+
+	// TODO: enter your public API key
+	const BUILDER_PUBLIC_API_KEY = '47944c5073d144f5b055aaf7305da050' // ggignore
+
+	const route = useRoute()
+
+	// fetch builder content data
+	const { data: content } = await useAsyncData('builderData', () =>
+		fetchOneEntry({
+			model: 'page',
+			apiKey: BUILDER_PUBLIC_API_KEY,
+			userAttributes: {
+				urlPath: route.path
+			}
+		})
+	)
 </script>
 
 <template>
 	<main class="max-w-6xl mx-auto p-4 md:p-8">
-		<section class="flex flex-col gap-4 md:gap-8 relative mb-12">
+		<Content
+			model="page"
+			:content="content"
+			:api-key="BUILDER_PUBLIC_API_KEY"
+			:customComponents="REGISTERED_COMPONENTS"
+		/>
+		<!-- <section class="flex flex-col gap-4 md:gap-8 relative mb-12">
 			<img
 				:src="Rooster"
 				alt=""
@@ -66,7 +112,7 @@
 					<Button size="sm">Contact us</Button>
 				</div>
 			</div>
-		</section>
+		</section> -->
 
 		<div class="flex flex-col gap-8 md:flex-row mb-12">
 			<section class="bg-white rounded-2xl p-8 space-y-8 md:max-w-80">
