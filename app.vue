@@ -1,37 +1,4 @@
-<script setup>
-	import { Content, fetchOneEntry, isPreviewing } from '@builder.io/sdk-vue'
-	import '@builder.io/sdk-vue/css'
-	import HomeHero from './components/HomeHero.vue'
-
-	const registeredComponents = [
-		{
-			component: HomeHero,
-			name: 'Home Hero',
-			inputs: [
-				{
-					title: 'text',
-					type: 'string',
-					defaultValue: 'Harmony Rooster LLC'
-				}
-			]
-		}
-	]
-
-	const BUILDER_PUBLIC_API_KEY = '47944c5073d144f5b055aaf7305da050' // ggignore
-
-	const route = useRoute()
-
-	// fetch builder content data
-	const { data: content } = await useAsyncData('builderData', () =>
-		fetchOneEntry({
-			model: 'page',
-			apiKey: BUILDER_PUBLIC_API_KEY,
-			userAttributes: {
-				urlPath: route.path
-			}
-		})
-	)
-</script>
+<script setup></script>
 
 <template>
 	<div>

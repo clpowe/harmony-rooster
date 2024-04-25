@@ -16,8 +16,8 @@
 			class="left-3/4 md:block h-48 absolute md:h-60 md:left-1/4 md:bottom-12 -z-10 opacity-60"
 		/>
 		<div class="justify-start max-w-[75ch] text-slate-700">
-			<h1 class="uppercase text-base md:text-xl mb-2">{{ title }}</h1>
-			<h2 class="!leading-[0.9em] text-wrap md:text-balance uppercase"
+			<h1 class="h1 uppercase text-base md:text-xl mb-2">{{ title }}</h1>
+			<h2 class="h2 !leading-[0.9em] text-wrap md:text-balance uppercase"
 				>Providing <br />
 				<span class="text-primary">Compassionate </span>
 				<br />
@@ -37,3 +37,20 @@
 		</div>
 	</section>
 </template>
+
+<style>
+	.h1 {
+		line-break: auto;
+		font-size: clamp(2rem, 10vw, 6rem);
+	}
+
+	.h2 {
+		font-size: clamp(1.8rem, 5vw, 3rem);
+		line-height: 1em;
+		@apply uppercase;
+
+		span {
+			@apply text-primary;
+		}
+	}
+</style>

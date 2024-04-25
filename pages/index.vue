@@ -1,4 +1,5 @@
 <script setup>
+	import Rooster from '../assets/images/Rooster.svg'
 	import Care from '../assets/images/Care.svg'
 	import Cook from '../assets/images/Cook.svg'
 	import Medication from '../assets/images/Medication.svg'
@@ -35,29 +36,10 @@
 		}
 	]
 
-	import { Content, fetchOneEntry, isPreviewing } from '@builder.io/sdk-vue'
-
-	import HomeHero from '../components/HomeHero.vue'
+	import { Content, fetchOneEntry } from '@builder.io/sdk-vue'
 
 	// Register your Builder components
-	const REGISTERED_COMPONENTS = [
-		{
-			component: HomeHero,
-			name: 'HomeHero',
-			inputs: [
-				{
-					name: 'title',
-					type: 'string',
-					defaultValue: 'Harmony Rooster LLC'
-				},
-				{
-					name: 'paragraph',
-					type: 'longText',
-					defaultValue: ''
-				}
-			]
-		}
-	]
+	import { registeredComponents } from '../components/init-builder'
 
 	// TODO: enter your public API key
 	const BUILDER_PUBLIC_API_KEY = '47944c5073d144f5b055aaf7305da050' // ggignore
@@ -82,9 +64,9 @@
 			model="page"
 			:content="content"
 			:api-key="BUILDER_PUBLIC_API_KEY"
-			:customComponents="REGISTERED_COMPONENTS"
+			:customComponents="registeredComponents"
 		/>
-		<!-- <section class="flex flex-col gap-4 md:gap-8 relative mb-12">
+		<section class="flex flex-col gap-4 md:gap-8 relative mb-12">
 			<img
 				:src="Rooster"
 				alt=""
@@ -112,7 +94,7 @@
 					<Button size="sm">Contact us</Button>
 				</div>
 			</div>
-		</section> -->
+		</section>
 
 		<div class="flex flex-col gap-8 md:flex-row mb-12">
 			<section class="bg-white rounded-2xl p-8 space-y-8 md:max-w-80">

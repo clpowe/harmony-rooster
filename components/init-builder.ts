@@ -3,6 +3,16 @@ import HomeHero from './HomeHero.vue'
 export const registeredComponents = [
 	{
 		component: HomeHero,
-		name: 'Home Hero'
+		name: 'HomeHero',
+		inputs: [
+			{
+				name: 'title',
+				type: 'string'
+			},
+			{
+				name: 'paragraph',
+				type: 'longText'
+			}
+		]
 	}
 ]
