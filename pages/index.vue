@@ -36,7 +36,7 @@
 		}
 	]
 
-	import { Content, fetchOneEntry } from '@builder.io/sdk-vue'
+	import { Content, fetchOneEntry, fetchEntries } from '@builder.io/sdk-vue'
 
 	// Register your Builder components
 	import { registeredComponents } from '../components/init-builder'
@@ -56,6 +56,15 @@
 			}
 		})
 	)
+	// fetch builder content data
+	const { data: staff } = await useAsyncData('staff', () =>
+		fetchEntries({
+			model: 'staff',
+			apiKey: BUILDER_PUBLIC_API_KEY
+		})
+	)
+
+	console.log(staff.value)
 </script>
 
 <template>
@@ -66,35 +75,6 @@
 			:api-key="BUILDER_PUBLIC_API_KEY"
 			:customComponents="registeredComponents"
 		/>
-		<section class="flex flex-col gap-4 md:gap-8 relative mb-12">
-			<img
-				:src="Rooster"
-				alt=""
-				height="150"
-				class="left-3/4 md:block h-48 absolute md:h-60 md:left-1/4 md:bottom-12 -z-10 opacity-60"
-			/>
-			<div class="justify-start max-w-[75ch] text-slate-700">
-				<p class="uppercase text-base md:text-xl mb-2">Harmony Rooster LLC</p>
-				<h1 class="!leading-[0.9em] text-wrap md:text-balance uppercase"
-					>Providing <br />
-					<span class="text-primary">Compassionate </span>
-					<br />
-					In-Home <span class="text-accent">Care</span></h1
-				>
-			</div>
-			<div
-				class="justify-start md:ml-[50%] flex flex-col gap-4 md:gap-8 md:self-end"
-			>
-				<p
-					class="italic text-slate-500 max-w-md text-sm sm:text-sm md:text-xl md:max-w-lg"
-					>We offer compassionate, non-emergency in-home care services designed
-					to promote independence, dignity, and overall well-being.</p
-				>
-				<div class="flex gap-4 flex-wrap">
-					<Button size="sm">Contact us</Button>
-				</div>
-			</div>
-		</section>
 
 		<div class="flex flex-col gap-8 md:flex-row mb-12">
 			<section class="bg-white rounded-2xl p-8 space-y-8 md:max-w-80">
@@ -142,36 +122,19 @@
 					ensure they provide the highest quality of care.</p
 				>
 				<ul class="flex gap-4 pt-6 overflow-x-scroll">
-					<li>
+					<li v-for="s in staff" :key="s.id">
 						<article class="p-4 bg-white rounded-md w-72">
 							<img
-								src="https://picsum.photos/200"
+								:src="s.data.picture"
 								alt=""
 								class="w-full rounded-md mb-4"
 							/>
-							<h3 class="font-bold text-xl mb-0">Derek Robinson</h3>
-							<p class="text-accent mb-2">President/Owner</p>
-							<p
-								>With over 14+ years of experience in the medical field, Derek
-								leads our team with expertise and compassion</p
-							>
+							<h3 class="font-bold text-xl mb-0">{{ s.data.name }}</h3>
+							<p class="text-accent mb-2">{{ s.data.title }}</p>
+							<p>{{ s.data.description }}</p>
 						</article>
 					</li>
-					<li>
-						<article class="p-4 bg-white rounded-md w-72">
-							<img
-								src="https://picsum.photos/500"
-								alt=""
-								class="w-full rounded-md mb-4"
-							/>
-							<h3 class="font-bold text-xl mb-0">Derek Robinson</h3>
-							<p class="text-accent mb-2">President/Owner</p>
-							<p
-								>With over 14+ years of experience in the medical field, Derek
-								leads our team with expertise and compassion</p
-							>
-						</article>
-					</li>
+
 					<li>
 						<article
 							class="p-8 bg-primary rounded-md w-72 h-full grid place-content-center text-center"

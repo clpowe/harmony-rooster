@@ -4,20 +4,21 @@
 	defineProps<{
 		title?: string
 		paragraph?: string
+		image?: string
 	}>()
 </script>
 
 <template>
 	<section class="flex flex-col gap-4 md:gap-8 relative mb-12">
 		<img
-			:src="Rooster"
+			:src="image"
 			alt=""
 			height="150"
 			class="left-3/4 md:block h-48 absolute md:h-60 md:left-1/4 md:bottom-12 -z-10 opacity-60"
 		/>
 		<div class="justify-start max-w-[75ch] text-slate-700">
-			<h1 class="h1 uppercase text-base md:text-xl mb-2">{{ title }}</h1>
-			<h2 class="h2 !leading-[0.9em] text-wrap md:text-balance uppercase"
+			<h1 class="uppercase text-base md:text-xl mb-2">{{ title }}</h1>
+			<h2 class="h1 !leading-[0.9em] text-wrap md:text-balance uppercase"
 				>Providing <br />
 				<span class="text-primary">Compassionate </span>
 				<br />
