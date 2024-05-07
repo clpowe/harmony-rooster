@@ -1,5 +1,4 @@
 <script setup>
-	import Rooster from '../assets/images/Rooster.svg'
 	import Care from '../assets/images/Care.svg'
 	import Cook from '../assets/images/Cook.svg'
 	import Medication from '../assets/images/Medication.svg'
@@ -63,8 +62,14 @@
 			apiKey: BUILDER_PUBLIC_API_KEY
 		})
 	)
+	const { data: FAQ } = await useAsyncData('frequently-asked-questions', () =>
+		fetchOneEntry({
+			model: 'frequently-asked-questions',
+			apiKey: BUILDER_PUBLIC_API_KEY
+		})
+	)
 
-	console.log(staff.value)
+	console.log(FAQ.value.data)
 </script>
 
 <template>
@@ -76,7 +81,7 @@
 			:customComponents="registeredComponents"
 		/>
 
-		<div class="flex flex-col gap-8 md:flex-row mb-12">
+		<!-- <div class="flex flex-col gap-8 md:flex-row mb-12">
 			<section class="bg-white rounded-2xl p-8 space-y-8 md:max-w-80">
 				<div>
 					<h2 class="mb-4">Our <span>Services</span></h2>
@@ -144,7 +149,7 @@
 					</li>
 				</ul>
 			</section>
-		</div>
+		</div> -->
 
 		<section
 			class="bg-white rounded-2xl p-8 flex gap-4 flex-col md:flex-row relative overflow-hidden mb-12"
@@ -172,7 +177,7 @@
 					><span class="text-accent">Frequently</span> Asked
 					<span>Questions</span></h2
 				>
-				<p>Find answers to common questions about our services</p>
+				<p>{{ FAQ.data.description }}</p>
 			</div>
 			<div>
 				<Accordion
@@ -182,13 +187,13 @@
 					:default-value="defaultValue"
 				>
 					<AccordionItem
-						v-for="item in accordionQuestions"
-						:key="item.value"
-						:value="item.value"
+						v-for="item in FAQ.data.questions"
+						:key="item.question"
+						:value="item.question"
 					>
-						<AccordionTrigger>{{ item.title }}</AccordionTrigger>
+						<AccordionTrigger>{{ item.question }}</AccordionTrigger>
 						<AccordionContent>
-							{{ item.content }}
+							{{ item.answer }}
 						</AccordionContent>
 					</AccordionItem>
 				</Accordion>
