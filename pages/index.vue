@@ -56,20 +56,13 @@
 		})
 	)
 	// fetch builder content data
-	const { data: staff } = await useAsyncData('staff', () =>
-		fetchEntries({
-			model: 'staff',
-			apiKey: BUILDER_PUBLIC_API_KEY
-		})
-	)
+
 	const { data: FAQ } = await useAsyncData('frequently-asked-questions', () =>
 		fetchOneEntry({
 			model: 'frequently-asked-questions',
 			apiKey: BUILDER_PUBLIC_API_KEY
 		})
 	)
-
-	console.log(FAQ.value.data)
 </script>
 
 <template>
@@ -80,76 +73,6 @@
 			:api-key="BUILDER_PUBLIC_API_KEY"
 			:customComponents="registeredComponents"
 		/>
-
-		<!-- <div class="flex flex-col gap-8 md:flex-row mb-12">
-			<section class="bg-white rounded-2xl p-8 space-y-8 md:max-w-80">
-				<div>
-					<h2 class="mb-4">Our <span>Services</span></h2>
-					<p
-						>Harmony Rooster, LLC is here to help. Our team of dedicated and
-						qualified caregivers provides a helping hand with a variety of
-						needs, including</p
-					>
-				</div>
-				<ul class="flex flex-col gap-4">
-					<li class="service-item">
-						<div class="icon">
-							<img :src="Care" alt="" />
-						</div>
-						<p> Personal care assistance </p>
-					</li>
-					<li class="service-item">
-						<div class="icon">
-							<img :src="Cook" alt="" />
-						</div>
-						<p> Meal preparation and light housekeeping </p>
-					</li>
-					<li class="service-item">
-						<div class="icon">
-							<img :src="Medication" alt="" />
-						</div>
-						<p> Medication reminders and management </p>
-					</li>
-				</ul>
-				<p
-					>We work closely with you and your loved one to create a personalized
-					care plan that promotes self-reliance, personal growth, and a sense of
-					fulfillment.</p
-				>
-			</section>
-
-			<section class="p-4 md:p-8 space-y-4 overflow-hidden">
-				<h2 class="mb-4">Meet our <span>team</span></h2>
-				<p class=""
-					>Our caregivers are not just qualified; they are compassionate and
-					dedicated to making a difference in the lives of our clients. They
-					undergo rigorous background checks, training, and ongoing education to
-					ensure they provide the highest quality of care.</p
-				>
-				<ul class="flex gap-4 pt-6 overflow-x-scroll">
-					<li v-for="s in staff" :key="s.id">
-						<article class="p-4 bg-white rounded-md w-72">
-							<img
-								:src="s.data.picture"
-								alt=""
-								class="w-full rounded-md mb-4"
-							/>
-							<h3 class="font-bold text-xl mb-0">{{ s.data.name }}</h3>
-							<p class="text-accent mb-2">{{ s.data.title }}</p>
-							<p>{{ s.data.description }}</p>
-						</article>
-					</li>
-
-					<li>
-						<article
-							class="p-8 bg-primary rounded-md w-72 h-full grid place-content-center text-center"
-						>
-							<p class="text-white text-5xl"> JOIN OUR TEAM </p>
-						</article>
-					</li>
-				</ul>
-			</section>
-		</div> -->
 
 		<section
 			class="bg-white rounded-2xl p-8 flex gap-4 flex-col md:flex-row relative overflow-hidden mb-12"
