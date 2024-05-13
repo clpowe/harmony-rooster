@@ -38,7 +38,7 @@ export const registeredComponents = [
 				type: 'list',
 				subFields: [
 					{
-						name: 'image',
+						name: 'icon',
 						type: 'file',
 						allowedFileTypes: ['svg'],
 						required: true

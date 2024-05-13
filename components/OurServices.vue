@@ -1,6 +1,6 @@
 <script setup lang="ts">
 	type Item = {
-		icom: string
+		icon: string
 		text: string
 	}
 
@@ -19,7 +19,7 @@
 		<ul class="flex flex-col gap-4">
 			<li class="service-item" v-for="item in items">
 				<div class="icon">
-					<img :src="item.icom" alt="" />
+					<img :src="item.icon" alt="" />
 				</div>
 				<p>{{ item.text }}</p>
 			</li>
