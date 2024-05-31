@@ -21,7 +21,7 @@
 </script>
 
 <template>
-	<form @submit="onSubmit" class="flex flex-col gap-4">
+	<!-- <form @submit="onSubmit" class="flex flex-col gap-4">
 		<FormField v-slot="{ componentField }" name="name">
 			<FormItem class="flex flex-col">
 				<FormLabel>Name</FormLabel>
@@ -58,5 +58,5 @@
 			</FormItem>
 		</FormField>
 		<Button type="submit"> Submit </Button>
-	</form>
+	</form> -->
 </template>

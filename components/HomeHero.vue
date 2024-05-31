@@ -1,57 +1,33 @@
 <script setup lang="ts">
-	import Rooster from '../assets/images/Rooster.svg'
-
-	defineProps<{
-		title?: string
-		paragraph?: string
-		image?: string
-	}>()
+	import Rooster from '@/assets/icons/icon-rooster.svg'
 </script>
 
 <template>
-	<section class="flex flex-col gap-4 md:gap-8 relative mb-12">
-		<img
-			:src="image"
+	<section class="HomeHero">
+		<Rooster
+			src="../assets/images/Rooster.svg"
 			alt=""
-			height="150"
-			class="left-3/4 md:block h-48 absolute md:h-60 md:left-1/4 md:bottom-12 -z-10 opacity-60"
+			aria-hidden="true"
+			:fontControlled="false"
+			class="img"
 		/>
-		<div class="justify-start max-w-[75ch] text-slate-700">
-			<h1 class="uppercase text-base md:text-xl mb-2">{{ title }}</h1>
-			<h2 class="h1 !leading-[0.9em] text-wrap md:text-balance uppercase"
+		<div class="main">
+			<h1 class="">Harmony Rooster LLC</h1>
+			<h2
 				>Providing <br />
-				<span class="text-primary">Compassionate </span>
+				<span>Compassionate </span>
 				<br />
-				In-Home <span class="text-accent">Care</span></h2
+				In-Home <span>Care</span></h2
 			>
 		</div>
-		<div
-			class="justify-start md:ml-[50%] flex flex-col gap-4 md:gap-8 md:self-end"
-		>
+		<div class="content">
 			<p
-				class="italic text-slate-500 max-w-md text-sm sm:text-sm md:text-xl md:max-w-lg"
-				>{{ paragraph }}</p
+				>We offer compassionate, non-emergency in-home care services designed to
+				promote independence, dignity, and overall well-being.</p
 			>
-			<div class="flex gap-4 flex-wrap">
-				<Button size="sm">Contact us</Button>
+			<div class="">
+				<button class="btn-lg btn-primary">Contact us</button>
 			</div>
 		</div>
 	</section>
 </template>
-
-<style>
-	.h1 {
-		line-break: auto;
-		font-size: clamp(2rem, 10vw, 6rem);
-	}
-
-	.h2 {
-		font-size: clamp(1.8rem, 5vw, 3rem);
-		line-height: 1em;
-		@apply uppercase;
-
-		span {
-			@apply text-primary;
-		}
-	}
-</style>
