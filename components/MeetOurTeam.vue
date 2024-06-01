@@ -1,5 +1,5 @@
 <template>
-	<section class="p-4 md:p-8 space-y-4 overflow-hidden">
+	<section class="">
 		<h2 class="header">Meet our <span>team</span></h2>
 		<p class="base-text"
 			>Our caregivers are not just qualified; they are compassionate and
@@ -7,14 +7,22 @@
 			rigorous background checks, training, and ongoing education to ensure they
 			provide the highest quality of care.</p
 		>
-		<ul class="flex gap-4 pt-6 overflow-x-scroll">
+		<ul class="horizontal-media-scroller">
 			<li v-for="s in staff" :key="s.id">
-				<article class="p-4 bg-white rounded-md w-72">
-					<img :src="s.picture" alt="" class="w-full rounded-md mb-4" />
-					<h3 class="font-bold text-xl mb-0">{{ s.name }}</h3>
-					<p class="text-accent mb-2">{{ s.title }}</p>
-					<p>{{ s.description }}</p>
-				</article>
+				<figure class="">
+					<NuxtImg
+						format="webp"
+						loading="lazy"
+						:src="s.picture"
+						:alt="`A picture of ${s.name} }}`"
+						class=""
+					/>
+					<figcaption>
+						<h3 class="font-bold text-xl mb-0">{{ s.name }}</h3>
+						<p class="title">{{ s.title }}</p>
+						<p>{{ s.description }}</p>
+					</figcaption>
+				</figure>
 			</li>
 		</ul>
 	</section>
@@ -45,6 +53,22 @@
 			description:
 				'With over 14+ years of experience in the medical field, Derek leads our team  with expertise and compassion',
 			picture: '/Placeholder.jpg'
+		},
+		{
+			id: '3',
+			name: 'Cynthia Robinson',
+			title: 'Administrator',
+			description:
+				'With over 14+ years of experience in the medical field, Derek leads our team  with expertise and compassion',
+			picture: '/Placeholder.jpg'
+		},
+		{
+			id: '4',
+			name: 'Cynthia Robinson',
+			title: 'Administrator',
+			description:
+				'With over 14+ years of experience in the medical field, Derek leads our team  with expertise and compassion',
+			picture: '/Placeholder.jpg'
 		}
 	]
 </script>
@@ -53,25 +77,88 @@
 	section {
 		border-radius: var(--radius-lg);
 		padding: 1.5rem;
-	}
-	ul {
-		display: flex;
-		gap: 1rem;
 		overflow: hidden;
 	}
 
-	li {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-		background-color: var(--surface-2);
-		padding: 1rem;
-		border-radius: var(--radius-lg);
-		width: 15rem;
+	.horizontal-media-scroller {
+		--size: 260px;
+		--gap: 2rem;
 
-		img {
-			height: 12rem;
-			width: 12rem;
+		display: grid;
+		grid-auto-flow: column;
+		grid-template-rows: 2fr;
+		gap: calc(var(--gap) / 2);
+		margin: 0;
+
+		padding-inline-start: var(--gap);
+		padding-inline-end: var(--gap);
+		padding-block-start: calc(var(--gap) / 2);
+		padding-block: calc(var(--gap) / 2);
+
+		overflow-x: auto;
+		overscroll-behavior-inline: contain;
+		scroll-snap-type: inline mandatory;
+		scroll-padding-left: var(--gap);
+		scroll-padding-right: var(--gap);
+		scroll-padding-inline: var(--gap);
+
+		@media (prefers-reduced-motion: no-preference) {
+			scroll-behavior: smooth;
 		}
+
+		& > li {
+			min-width: var(--size);
+			display: inline-block;
+
+			&:last-of-type figure {
+				position: relative;
+
+				&::after {
+					content: '';
+					position: absolute;
+
+					inline-size: var(--gap);
+					block-size: 100%;
+
+					inset-block-start: 0;
+					inset-inline-end: calc(var(--gap) * -1);
+				}
+			}
+		}
+
+		& figure {
+			scroll-snap-align: start;
+			background-color: var(--surface-2);
+			border-radius: var(--radius-sm);
+			padding: 1rem;
+			display: grid;
+			place-content: center;
+
+			gap: 0.5rem;
+
+			& figcaption {
+				display: grid;
+
+				& h3 {
+					font-size: 20px;
+					font-weight: bold;
+				}
+				& .title {
+					color: var(--accent-500);
+					margin-bottom: 0.5rem;
+				}
+			}
+		}
+	}
+
+	img {
+		inline-size: 100%;
+		block-size: 100%;
+
+		object-fit: cover;
+		border-radius: 1ex;
+		overflow: hidden;
+
+		background-image: linear-gradient(to bottom, hsl(0 0% 40%), hsl(0 0% 20%));
 	}
 </style>

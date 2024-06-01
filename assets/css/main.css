@@ -18,7 +18,7 @@
 
    --primary-light-400: hsl(var(--primary-hue) var(--primary-saturation) calc(var(--primary-lightness) + 10%));
    --primary-light-500: hsl(var(--primary-hue) var(--primary-saturation) var(--primary-lightness));
- --primary-light-600: hsl(var(--primary-hue) var(--primary-saturation) calc(var(--primary-lightness) - 8%));
+  --primary-light-600: hsl(var(--primary-hue) var(--primary-saturation) calc(var(--primary-lightness) - 8%));
 
    --secondary-hue: 0;
    --secondary-saturation: 0%;
@@ -35,72 +35,72 @@
    --accent-light-600: hsl(var(--accent-hue) var(--accent-saturation) calc(var(--accent-lightness) -8%)); 
 
    
-    --text-1-light: hsla(0, 0%, 30%, 1);
+  --text-1-light: hsla(0, 0%, 30%, 1);
 
-   --background-1-light: hsla(0, 0%, 96%, 1);
-   --background-2-light: hsl(192, 71%, 99%);
+  --background-1-light: hsla(0, 0%, 96%, 1);
+  --background-2-light: hsl(192, 71%, 99%);
 }
 
 
 
 @layer reset {
-/* makes sizing simpler */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+  /* makes sizing simpler */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-/* remove default spacing */
-/* force styling of type through styling, rather than elements */
-* {
-  margin: 0;
-  padding: 0;
-  font: inherit;
-}
+  /* remove default spacing */
+  /* force styling of type through styling, rather than elements */
+  * {
+    margin: 0;
+    padding: 0;
+    font: inherit;
+  }
 
-/* dark mode user-agent-styles */
-/* improves punctuation in supported browsers */
-html {
-  hanging-punctuation: first last;
-}
+  /* dark mode user-agent-styles */
+  /* improves punctuation in supported browsers */
+  html {
+    hanging-punctuation: first last;
+  }
 
-/* min body height */
-body {
-  min-height: 100svh;
-}
+  /* min body height */
+  body {
+    min-height: 100svh;
+  }
 
-/* responsive images/videos */
-img,
-picture,
-svg,
-video {
-  display: block;
-  max-width: 100%;
-}
+  /* responsive images/videos */
+  img,
+  picture,
+  svg,
+  video {
+    display: block;
+    max-width: 100%;
+  }
 
-/* Improved heading in supported browsers */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  text-wrap: balance;
-}
+  /* Improved heading in supported browsers */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+  }
 
-/* improve readability with max-width on paragraphs and lists */
-/* prevent orphans in supported browsers */
-p,
-li {
-  max-width: var(--p-max-width, 65ch);
-  text-wrap: pretty;
-}
+  /* improve readability with max-width on paragraphs and lists */
+  /* prevent orphans in supported browsers */
+  p,
+  li {
+    max-width: var(--p-max-width, 65ch);
+    text-wrap: pretty;
+  }
 
 }
  
 @layer base {
-   :root {
+  :root {
     --primary-400: var(--primary-light-400);
     --primary-500: var(--primary-light-500);
     --primary-600: var(--primary-light-600);
@@ -114,7 +114,7 @@ li {
     --text-1: var(--text-1-light);
 
     --radius-lg: 1.5rem;
-    --radius-sm: 5rem;
+    --radius-sm: .5rem;
 
     --surface-1: var(--background-1-light);
     --surface-2: var(--background-2-light);
@@ -153,27 +153,26 @@ li {
     grid-template-columns: 1fr 1fr;
     align-items: center;
 
-    & .icon {
+    .icon {
       font-size: 4rem;
       fill: var(--primary-500);
     }
 
-    & .actions {
+    .actions {
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
       gap: 1rem;
     }
-    
   }
 
   @media (min-width: 500px) {
-      header {
-        & .actions {
-          flex-direction: row;
-        }
+    header {
+      .actions {
+        flex-direction: row;
       }
     }
+  }
   
   button {
     background-color: transparent;
@@ -228,7 +227,7 @@ li {
     container-type: inline-size;
     margin-bottom: 3rem;
 
-    & .img {
+    .img {
       grid-row: 1/span 2;
       grid-column-start: 1;
       z-index: -10;
@@ -238,34 +237,34 @@ li {
       margin-right: -25%;
     }
   
-    & .main {
+    .main {
       max-width: 75ch;
       grid-column-start: 1;
       grid-row: 1;
-      
 
-      & h1{
+      h1 {
         font-size: clamp(.75rem,5vw,1.5rem);
         margin-bottom: .25rem;
         text-transform: uppercase;
       }
   
-      & h2 {
+      h2 {
         line-break: auto;
         font-size: clamp(2rem, 10cqw, 6rem);
         text-transform: uppercase;
         line-height: .9em;
   
-        & span:first-of-type {
+        span:first-of-type {
           color: var(--primary-500);
         }
-        & span {
+
+        span {
           color: var(--accent-500);
         }
       }
     }
 
-    & .content {
+    .content {
       grid-row: 2;
       grid-column-start: 1;
       display: flex;
@@ -324,7 +323,7 @@ li {
     }
   }
 
-  @container (min-width: 800px){
+  @container (min-width: 800px) {
     .OneThree {
       gap: 2rem;
       grid-template-columns: 30cqi auto;
@@ -332,21 +331,21 @@ li {
   }
 
   .header {
-        line-break: auto;
-        font-size: clamp(1.5rem,5vw, 2.5rem);
-        text-transform: uppercase;
-        line-height: .9em;
-        font-weight: 400;
-        padding-bottom: 1rem;
-
+    line-break: auto;
+    font-size: clamp(1.5rem,5vw, 2.5rem);
+    text-transform: uppercase;
+    line-height: .9em;
+    font-weight: 400;
+    padding-bottom: 1rem;
   
-        & span:first-of-type {
-          color: var(--primary-500);
-        }
-        & span {
-          color: var(--accent-500);
-        }
-      }
+    span:first-of-type {
+      color: var(--primary-500);
+    }
+    
+    span {
+      color: var(--accent-500);
+    }
+  }
 
   .base-text {
     max-width: 75ch;
