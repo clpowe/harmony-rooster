@@ -1,7 +1,7 @@
 <template>
 	<section class="p-4 md:p-8 space-y-4 overflow-hidden">
-		<h2 class="mb-4">Meet our <span>team</span></h2>
-		<p class=""
+		<h2 class="header">Meet our <span>team</span></h2>
+		<p class="base-text"
 			>Our caregivers are not just qualified; they are compassionate and
 			dedicated to making a difference in the lives of our clients. They undergo
 			rigorous background checks, training, and ongoing education to ensure they
@@ -49,4 +49,29 @@
 	]
 </script>
 
-<style scoped></style>
+<style scoped>
+	section {
+		border-radius: var(--radius-lg);
+		padding: 1.5rem;
+	}
+	ul {
+		display: flex;
+		gap: 1rem;
+		overflow: hidden;
+	}
+
+	li {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		background-color: var(--surface-2);
+		padding: 1rem;
+		border-radius: var(--radius-lg);
+		width: 15rem;
+
+		img {
+			height: 12rem;
+			width: 12rem;
+		}
+	}
+</style>

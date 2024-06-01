@@ -32,7 +32,10 @@
 <template>
 	<main class="">
 		<HomeHero></HomeHero>
-		<section> <OurServices /><MeetOurTeam /> </section>
+		<section class="OneThree">
+			<OurServices />
+			<MeetOurTeam />
+		</section>
 		<section
 			class="bg-white rounded-2xl p-8 flex gap-4 flex-col md:flex-row relative overflow-hidden mb-12"
 		>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-	import Care from '../assets/images/Care.svg'
-	import Cook from '../assets/images/Cook.svg'
-	import Medication from '../assets/images/Medication.svg'
+	import type { Component } from 'vue'
+	import Care from '@/assets/icons/icon-care.svg'
+	import Cook from '@/assets/icons/icon-cook.svg'
+	import Medication from '@/assets/icons/icon-medication.svg'
+
 	type Service = {
-		icon: string
+		icon: typeof Care
 		text: string
 	}
 
@@ -34,13 +36,11 @@
 		</div>
 		<ul class="flex flex-col gap-4">
 			<li class="service-item" v-for="item in services">
-				<div class="icon">
-					<img :src="item.icon" alt="" aria-hidden="true" />
-				</div>
+				<div class="icon"> <component :is="item.icon" /> </div>
 				<p>{{ item.text }}</p>
 			</li>
 		</ul>
-		<p
+		<p class="base-text"
 			>We work closely with you and your loved one to create a personalized care
 			plan that promotes self-reliance, personal growth, and a sense of
 			fulfillment.</p
@@ -48,4 +48,36 @@
 	</section>
 </template>
 
-<style scoped></style>
+<style scoped>
+	section {
+		border-radius: var(--radius-lg);
+		padding: 1.5rem;
+		background-color: var(--surface-2);
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+	}
+
+	li {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 1rem;
+		align-items: center;
+		margin-bottom: 1rem;
+
+		&:last-of-type {
+			margin-bottom: 0;
+		}
+
+		.icon {
+			background-color: var(--accent-500);
+			color: white;
+			font-size: 1.5rem;
+			padding: 0.25rem;
+			border-radius: 0.25rem;
+		}
+	}
+</style>

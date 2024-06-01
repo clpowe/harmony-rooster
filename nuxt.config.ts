@@ -1,3 +1,5 @@
+import postcssNesting from 'postcss-nesting'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
 	devtools: { enabled: true },
@@ -5,7 +7,9 @@ export default defineNuxtConfig({
 	postcss: {
 		plugins: {
 			autoprefixer: {},
-			cssnano: {}
+			cssnano: {
+				plugins: [postcssNesting]
+			}
 		}
 	},
 	modules: ['nuxt-svgo', '@nuxt/image']
