@@ -3,6 +3,7 @@ import type { Component } from 'vue'
 import Care from '@/assets/icons/icon-care.svg'
 import Cook from '@/assets/icons/icon-cook.svg'
 import Medication from '@/assets/icons/icon-medication.svg'
+import Companion from '@/assets/icons/icon-companion.svg'
 
 type Service = {
 	icon: typeof Care
@@ -23,8 +24,8 @@ const services: Service[] = [
 		text: 'Medication reminders and management'
 	},
 	{
-		icon: Medication,
-		text: 'Medication reminders and management'
+		icon: Companion,
+		text: 'Companionship and social interaction'
 	}
 ]
 </script>
@@ -36,23 +37,11 @@ const services: Service[] = [
 				qualified caregivers provides a helping hand with a variety of needs,
 				including</Typography>
 		</div>
-		<!-- <ul class="flex flex-col gap-4">
-			<li class="service-item" v-for="item in services">
-				<div class="icon">
-					<component :is="item.icon" />
-				</div>
-				<p>{{ item.text }}</p>
-			</li>
-		</ul> -->
+
 		<div v-for="item in services" :key="item.text" class="service-item">
 			<component :is="item.icon" class="icon" />
 			<Typography tag="p" variant="text">{{ item.text }}</Typography>
 		</div>
-
-		<!-- <p class="base-text">We work closely with you and your loved one to create a personalized care
-			plan that promotes self-reliance, personal growth, and a sense of
-fulfillment.</p> -->
-
 	</section>
 </template>
 

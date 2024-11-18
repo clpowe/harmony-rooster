@@ -61,9 +61,9 @@ const accordionItems = [
 
 		<section class="card faq flex mb-12 twoCol">
 			<div>
-				<h2><span class="text-accent">Frequently</span> Asked
+				<Typography tag="h2" variant="heading-medium"><span>Frequently</span> Asked
 					<span>Questions</span>
-				</h2>
+				</Typography>
 				<p>Find answers to common questions about our services</p>
 			</div>
 			<div>
@@ -86,8 +86,8 @@ const accordionItems = [
 
 		<section class="card faq bg-white flex mb-12 twoCol">
 			<div>
-				<h2>Contact <span>Us</span> </h2>
-				<p>have a question? We’re here to help!</p>
+				<Typography tag="h2" variant="heading-medium">Contact <span>Us</span> </Typography>
+				<Typography tag="p" variant="text">have a question? We’re here to help!</Typography>
 			</div>
 
 			<ContactForm />
