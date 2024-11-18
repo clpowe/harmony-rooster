@@ -39,6 +39,19 @@
 
   --background-1-light: hsla(0, 0%, 96%, 1);
   --background-2-light: hsl(192, 71%, 99%);
+
+
+  /* Spacing */
+  --space-unit: 1em;
+  --space-xxxs: calc(0.25 * var(--space-unit));
+  --space-xxs: calc(0.375 * var(--space-unit));
+  --space-xs: calc(0.5 * var(--space-unit));
+  --space-sm: calc(0.75 * var(--space-unit));
+  --space-md: calc(1.25 * var(--space-unit));
+  --space-lg: calc(2 * var(--space-unit));
+  --space-xl: calc(3.25 * var(--space-unit));
+  --space-xxl: calc(5.25 * var(--space-unit));
+  --space-xxxl: calc(8.5 * var(--space-unit));
 }
 
 
@@ -149,7 +162,7 @@
     width: 100%;
     max-width: 72rem;
     margin-inline: auto;
-    padding: 1rem;
+    padding: var(--size-1);
     display: grid;
     grid-template-columns: 1fr 1fr;
     align-items: center;
@@ -230,9 +243,9 @@
     display: grid;
     position: relative;
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: var(--size-3);
     container-type: inline-size;
-    margin-bottom: 3rem;
+    margin-bottom: var(--size-8);
 
     .img {
       grid-row: 1/span 2;
@@ -257,7 +270,7 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      gap: 1rem;
+      gap: var(--size-3);
       color: #6D6D6D;
       font-style: italic;
 
@@ -312,7 +325,7 @@
 
   @container (min-width: 800px) {
     .OneThree {
-      gap: 2rem;
+      gap: var(--size-7);
       grid-template-columns: 30cqi auto;
     }
   }
@@ -323,7 +336,7 @@
     text-transform: uppercase;
     line-height: .9em;
     font-weight: 400;
-    padding-bottom: 1rem;
+    padding-bottom: var(--size-3);
 
     span:first-of-type {
       color: var(--primary-500);
@@ -345,7 +358,7 @@
 
   .card {
     border-radius: var(--radius-lg);
-    padding: 1.5rem;
+    padding: var(--size-5);
   }
 
   .about-us {
@@ -354,11 +367,11 @@
     position: relative;
     grid-template-columns: 1fr;
     background-color: var(--surface-2);
-    gap: 1rem;
+    gap: var(--size-3);
     align-items: center;
 
     .about-us-content {
-      padding: .5rem;
+      padding: var(--size-2);
       z-index: 1;
     }
 

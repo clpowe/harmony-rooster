@@ -2,6 +2,7 @@
 type Variant =
 	| 'heading'
 	| 'heading-large'
+	| 'heading-medium'
 	| 'heading-small'
 	| 'text' | 'text-display'
 
@@ -14,6 +15,7 @@ const VARIANT_CLASSES: Record<Variant, string> = {
 	heading: 'heading',
 	'heading-variable': 'heading-variable',
 	'heading-large': 'heading-large',
+	'heading-medium': 'heading-medium',
 	'heading-small': 'heading-small',
 	text: 'text',
 	'text-display': 'text-display'
@@ -41,6 +43,24 @@ const variantClass = computed(() => {
 	font-size: clamp(2rem, 10cqw, 6rem);
 	text-transform: uppercase;
 	line-height: .9em;
+
+	:deep(span:first-of-type) {
+		color: var(--primary-500);
+	}
+
+	:deep(span) {
+		color: var(--accent-500);
+	}
+}
+
+
+.heading-medium {
+	line-break: auto;
+	font-size: clamp(2rem, 5vw, 2.5rem);
+	text-transform: uppercase;
+	line-height: .9em;
+	font-weight: 400;
+	padding-bottom: 1rem;
 
 	:deep(span:first-of-type) {
 		color: var(--primary-500);

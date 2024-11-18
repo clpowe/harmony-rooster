@@ -35,10 +35,8 @@ const accordionItems = [
 <template>
 	<main class="">
 		<HomeHero></HomeHero>
-		<section class="OneThree">
-			<OurServices />
-			<MeetOurTeam />
-		</section>
+		<OurServices />
+		<MeetOurTeam />
 		<section class="card about-us ">
 			<div class="about-us-img">
 				<NuxtImg src="https://picsum.photos/200" alt="" class="" />
