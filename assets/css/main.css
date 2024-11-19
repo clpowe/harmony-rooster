@@ -146,6 +146,8 @@
   }
 
   main {
+    display: grid;
+    gap: var(--size-7);
     max-width: 72rem;
     margin-inline: auto;
     container-type: inline-size;
