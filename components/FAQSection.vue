@@ -44,10 +44,13 @@ const accordionItems = [
 
 				<template v-for="item in accordionItems" :key="item.value">
 					<AccordionItem :value="item.value" class="accordion-item">
-						<AccordionHeader>
-							<AccordionTrigger>{{ item.question }}</AccordionTrigger>
+						<AccordionHeader class="accordion-header">
+							<AccordionTrigger class="accordion-trigger">{{ item.question }}
+								<Icon name="bi:plus-lg" />
+							</AccordionTrigger>
 						</AccordionHeader>
 						<AccordionContent class="accordion-content">
+
 							{{ item.answer }}
 						</AccordionContent>
 					</AccordionItem>
@@ -58,4 +61,4 @@ const accordionItems = [
 	</section>
 </template>
 
-<style></style>
+<style scoped></style>
