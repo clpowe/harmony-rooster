@@ -1,62 +1,30 @@
 <script setup lang="ts">
-	import { useForm } from 'vee-validate'
-	import { toTypedSchema } from '@vee-validate/zod'
-	import * as z from 'zod'
+import { createZodPlugin } from '@formkit/zod'
+import { contactValidator } from '@/validators'
 
-	const formSchema = toTypedSchema(
-		z.object({
-			name: z.string().min(2).max(50),
-			email: z.string().email(),
-			message: z.string().min(2).max(500)
-		})
-	)
+const form = shallowRef({
+	name: '',
+	email: '',
+	message: ''
+})
 
-	const form = useForm({
-		validationSchema: formSchema
+createZodPlugin(contactValidator,
+	async (formData) => {
+		await new Promise((r) => setTimeout(r, 2000))
+		alert('Thank you for your message!')
+		console.log(formData)
 	})
+})
 
-	const onSubmit = form.handleSubmit((values) => {
-		console.log('Form submitted:', values)
-	})
+
+function submitHandler(formData: typeof form.value) {
+	console.log(form.value)
+}
+
 </script>
 
 <template>
-	<!-- <form @submit="onSubmit" class="flex flex-col gap-4">
-		<FormField v-slot="{ componentField }" name="name">
-			<FormItem class="flex flex-col">
-				<FormLabel>Name</FormLabel>
-				<FormControl>
-					<Input
-						type="text"
-						placeholder="Enter your name"
-						v-bind="componentField"
-					/>
-				</FormControl>
-				<FormMessage />
-			</FormItem>
-		</FormField>
-		<FormField v-slot="{ componentField }" name="email">
-			<FormItem class="flex flex-col">
-				<FormLabel>Email</FormLabel>
-				<FormControl>
-					<Input
-						type="email"
-						placeholder="Enter your email address"
-						v-bind="componentField"
-					/>
-				</FormControl>
-				<FormMessage />
-			</FormItem>
-		</FormField>
-		<FormField v-slot="{ componentField }" name="message">
-			<FormItem class="flex flex-col">
-				<FormLabel>Message</FormLabel>
-				<FormControl>
-					<Textarea placeholder="Enter your message" v-bind="componentField" />
-				</FormControl>
-				<FormMessage />
-			</FormItem>
-		</FormField>
-		<Button type="submit"> Submit </Button>
-	</form> -->
+	<div>
+		<FormKit type="form" @submit="submitHandler" />
+	</div>
 </template>
