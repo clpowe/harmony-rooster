@@ -25,9 +25,9 @@ function submitHandler(formData: typeof form.value) {
 <template>
 	<div>
 		<FormKit type="form" @submit="submitHandler">
-			<Formkit type="text" name="name" label="Name" placeholder="Your Name" v-model="form.name" />
-			<Formkit type="email" name="email" label="Email" placeholder="Your Email" v-model="form.email" />
-			<Formkit type="textarea" name="message" label="Message" placeholder="Your Message" v-model="form.message" />
+			<FormKit type="text" name="name" label="Name" placeholder="Your Name" v-model="form.name" :delay="1000" />
+			<FormKit type="email" name="email" label="Email" placeholder="Your Email" v-model="form.email" />
+			<FormKit type="textarea" name="message" label="Message" placeholder="Your Message" v-model="form.message" />
 			<Formkit type="submit" label="Submit" />
 		</FormKit>
 	</div>
