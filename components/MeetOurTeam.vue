@@ -12,7 +12,7 @@
 					<figcaption>
 						<Typography tag="h3" variant="heading">{{ s.name }}</Typography>
 						<Typography tag="p" variant="text" class="title">{{ s.title }}</Typography>
-						<Typography tag="p" variant="text">{{ s.description }}</Typography>
+						<!--<Typography tag="p" variant="text">{{ s.description }}</Typography>-->
 					</figcaption>
 				</figure>
 			</li>
@@ -54,14 +54,6 @@ const staff: Staff[] = [
 			'With over 14+ years of experience in the medical field, Derek leads our team  with expertise and compassion',
 		picture: '/Placeholder.jpg'
 	},
-	{
-		id: '4',
-		name: 'Cynthia Robinson',
-		title: 'Administrator',
-		description:
-			'With over 14+ years of experience in the medical field, Derek leads our team  with expertise and compassion',
-		picture: '/Placeholder.jpg'
-	}
 ]
 </script>
 
