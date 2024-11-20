@@ -11,9 +11,15 @@ importers:
       '@formkit/core':
         specifier: ^1.6.9
         version: 1.6.9
+      '@formkit/icons':
+        specifier: ^1.6.9
+        version: 1.6.9
       '@formkit/nuxt':
         specifier: ^1.6.9
         version: 1.6.9(magicast@0.3.5)(rollup@4.27.3)(tailwindcss@3.4.15)(vite@5.4.11(@types/node@22.9.0)(terser@5.36.0))(vue@3.5.13(typescript@5.6.3))
+      '@formkit/themes':
+        specifier: ^1.6.9
+        version: 1.6.9(tailwindcss@3.4.15)
       '@formkit/vue':
         specifier: ^1.6.9
         version: 1.6.9(tailwindcss@3.4.15)(vue@3.5.13(typescript@5.6.3))
@@ -584,6 +590,9 @@ packages:
 
   '@formkit/i18n@1.6.9':
     resolution: {integrity: sha512-8NA5bALlspCBEwInuZVgBqgQr0lDfproZdmbs2LciQpGi2B15u74JCjAkEwaKlMs+qgf/ds3QcIgUv2ztyyVEA==}
+
+  '@formkit/icons@1.6.9':
+    resolution: {integrity: sha512-Fg54j0ArCGNdE1EbwarEhOBj04WlFdF9wafRiwOueqDM9/aUy4j8T2W/4eu8Wk8sNZ1nmrcQ5qUNFIb6MT27aQ==}
 
   '@formkit/inputs@1.6.9':
     resolution: {integrity: sha512-k9gjV1e5F87NxSnu13JtKb30XYt6ndx2KGHZG8Xz0etoP75yJlMaeROHHPvlxdy2gZM6qH7Ex4it51W74Wh2Eg==}
@@ -4340,6 +4349,10 @@ snapshots:
       '@formkit/core': 1.6.9
       '@formkit/utils': 1.6.9
       '@formkit/validation': 1.6.9
+
+  '@formkit/icons@1.6.9':
+    dependencies:
+      '@formkit/core': 1.6.9
 
   '@formkit/inputs@1.6.9':
     dependencies:

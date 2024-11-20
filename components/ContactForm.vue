@@ -14,7 +14,6 @@ createZodPlugin(contactValidator,
 		alert('Thank you for your message!')
 		console.log(formData)
 	})
-})
 
 
 function submitHandler(formData: typeof form.value) {
@@ -25,6 +24,11 @@ function submitHandler(formData: typeof form.value) {
 
 <template>
 	<div>
-		<FormKit type="form" @submit="submitHandler" />
+		<FormKit type="form" @submit="submitHandler">
+			<Formkit type="text" name="name" label="Name" placeholder="Your Name" v-model="form.name" />
+			<Formkit type="email" name="email" label="Email" placeholder="Your Email" v-model="form.email" />
+			<Formkit type="textarea" name="message" label="Message" placeholder="Your Message" v-model="form.message" />
+			<Formkit type="submit" label="Submit" />
+		</FormKit>
 	</div>
 </template>

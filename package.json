@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@formkit/core": "^1.6.9",
+    "@formkit/icons": "^1.6.9",
     "@formkit/nuxt": "^1.6.9",
+    "@formkit/themes": "^1.6.9",
     "@formkit/vue": "^1.6.9",
     "@formkit/zod": "^1.6.9",
     "@nuxt/kit": "^3.14.159",

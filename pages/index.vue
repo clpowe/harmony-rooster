@@ -36,8 +36,9 @@ import RoosterBG from '@/assets/images/roosterbg.svg'
 				<Typography tag="h2" variant="heading-medium">Contact <span>Us</span> </Typography>
 				<Typography tag="p" variant="text">have a question? We’re here to help!</Typography>
 			</div>
-
-			<ContactForm />
+			<client-only>
+				<ContactForm />
+			</client-only>
 		</section>
 	</main>
 </template>
