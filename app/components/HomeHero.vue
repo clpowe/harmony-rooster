@@ -4,7 +4,7 @@ import Rooster from '@/assets/icons/icon-rooster.svg'
 
 <template>
 	<section class="HomeHero">
-		<Rooster src="../assets/images/Rooster.svg" alt="" aria-hidden="true" :fontControlled="false" class="img" />
+		<Rooster src="../assets/images/Rooster.svg" alt="" aria-hidden="true" :fontControlled="false" class="HomeHero__img" />
 		<div class="main">
 			<Typography tag="h1" variant="heading" class="">Harmony Rooster LLC</Typography>
 			<Typography tag="h2" variant="heading-large">Providing <br />

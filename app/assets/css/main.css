@@ -1,129 +1,71 @@
-@layer reset, base;
+/* =========================
+   CUBE CSS
+   Layers: settings, reset, base, composition, utilities, blocks, exceptions
+   ========================= */
+
+@layer settings, reset, base, composition, utilities, blocks, exceptions;
 
 @import "open-props/style";
-
-@font-face {
-  font-family: "Verdana";
-  src: url("../fonts/Verdana.ttf");
-  font-weight: 400;
-}
-
-:root {
-  interpolate-size: allow-keywords;
-  --primary-hue: 195;
-  --primary-saturation: 94%;
-  --primary-lightness: 25%;
-
-  --primary-light-400: hsl(
-    var(--primary-hue) var(--primary-saturation)
-      calc(var(--primary-lightness) + 10%)
-  );
-  --primary-light-500: hsl(
-    var(--primary-hue) var(--primary-saturation) var(--primary-lightness)
-  );
-  --primary-light-600: hsl(
-    var(--primary-hue) var(--primary-saturation)
-      calc(var(--primary-lightness) - 8%)
-  );
-
-  --secondary-hue: 0;
-  --secondary-saturation: 0%;
-  --secondary-lightness: 30%;
-
-  --secondary-light: hsl(
-    var(--secondary-hue) var(--secondary-saturation) var(--secondary-lightness)
-  );
-
-  --accent-hue: 34;
-  --accent-saturation: 89%;
-  --accent-lightness: 40%;
-
-  --accent-light-400: hsl(
-    var(--accent-hue) var(--accent-saturation)
-      calc(var(--accent-lightness) + 10%)
-  );
-  --accent-light-500: hsl(
-    var(--accent-hue) var(--accent-saturation) var(--accent-lightness)
-  );
-  --accent-light-600: hsl(
-    var(--accent-hue) var(--accent-saturation) calc(var(--accent-lightness) -8%)
-  );
-
-  --text-1-light: hsla(0, 0%, 30%, 1);
-
-  --background-1-light: hsla(0, 0%, 96%, 1);
-  --background-2-light: hsl(192, 71%, 99%);
-
-  /* Spacing */
-  --space-unit: 1em;
-  --space-xxxs: calc(0.25 * var(--space-unit));
-  --space-xxs: calc(0.375 * var(--space-unit));
-  --space-xs: calc(0.5 * var(--space-unit));
-  --space-sm: calc(0.75 * var(--space-unit));
-  --space-md: calc(1.25 * var(--space-unit));
-  --space-lg: calc(2 * var(--space-unit));
-  --space-xl: calc(3.25 * var(--space-unit));
-  --space-xxl: calc(5.25 * var(--space-unit));
-  --space-xxxl: calc(8.5 * var(--space-unit));
-}
-
-@layer reset {
-  /* makes sizing simpler */
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
+/* -------------------------
+   SETTINGS (tokens, fonts)
+   ------------------------- */
+@layer settings {
+  @font-face {
+    font-family: "Verdana";
+    src: url("../fonts/Verdana.ttf");
+    font-weight: 400;
   }
 
-  /* remove default spacing */
-  /* force styling of type through styling, rather than elements */
-  * {
-    margin: 0;
-    padding: 0;
-    font: inherit;
-  }
-
-  /* dark mode user-agent-styles */
-  /* improves punctuation in supported browsers */
-  html {
-    hanging-punctuation: first last;
-  }
-
-  /* min body height */
-  body {
-    min-height: 100svh;
-  }
-
-  /* responsive images/videos */
-  img,
-  picture,
-  svg,
-  video {
-    display: block;
-    max-width: 100%;
-  }
-
-  /* Improved heading in supported browsers */
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    text-wrap: balance;
-  }
-
-  /* improve readability with max-width on paragraphs and lists */
-  /* prevent orphans in supported browsers */
-  p,
-  li {
-    max-width: var(--p-max-width, 65ch);
-    text-wrap: pretty;
-  }
-}
-
-@layer base {
   :root {
+    interpolate-size: allow-keywords;
+
+    /* Brand hues */
+    --primary-hue: 195;
+    --primary-saturation: 94%;
+    --primary-lightness: 25%;
+
+    --primary-light-400: hsl(
+      var(--primary-hue) var(--primary-saturation)
+        calc(var(--primary-lightness) + 10%)
+    );
+    --primary-light-500: hsl(
+      var(--primary-hue) var(--primary-saturation) var(--primary-lightness)
+    );
+    --primary-light-600: hsl(
+      var(--primary-hue) var(--primary-saturation)
+        calc(var(--primary-lightness) - 8%)
+    );
+
+    --secondary-hue: 0;
+    --secondary-saturation: 0%;
+    --secondary-lightness: 30%;
+    --secondary-light: hsl(
+      var(--secondary-hue) var(--secondary-saturation)
+        var(--secondary-lightness)
+    );
+
+    --accent-hue: 34;
+    --accent-saturation: 89%;
+    --accent-lightness: 40%;
+
+    --accent-light-400: hsl(
+      var(--accent-hue) var(--accent-saturation)
+        calc(var(--accent-lightness) + 10%)
+    );
+    --accent-light-500: hsl(
+      var(--accent-hue) var(--accent-saturation) var(--accent-lightness)
+    );
+    --accent-light-600: hsl(
+      var(--accent-hue) var(--accent-saturation)
+        calc(var(--accent-lightness) - 8%)
+    );
+
+    --text-1-light: hsla(0, 0%, 30%, 1);
+
+    --background-1-light: hsla(0, 0%, 96%, 1);
+    --background-2-light: hsl(192, 71%, 99%);
+
+    /* Alias tokens for theme */
     --primary-400: var(--primary-light-400);
     --primary-500: var(--primary-light-500);
     --primary-600: var(--primary-light-600);
@@ -136,25 +78,93 @@
 
     --text-1: var(--text-1-light);
 
+    --surface-1: var(--background-1-light);
+    --surface-2: var(--background-2-light);
+
     --radius-lg: 1.5rem;
     --radius-sm: 0.5rem;
 
-    --surface-1: var(--background-1-light);
-    --surface-2: var(--background-2-light);
+    /* Custom spacing scale (kept for compatibility) */
+    --space-unit: 1em;
+    --space-xxxs: calc(0.25 * var(--space-unit));
+    --space-xxs: calc(0.375 * var(--space-unit));
+    --space-xs: calc(0.5 * var(--space-unit));
+    --space-sm: calc(0.75 * var(--space-unit));
+    --space-md: calc(1.25 * var(--space-unit));
+    --space-lg: calc(2 * var(--space-unit));
+    --space-xl: calc(3.25 * var(--space-unit));
+    --space-xxl: calc(5.25 * var(--space-unit));
+    --space-xxxl: calc(8.5 * var(--space-unit));
+  }
+}
+
+/* -------------------------
+   RESET (element resets)
+   ------------------------- */
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  * {
+    margin: 0;
+    padding: 0;
+    font: inherit;
   }
 
   html {
-    overflow-x: hidden;
+    hanging-punctuation: first last;
+  }
+  body {
+    min-height: 100svh;
   }
 
+  img,
+  picture,
+  svg,
+  video {
+    display: block;
+    max-width: 100%;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+  }
+
+  p,
+  li {
+    max-width: var(--p-max-width, 65ch);
+    text-wrap: pretty;
+  }
+}
+
+/* -------------------------
+   BASE (site-wide element styles)
+   ------------------------- */
+@layer base {
+  html {
+    overflow-x: hidden;
+  }
   body {
     font-family: "Verdana";
     background: var(--surface-1);
     color: var(--text-1);
     overflow-x: hidden;
   }
+}
 
-  main {
+/* -------------------------
+   COMPOSITION (layout patterns)
+   ------------------------- */
+@layer composition {
+  /* Page container */
+  .l-container {
     display: grid;
     gap: var(--size-7);
     max-width: 72rem;
@@ -162,45 +172,51 @@
     container-type: inline-size;
     padding: 1rem;
   }
-
-  @media (min-width: 768) {
-    main {
+  @media (min-width: 768px) {
+    .l-container {
       padding: 2rem;
     }
   }
 
-  header {
-    width: 100%;
-    max-width: 72rem;
-    margin-inline: auto;
-    padding: var(--size-1);
+  /* Simple grid helper for 1->2 cols at container widths */
+  .l-grid-1-2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: center;
-
-    .icon {
-      font-size: 4rem;
-      fill: var(--primary-500);
-    }
-
-    .actions {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      gap: 1rem;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    container-type: inline-size;
+  }
+  @container (min-width: 600px) {
+    .l-grid-1-2 {
+      grid-template-columns: 1fr 1fr;
     }
   }
 
-  @media (min-width: 500px) {
-    header {
-      .actions {
-        flex-direction: row;
-      }
+  /* One/Three layout */
+  .l-one-three {
+    display: grid;
+    grid-template-columns: 1fr;
+    container-type: inline-size;
+    gap: 1rem;
+  }
+  @container (min-width: 600px) {
+    .l-one-three {
+      grid-template-columns: 1fr 1fr;
     }
   }
+  @container (min-width: 800px) {
+    .l-one-three {
+      gap: var(--size-7);
+      grid-template-columns: 30cqi auto;
+    }
+  }
+}
 
-  button,
-  .p-button {
+/* -------------------------
+   UTILITIES (single-purpose helpers)
+   ------------------------- */
+@layer utilities {
+  /* Buttons */
+  .u-btn {
     background-color: transparent;
     border: none;
     font-style: normal;
@@ -208,54 +224,115 @@
       background-color 300ms var(--ease-spring-1),
       outline 300ms var(--ease-spring-1);
   }
-
-  button:hover,
-  .p-button:hover,
-  button:focus,
-  .p-button:focus,
-  button:active,
-  .p-button:active {
+  .u-btn:where(:hover, :focus, :active) {
     outline-style: solid;
     outline-width: 0.2em;
     outline-offset: 0.3em;
   }
-
-  .btn-lg {
+  .u-btn--lg {
     padding: var(--size-px-2) var(--size-px-3);
     font-size: 0.8rem;
     border-radius: var(--radius-round);
   }
-
-  .btn-sm {
+  .u-btn--sm {
     padding: var(--size-px-1) var(--size-px-2);
     font-size: 0.8rem;
     border-radius: var(--radius-round);
   }
 
-  .btn-primary {
+  .u-btn--primary {
     color: white;
     background-color: var(--primary-500);
   }
-
-  .btn-primary:hover,
-  .btn-primary:focus,
-  .btn-primary:active {
+  .u-btn--primary:where(:hover, :focus, :active) {
     background-color: var(--primary-600);
     outline-color: var(--primary-600);
   }
 
-  .btn-accent {
+  .u-btn--accent {
     color: white;
     background-color: var(--accent-500);
   }
-
-  .btn-accent:hover,
-  .btn-accent:focus,
-  .btn-accent:active {
+  .u-btn--accent:where(:hover, :focus, :active) {
     background-color: var(--accent-400);
     outline-color: var(--accent-400);
   }
 
+  /* Typography utilities */
+  .u-header {
+    font-size: clamp(2rem, 5vw, 2.5rem);
+    text-transform: uppercase;
+    line-height: 0.9em;
+    font-weight: 400;
+    padding-bottom: var(--size-3);
+  }
+  .u-header span:first-of-type {
+    color: var(--primary-500);
+  }
+  .u-header span {
+    color: var(--accent-500);
+  }
+
+  .u-text {
+    max-width: 75ch;
+    line-height: 140%;
+    font-weight: 100;
+    color: #8a8a8a;
+    font-size: clamp(0.875rem, 10vw, 1rem);
+  }
+
+  /* Surfaces */
+  .u-surface-1 {
+    background: var(--surface-1);
+  }
+  .u-surface-2 {
+    background: var(--surface-2);
+  }
+
+  /* Radii & card */
+  .u-card {
+    border-radius: var(--radius-lg);
+    padding: var(--size-5);
+  }
+
+  /* Media fit */
+  .u-img {
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* -------------------------
+   BLOCKS (components)
+   ------------------------- */
+@layer blocks {
+  /* Header */
+  .header {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding: var(--size-1);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+  .header__icon {
+    font-size: 4rem;
+    fill: var(--primary-500);
+  }
+  .header__actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 1rem;
+
+    @media (min-width: 500px) {
+      flex-direction: row;
+    }
+  }
+
+  /* Home hero */
   .HomeHero {
     display: grid;
     position: relative;
@@ -263,117 +340,64 @@
     gap: var(--size-3);
     container-type: inline-size;
     margin-bottom: var(--size-8);
-
-    .img {
-      grid-row: 1 / span 2;
-      grid-column-start: 1;
-      z-index: -10;
-      opacity: 0.1;
-      height: 25cqh;
-      justify-self: end;
-      margin-right: -25%;
-    }
-
-    .main {
-      max-width: 75ch;
-      grid-column-start: 1;
-      grid-row: 1;
-    }
-
-    .content {
-      grid-row: 2;
-      grid-column-start: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      gap: var(--size-3);
-      color: #6d6d6d;
-      font-style: italic;
-
-      p {
-        font-size: 0.875rem;
-        max-width: 28rem;
-      }
-    }
-
-    @media (min-width: 400px) {
-      .img {
-        margin-right: -10%;
-      }
-    }
-
-    @media (min-width: 768px) {
-      .img {
-        justify-self: center;
-        margin-right: 30%;
-        height: 15rem;
-        margin-top: -10%;
-        grid-row: 2;
-      }
-
-      .content {
-        grid-row: 2;
-        grid-column: 1/-1;
-        gap: 2rem;
-        align-self: flex-end;
-        margin-left: 50%;
-
-        p {
-          font-size: 1.25rem;
-          max-width: 32rem;
-        }
-      }
-    }
   }
-
-  .OneThree {
-    display: grid;
-    grid-template-columns: 1fr;
-    container-type: inline-size;
-    gap: 1rem;
-
-    @container (min-width: 600px) {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    @container (min-width: 800px) {
-      gap: var(--size-7);
-      grid-template-columns: 30cqi auto;
-    }
+  .HomeHero__img {
+    grid-row: 1 / span 2;
+    grid-column: 1;
+    z-index: -10;
+    opacity: 0.1;
+    height: 25cqh;
+    justify-self: end;
+    margin-right: -25%;
   }
-
-  .header {
-    line-break: auto;
-    font-size: clamp(2rem, 5vw, 2.5rem);
-    text-transform: uppercase;
-    line-height: 0.9em;
-    font-weight: 400;
-    padding-bottom: var(--size-3);
-
-    span:first-of-type {
-      color: var(--primary-500);
-    }
-
-    span {
-      color: var(--accent-500);
-    }
-  }
-
-  .base-text {
+  .HomeHero__main {
     max-width: 75ch;
-    line-height: 140%;
-    color: var(--text-1);
-    font-weight: 100;
-    color: #8a8a8a;
-    font-size: clamp(0.875rem, 10vw, 1rem);
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .HomeHero__content {
+    grid-row: 2;
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: var(--size-3);
+    color: #6d6d6d;
+    font-style: italic;
+  }
+  .HomeHero__content p {
+    font-size: 0.875rem;
+    max-width: 28rem;
   }
 
-  .card {
-    border-radius: var(--radius-lg);
-    padding: var(--size-5);
+  @media (min-width: 400px) {
+    .HomeHero__img {
+      margin-right: -10%;
+    }
+  }
+  @media (min-width: 768px) {
+    .HomeHero__img {
+      justify-self: center;
+      margin-right: 30%;
+      height: 15rem;
+      margin-top: -10%;
+      grid-row: 2;
+    }
+    .HomeHero__content {
+      grid-row: 2;
+      grid-column: 1 / -1;
+      gap: 2rem;
+      align-self: flex-end;
+      margin-left: 50%;
+    }
+    .HomeHero__content p {
+      font-size: 1.25rem;
+      max-width: 32rem;
+    }
   }
 
-  .about-us {
+  /* About section */
+  .About {
     overflow: hidden;
     display: grid;
     position: relative;
@@ -381,57 +405,94 @@
     background-color: var(--surface-2);
     gap: var(--size-3);
     align-items: center;
-
-    .about-us-content {
-      padding: var(--size-2);
-      z-index: 1;
+  }
+  .About__content {
+    padding: var(--size-2);
+    z-index: 1;
+  }
+  .About__img {
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    aspect-ratio: 4/2.5;
+    z-index: 1;
+  }
+  .About__decoration {
+    position: absolute;
+    top: 54%;
+    right: -60px;
+    width: 300px;
+    height: 600px;
+    z-index: 0;
+  }
+  @container (min-width: 700px) {
+    .About {
+      grid-template-columns: 1fr 2fr;
     }
-
-    .about-us-img {
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      aspect-ratio: 4/2.5;
-      z-index: 1;
-    }
-
-    svg {
-      position: absolute;
-      top: 54%;
+    .About__decoration {
+      top: -140px;
       right: -60px;
       width: 300px;
       height: 600px;
-      z-index: 0;
-
-      @container (min-width: 700px) {
-        position: absolute;
-        top: -140px;
-        right: -60px;
-        width: 300px;
-        height: 600px;
-        z-index: 0;
-      }
-    }
-
-    @container (min-width: 700px) {
-      grid-template-columns: 1fr 2fr;
     }
   }
 
-  img {
-    max-width: 100%;
-    width: 100%;
-    height: 100%;
+  /* FAQ */
+  .Faq {
+    display: grid;
+    grid-template-columns: 1fr;
+    background-color: var(--surface-2);
+    gap: var(--size-2);
+  }
+  @container (min-width: 600px) {
+    .Faq {
+      gap: var(--size-3);
+      grid-template-columns: 1fr 1fr;
+    }
   }
 }
 
-.faq {
-  display: grid;
-  grid-template-columns: 1fr;
-  background-color: var(--surface-2);
-  gap: var(--size-2);
+/* -------------------------
+   EXCEPTIONS (one-off tweaks)
+   ------------------------- */
+@layer exceptions {
+  /* If you need legacy class compatibility */
+  main.l-container {
+  } /* maps old <main> styles to .l-container */
 
-  @container (min-width: 600px) {
-    gap: var(--size-3);
-    grid-template-columns: 1fr 1fr;
+  /* Back-compat aliases (optional) */
+  .card {
+    composes: u-card;
+  }
+  .base-text {
+    composes: u-text;
+  }
+  .header {
+    composes: u-header;
+  }
+
+  /* If composes is unsupported in your tooling, mirror with duplicate classes: */
+  .card {
+    border-radius: var(--radius-lg);
+    padding: var(--size-5);
+  }
+  .base-text {
+    max-width: 75ch;
+    line-height: 140%;
+    font-weight: 100;
+    color: #8a8a8a;
+    font-size: clamp(0.875rem, 10vw, 1rem);
+  }
+  .header {
+    font-size: clamp(2rem, 5vw, 2.5rem);
+    text-transform: uppercase;
+    line-height: 0.9em;
+    font-weight: 400;
+    padding-bottom: var(--size-3);
+  }
+  .header span:first-of-type {
+    color: var(--primary-500);
+  }
+  .header span {
+    color: var(--accent-500);
   }
 }
