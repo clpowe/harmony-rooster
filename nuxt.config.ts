@@ -15,7 +15,9 @@ export default defineNuxtConfig({
 			}
 		}
 	},
-
-	modules: ['nuxt-svgo', '@nuxt/image', '@nuxt/icon',],
-	compatibilityDate: '2024-11-16'
+	modules: ['nuxt-svgo', '@nuxt/image', '@nuxt/icon','reka-ui/nuxt'],
+	compatibilityDate: '2024-11-16',
+  runtimeConfig: {
+    airtableKey:'',
+  }
 })

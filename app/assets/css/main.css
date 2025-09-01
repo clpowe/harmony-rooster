@@ -260,7 +260,6 @@
   .u-header {
     font-size: clamp(2rem, 5vw, 2.5rem);
     text-transform: uppercase;
-    line-height: 0.9em;
     font-weight: 400;
     padding-bottom: var(--size-3);
   }
@@ -456,6 +455,12 @@
     }
   }
 
+  /* Courses */
+  .courses {
+    display: grid;
+    gap: var(--size-8);
+  }
+
   /* FAQ */
   .Faq {
     display: grid;
@@ -505,7 +510,6 @@
   .header {
     font-size: clamp(2rem, 5vw, 2.5rem);
     text-transform: uppercase;
-    line-height: 0.9em;
     font-weight: 400;
     padding-bottom: var(--size-3);
   }
