@@ -34,19 +34,26 @@ function formatDate(dateString) {
       </Typography>
       <Typography tag="p" variant="text">Harmony Rooster, LLC is a locally owned and operated company based in Tampa, Florida. The company was founded by Derek and Cynthia Robinson, who are passionate about providing exceptional in-home care services that empower individuals to live their best lives.</Typography>
     </div>
-    <div v-if="data">
+    <div v-if="data" class="courses-wrapper">
       <div v-for="course in data" :key="course.id">
+        <div>
         <Typography tag="h3" variant="heading-small" >{{course.course_name}}</Typography>
         <Typography tag="p" variant="text">{{course.description}}</Typography>
         <Typography tag="p" variant="text">Price ${{course.cost}}.00</Typography>
-        <ul>
+        </div>
+        <ul class="sessions-wrapper">
           <li v-for="session in course.sessions" :key="session.id">
-            <div>
-              <Typography tag="h4" variant="heading-small">
+            <div class="session_card">
+              <Typography tag="h4" variant="text-large">
                 {{formatDate(session.date) }}
               </Typography>
-              <Typography tag="p" variant="text">Time: {{ session.time }}</Typography>
-              <Typography tag="p" variant="text">Spots Remaining: {{session.spots_available}}</Typography>
+
+              <div>
+                <Typography tag="p" variant="text"><b>Time:</b> {{ session.time }}</Typography>
+                <Typography tag="p" variant="text"><b>Spots Remaining:</b> {{session.spots_available}}</Typography>
+              </div>
+
+              <button class="u-btn u-btn--sm u-btn--primary">Book Now</button>
             </div>
           </li>
         </ul>
