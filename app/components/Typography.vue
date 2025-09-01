@@ -81,12 +81,11 @@ const variantClass = computed(() => {
 	padding-bottom: 1rem;
 }
 
-text-large {
+.text-large {
 	max-width: 75ch;
 	line-height: 140%;
 	color: var(--text-1);
 	font-weight: bold;
-	color: #8a8a8a;
 	font-size: clamp(1rem, 10vw, 1.25rem);
 }
 
