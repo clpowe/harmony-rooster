@@ -4,7 +4,9 @@ import postcssNesting from 'postcss-nesting'
 export default defineNuxtConfig({
 	devtools: { enabled: true },
 	css: ['@/assets/css/main.css'],
-
+  future: {
+    compatibilityVersion: 4,
+  },
 	postcss: {
 		plugins: {
 			autoprefixer: {},
@@ -14,6 +16,6 @@ export default defineNuxtConfig({
 		}
 	},
 
-	modules: ['nuxt-svgo', '@nuxt/image', '@nuxt/icon'],
+	modules: ['nuxt-svgo', '@nuxt/image', '@nuxt/icon',],
 	compatibilityDate: '2024-11-16'
 })

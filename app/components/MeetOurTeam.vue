@@ -1,23 +1,23 @@
 <template>
-	<section class="">
-		<Typography tag="h2" variant="heading-medium">Meet our <span>team</span></Typography>
+	<div class="">
+		<Typography tag="h2" variant="heading-medium">Our <span>team</span></Typography>
 		<Typography tag="p" variant="text">Our caregivers are not just qualified; they are compassionate and
 			dedicated to making a difference in the lives of our clients. They undergo
 			rigorous background checks, training, and ongoing education to ensure they
 			provide the highest quality of care.</Typography>
-		<ul>
+		<!-- <ul>
 			<li v-for="s in staff" :key="s.id">
 				<figure class="">
 					<NuxtImg format="webp" loading="lazy" :src="s.picture" :alt="`A picture of ${s.name} }}`" class="" />
 					<figcaption>
 						<Typography tag="h3" variant="heading">{{ s.name }}</Typography>
 						<Typography tag="p" variant="text" class="title">{{ s.title }}</Typography>
-						<!--<Typography tag="p" variant="text">{{ s.description }}</Typography>-->
+						<Typography tag="p" variant="text">{{ s.description }}</Typography>
 					</figcaption>
 				</figure>
 			</li>
-		</ul>
-	</section>
+		</ul> -->
+	</div>
 </template>
 
 <script setup lang="ts">
