@@ -82,6 +82,7 @@
     --surface-2: var(--background-2-light);
 
     --radius-lg: 1.5rem;
+    --radius-md: 1rem;
     --radius-sm: 0.5rem;
 
     /* Custom spacing scale (kept for compatibility) */
@@ -260,7 +261,6 @@
   .u-header {
     font-size: clamp(2rem, 5vw, 2.5rem);
     text-transform: uppercase;
-    line-height: 0.9em;
     font-weight: 400;
     padding-bottom: var(--size-3);
   }
@@ -456,6 +456,33 @@
     }
   }
 
+  /* Courses */
+  .courses {
+    display: grid;
+    gap: var(--space-lg);
+  }
+
+  .courses-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .sessions-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+
+  .session_card {
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
   /* FAQ */
   .Faq {
     display: grid;
@@ -505,7 +532,6 @@
   .header {
     font-size: clamp(2rem, 5vw, 2.5rem);
     text-transform: uppercase;
-    line-height: 0.9em;
     font-weight: 400;
     padding-bottom: var(--size-3);
   }

@@ -4,7 +4,9 @@ type Variant =
 	| 'heading-large'
 	| 'heading-medium'
 	| 'heading-small'
-	| 'text' | 'text-display'
+  | 'text-large'
+	| 'text' 
+  | 'text-display'
 
 const props = defineProps<{
 	tag: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p'
@@ -13,10 +15,10 @@ const props = defineProps<{
 
 const VARIANT_CLASSES: Record<Variant, string> = {
 	heading: 'heading',
-	'heading-variable': 'heading-variable',
 	'heading-large': 'heading-large',
 	'heading-medium': 'heading-medium',
 	'heading-small': 'heading-small',
+  'text-large':'text-large',
 	text: 'text',
 	'text-display': 'text-display'
 }
@@ -69,6 +71,23 @@ const variantClass = computed(() => {
 	:deep(span) {
 		color: var(--accent-500);
 	}
+}
+
+.heading-small {
+  line-break: auto;
+	font-size: clamp(1.5rem, 5vw, 1.75rem);
+	line-height: .9em;
+	font-weight: 400;
+	padding-bottom: 1rem;
+}
+
+text-large {
+	max-width: 75ch;
+	line-height: 140%;
+	color: var(--text-1);
+	font-weight: bold;
+	color: #8a8a8a;
+	font-size: clamp(1rem, 10vw, 1.25rem);
 }
 
 .text {

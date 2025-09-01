@@ -30,7 +30,7 @@ const services: Service[] = [
 ]
 </script>
 <template>
-	<div class="l-grid-1-2 ">
+	<div class="l-grid-1-2 card u-surface-2">
 		<div class="content_wrapper">
 			<Typography tag="h2" variant="heading-medium">Our <span>Services</span></Typography>
 			<Typography tag="p" variant="text">Harmony Rooster, LLC is here to help. Our team of dedicated and
@@ -56,6 +56,7 @@ const services: Service[] = [
 .services_wrapper {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: var(--size-3);
 }
 
 .service-item {
@@ -64,6 +65,8 @@ const services: Service[] = [
 	background: var(--surface-1);
 	padding: var(--size-3);
 	border-radius: var(--radius-3);
+  text-align: center;
+  place-content: center;
 
 	.icon {
     margin-inline: auto;
