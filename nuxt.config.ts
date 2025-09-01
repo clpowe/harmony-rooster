@@ -4,7 +4,7 @@ import postcssNesting from 'postcss-nesting'
 export default defineNuxtConfig({
 	devtools: { enabled: true },
 	css: ['@/assets/css/main.css'],
-future: {
+  future: {
     compatibilityVersion: 4,
   },
 	postcss: {

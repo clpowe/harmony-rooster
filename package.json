@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@nuxtjs/robots": "^4.1.11",
-    "@primevue/themes": "^4.3.1",
     "@vee-validate/zod": "^4.15.0",
     "@vueuse/core": "^10.11.1",
     "clsx": "^2.1.1",
@@ -30,10 +29,9 @@
     "@nuxt/image": "^1.9.0",
     "@nuxt/kit": "^4.0.3",
     "@nuxt/schema": "^4.0.3",
-    "@nuxtjs/tailwindcss": "^6.13.2",
     "nuxt": "^4.0.3",
     "nuxt-svgo": "^4.0.15",
-    "postcss-nesting": "^12.1.5",
+    "postcss-nesting": "^13.0.2",
     "typescript": "^5.8.2"
   }
 }
