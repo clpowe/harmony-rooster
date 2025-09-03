@@ -62,7 +62,6 @@ const variantClass = computed(() => {
 	text-transform: uppercase;
 	line-height: .9em;
 	font-weight: 400;
-	padding-bottom: 1rem;
 
 	:deep(span:first-of-type) {
 		color: var(--primary-500);
@@ -78,25 +77,29 @@ const variantClass = computed(() => {
 	font-size: clamp(1.5rem, 5vw, 1.75rem);
 	line-height: .9em;
 	font-weight: 400;
-	padding-bottom: 1rem;
 }
 
-text-large {
+.text-large {
 	max-width: 75ch;
 	line-height: 140%;
 	color: var(--text-1);
 	font-weight: bold;
-	color: #8a8a8a;
-	font-size: clamp(1rem, 10vw, 1.25rem);
+	font-size: clamp(1.25rem, 10vw, 1.35rem);
 }
 
 .text {
 	max-width: 75ch;
-	line-height: 140%;
-	color: var(--text-1);
+	line-height: 150%;
+	color: var(--text-1-light);
 	font-weight: 100;
-	color: #8a8a8a;
-	font-size: clamp(.875rem, 10vw, 1rem);
+  opacity: .75;
+	font-size: 1.1rem;
+  text-wrap: balance;
+
+  :deep(span) {
+    font-weight: bold;
+    color: var(--text-1)
+  }
 }
 
 

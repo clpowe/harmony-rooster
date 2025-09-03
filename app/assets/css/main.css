@@ -16,8 +16,19 @@
     font-weight: 400;
   }
 
+  @font-face {
+    font-family: "Verdana";
+    src: url("../fonts/Verdana Bold.ttf");
+    font-weight: 600;
+  }
+
   :root {
     interpolate-size: allow-keywords;
+
+    --font-family-sans:
+      "Sofia Pro", "Hiragino Maru Gothic ProN", Quicksand, Comfortaa, Manjari,
+      "Arial Rounded MT", "Arial Rounded MT Bold", Calibri, source-sans-pro,
+      sans-serif;
 
     /* Brand hues */
     --primary-hue: 195;
@@ -81,9 +92,9 @@
     --surface-1: var(--background-1-light);
     --surface-2: var(--background-2-light);
 
-    --radius-lg: 1.5rem;
-    --radius-md: 1rem;
-    --radius-sm: 0.5rem;
+    --radius-lg: 20px;
+    --radius-md: 16px;
+    --radius-sm: 12px;
 
     /* Custom spacing scale (kept for compatibility) */
     --space-unit: 1em;
@@ -153,10 +164,11 @@
     overflow-x: hidden;
   }
   body {
-    font-family: "Verdana";
+    font-family: var(--font-family-sans);
     background: var(--surface-1);
     color: var(--text-1);
     overflow-x: hidden;
+    font-weight: normal;
   }
 }
 
@@ -219,9 +231,10 @@
     background-color: transparent;
     border: none;
     font-style: normal;
+    width: fit-content;
     transition:
-      background-color 300ms var(--ease-spring-1),
-      outline 300ms var(--ease-spring-1);
+      background-color 200ms var(--ease-spring-1),
+      outline 200ms var(--ease-spring-1);
   }
   .u-btn:where(:hover, :focus, :active) {
     outline-style: solid;
@@ -230,6 +243,11 @@
   }
   .u-btn--lg {
     padding: var(--size-px-3) var(--size-px-4);
+    font-size: 0.8rem;
+    border-radius: var(--radius-round);
+  }
+  .u-btn--md {
+    padding: var(--size-px-2) var(--size-px-3);
     font-size: 0.8rem;
     border-radius: var(--radius-round);
   }
@@ -243,7 +261,7 @@
     color: white;
     background-color: var(--primary-500);
   }
-  .u-btn--primary:where(:hover, :focus, :active) {
+  .u-btn--primary:where(:hover, :focus) {
     background-color: var(--primary-600);
     outline-color: var(--primary-600);
   }
@@ -252,7 +270,7 @@
     color: white;
     background-color: var(--accent-500);
   }
-  .u-btn--accent:where(:hover, :focus, :active) {
+  .u-btn--accent:where(:hover, :focus) {
     background-color: var(--accent-400);
     outline-color: var(--accent-400);
   }
@@ -469,9 +487,25 @@
   }
 
   .sessions-wrapper {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
     gap: var(--space-sm);
+  }
+
+  .courses-content {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    padding-bottom: var(--space-sm);
+
+    .content-main {
+      display: grid;
+      gap: var(--space-xxs);
+    }
+
+    .content-price {
+      place-self: end;
+    }
   }
 
   .session_card {
@@ -480,7 +514,7 @@
     background: var(--surface-1);
     display: flex;
     flex-direction: column;
-    gap: var(--space-xs);
+    gap: var(--space-xxs);
   }
 
   /* FAQ */

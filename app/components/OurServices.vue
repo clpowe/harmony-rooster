@@ -41,7 +41,7 @@ const services: Service[] = [
     <ul class="services_wrapper">
       <li v-for="item in services" :key="item.text" class="service-item">
         <component :is="item.icon" class="icon" />
-        <Typography tag="p" variant="heading-small">{{ item.text }}</Typography>
+        <Typography tag="p" variant="text-large">{{ item.text }}</Typography>
       </li>
     </ul>
 	</div>

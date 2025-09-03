@@ -8,7 +8,7 @@ import RoosterBG from '@/assets/images/roosterbg.svg'
 		<OurServices />
 		<section class="about">
 			<div class="about__img">
-				<NuxtImg src="https://picsum.photos/500" alt="" class="" />
+				<img src="/asian-caregiver-nurse-give-consult-to-caucasian.jpg" alt="" class="" />
 			</div>
 			<div class="about__content">
         <div>
