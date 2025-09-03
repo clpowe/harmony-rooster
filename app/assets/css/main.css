@@ -16,8 +16,19 @@
     font-weight: 400;
   }
 
+  @font-face {
+    font-family: "Verdana";
+    src: url("../fonts/Verdana Bold.ttf");
+    font-weight: 600;
+  }
+
   :root {
     interpolate-size: allow-keywords;
+
+    --font-family-sans:
+      "Sofia Pro", "Hiragino Maru Gothic ProN", Quicksand, Comfortaa, Manjari,
+      "Arial Rounded MT", "Arial Rounded MT Bold", Calibri, source-sans-pro,
+      sans-serif;
 
     /* Brand hues */
     --primary-hue: 195;
@@ -81,9 +92,9 @@
     --surface-1: var(--background-1-light);
     --surface-2: var(--background-2-light);
 
-    --radius-lg: 1.75rem;
-    --radius-md: 1.25rem;
-    --radius-sm: 0.75rem;
+    --radius-lg: 20px;
+    --radius-md: 16px;
+    --radius-sm: 12px;
 
     /* Custom spacing scale (kept for compatibility) */
     --space-unit: 1em;
@@ -153,10 +164,11 @@
     overflow-x: hidden;
   }
   body {
-    font-family: "Verdana";
+    font-family: var(--font-family-sans);
     background: var(--surface-1);
     color: var(--text-1);
     overflow-x: hidden;
+    font-weight: normal;
   }
 }
 
@@ -219,6 +231,7 @@
     background-color: transparent;
     border: none;
     font-style: normal;
+    width: fit-content;
     transition:
       background-color 200ms var(--ease-spring-1),
       outline 200ms var(--ease-spring-1);
@@ -230,6 +243,11 @@
   }
   .u-btn--lg {
     padding: var(--size-px-3) var(--size-px-4);
+    font-size: 0.8rem;
+    border-radius: var(--radius-round);
+  }
+  .u-btn--md {
+    padding: var(--size-px-2) var(--size-px-3);
     font-size: 0.8rem;
     border-radius: var(--radius-round);
   }
@@ -474,13 +492,29 @@
     gap: var(--space-sm);
   }
 
+  .courses-content {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    padding-bottom: var(--space-sm);
+
+    .content-main {
+      display: grid;
+      gap: var(--space-xxs);
+    }
+
+    .content-price {
+      place-self: end;
+    }
+  }
+
   .session_card {
-    padding: var(--space-md);
-    border-radius: var(--radius-sm);
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
     background: var(--surface-1);
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: var(--space-xxs);
   }
 
   /* FAQ */

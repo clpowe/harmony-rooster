@@ -2,25 +2,19 @@
 const {data} = useAsyncData('courses', () => $fetch('/api/courses'))
 
 
-function formatDate(dateString) {
-  const date = new Date(dateString);
+function formatDate(dateString: string) {
+    // Use noon UTC so the calendar date is stable in ET regardless of DST
+  const [year, month, day] = dateString.split("-").map(Number);
+  if(!year || !month || !day) return ''
+  const utcNoon = new Date(Date.UTC(year, month - 1, day, 12));
+  const tz = "America/New_York";
 
-  const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
-  const monthName = date.toLocaleDateString("en-US", { month: "short" });
-  const day = date.getDate();
+  const dayName   = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: tz }).format(utcNoon);
+  const monthName = new Intl.DateTimeFormat("en-US", { month: "short",  timeZone: tz }).format(utcNoon);
+  const dayNumber       = Number(new Intl.DateTimeFormat("en-US", { day: "numeric", timeZone: tz }).format(utcNoon));
 
-  // add ordinal suffix
-  const suffix = (d => {
-    if (d > 3 && d < 21) return "th"; // 4th–20th
-    switch (d % 10) {
-      case 1: return "st";
-      case 2: return "nd";
-      case 3: return "rd";
-      default: return "th";
-    }
-  })(day);
-
-  return `${dayName} ${monthName} ${day}${suffix}`;
+  const suffix = dayNumber > 3 && dayNumber < 21 ? "th" : (dayNumber % 10 === 1 ? "st" : dayNumber % 10 === 2 ? "nd" : dayNumber % 10 === 3 ? "rd" : "th");
+  return `${dayName} ${monthName} ${dayNumber}${suffix}`;
 }
 
 </script>
@@ -30,16 +24,18 @@ function formatDate(dateString) {
   <section class="courses card u-surface-2">
     <div>
       <Typography tag="h2" variant="heading-medium">
-        Courses We <span>Offer</span>
+       <span>Courses We</span> <span>Offer</span>
       </Typography>
       <Typography tag="p" variant="text">Harmony Rooster, LLC is a locally owned and operated company based in Tampa, Florida. The company was founded by Derek and Cynthia Robinson, who are passionate about providing exceptional in-home care services that empower individuals to live their best lives.</Typography>
     </div>
     <div v-if="data" class="courses-wrapper">
       <div v-for="course in data" :key="course.id">
-        <div>
-        <Typography tag="h3" variant="heading-small" >{{course.course_name}}</Typography>
-        <Typography tag="p" variant="text">{{course.description}}</Typography>
-        <Typography tag="p" variant="text">Price ${{course.cost}}.00</Typography>
+        <div class="courses-content">
+          <div class="content-main">
+            <Typography tag="h3" variant="heading-small" >{{course.course_name}}</Typography>
+            <Typography tag="p" variant="text">{{course.description}}</Typography>
+          </div >
+            <Typography class="content-price" tag="p" variant="text">Price ${{course.cost}}.00</Typography>
         </div>
         <ul class="sessions-wrapper">
           <li v-for="session in course.sessions" :key="session.id">
@@ -49,11 +45,11 @@ function formatDate(dateString) {
               </Typography>
 
               <div>
-                <Typography tag="p" variant="text"><b>Time:</b> {{ session.time }}</Typography>
-                <Typography tag="p" variant="text"><b>Spots Remaining:</b> {{session.spots_available}}</Typography>
+                <Typography tag="p" variant="text"><span class="">Time:</span> {{ session.time }}</Typography>
+                <Typography tag="p" variant="text"><span>Spots Remaining:</span> {{session.spots_available}}</Typography>
               </div>
 
-              <button class="u-btn u-btn--sm u-btn--primary">Book Now</button>
+              <button class="u-btn u-btn--md w-fit u-btn--primary">Book Now</button>
             </div>
           </li>
         </ul>

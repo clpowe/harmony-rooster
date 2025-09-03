@@ -30,12 +30,20 @@ export default defineEventHandler(async (event) => {
 
   const courses: Course[] = []
 
+  const today = new Date()
+
   for (const record of records) {
     const sessionIds: string[] = record.get('sessions') || []  // be sure the field name is exact
     const sessions: Session[] = []
 
+
     for (const id of sessionIds) {
       const r = await base('Sessions').find(id)
+
+      if (new Date(r.get('date') as string) < today) {
+        continue
+      }
+
       sessions.push({
         id: r.id as string,
         session_name: r.get('session-name') as string,
