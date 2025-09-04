@@ -7,6 +7,7 @@ type Session = {
   time: string
   capacity: number
   spots_available: number
+  location: string
 }
 
 type Course = {
@@ -51,6 +52,7 @@ export default defineEventHandler(async (event) => {
         time: r.get('time') as string,
         capacity: r.get('capacity') as number,
         spots_available: r.get('spots-available') as number,
+        location: r.get('location') as string,
       })
     }
 

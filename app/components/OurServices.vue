@@ -41,7 +41,7 @@ const services: Service[] = [
     <ul class="services_wrapper">
       <li v-for="item in services" :key="item.text" class="service-item">
         <component :is="item.icon" class="icon" />
-        <Typography tag="p" variant="text-large">{{ item.text }}</Typography>
+        <Typography tag="p" variant="text">{{ item.text }}</Typography>
       </li>
     </ul>
 	</div>
@@ -50,26 +50,21 @@ const services: Service[] = [
 <style scoped>
 
 .content_wrapper {
-	padding: var(--size-3);
 }
 
 .services_wrapper {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--size-3);
+  gap: var(--space-sm);
 }
 
 .service-item {
   display: grid;
-  justify-content: center;
 	background: var(--surface-1);
 	padding: var(--size-3);
 	border-radius: var(--radius-3);
-  text-align: center;
-  place-content: center;
 
 	.icon {
-    margin-inline: auto;
 		font-size: var(--size-8);
 		margin-bottom: var(--size-2);
 	}

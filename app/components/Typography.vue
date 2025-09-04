@@ -62,6 +62,7 @@ const variantClass = computed(() => {
 	text-transform: uppercase;
 	line-height: .9em;
 	font-weight: 400;
+  margin-bottom: var(--space-xxxs);
 
 	:deep(span:first-of-type) {
 		color: var(--primary-500);
@@ -82,7 +83,6 @@ const variantClass = computed(() => {
 .text-large {
 	max-width: 75ch;
 	line-height: 140%;
-	color: var(--text-1);
 	font-weight: bold;
 	font-size: clamp(1.25rem, 10vw, 1.35rem);
 }
@@ -90,15 +90,12 @@ const variantClass = computed(() => {
 .text {
 	max-width: 75ch;
 	line-height: 150%;
-	color: var(--text-1-light);
 	font-weight: 100;
-  opacity: .75;
-	font-size: 1.1rem;
+	font-size: 1rem;
   text-wrap: balance;
 
   :deep(span) {
     font-weight: bold;
-    color: var(--text-1)
   }
 }
 
