@@ -26,9 +26,9 @@
     interpolate-size: allow-keywords;
 
     --font-family-sans:
-      "Sofia Pro", "Hiragino Maru Gothic ProN", Quicksand, Comfortaa, Manjari,
-      "Arial Rounded MT", "Arial Rounded MT Bold", Calibri, source-sans-pro,
-      sans-serif;
+      "Verdana", "Sofia Pro", "Hiragino Maru Gothic ProN", Quicksand, Comfortaa,
+      Manjari, "Arial Rounded MT", "Arial Rounded MT Bold", Calibri,
+      source-sans-pro, sans-serif;
 
     /* Brand hues */
     --primary-hue: 195;
@@ -59,7 +59,7 @@
     --accent-saturation: 89%;
     --accent-lightness: 40%;
 
-    --accent-light-400: hsl(
+    --accent--light-400: hsl(
       var(--accent-hue) var(--accent-saturation)
         calc(var(--accent-lightness) + 10%)
     );
@@ -71,10 +71,24 @@
         calc(var(--accent-lightness) - 8%)
     );
 
-    --text-1-light: hsla(0, 0%, 30%, 1);
+    /* neutral */
+    --neutral-50: #f6f6f6;
+    --neutral-100: #e7e7e7;
+    --neutral-200: #d1d1d1;
+    --neutral-300: #b0b0b0;
+    --neutral-400: #888888;
+    --neutral-500: #6d6d6d;
+    --neutral-600: #5d5d5d;
+    --neutral-700: #4c4c4c;
+    --neutral-800: #454545;
+    --neutral-900: #3d3d3d;
+    --neutral-950: #262626;
 
-    --background-1-light: hsla(0, 0%, 96%, 1);
-    --background-2-light: hsl(192, 71%, 99%);
+    --text-1-light: hsla(0, 0%, 10%, 1);
+    --text-2-light: hsla(0, 0%, 50%, 1);
+
+    --background-1-light: var(--neutral-50);
+    --background-2-light: #fff;
 
     /* Alias tokens for theme */
     --primary-400: var(--primary-light-400);
@@ -88,6 +102,7 @@
     --accent-600: var(--accent-light-600);
 
     --text-1: var(--text-1-light);
+    --text-2: var(--text-2-light);
 
     --surface-1: var(--background-1-light);
     --surface-2: var(--background-2-light);
@@ -108,6 +123,11 @@
     --space-xxl: calc(5.25 * var(--space-unit));
     --space-xxxl: calc(8.5 * var(--space-unit));
   }
+}
+
+.light {
+}
+.dark {
 }
 
 /* -------------------------
@@ -166,7 +186,7 @@
   body {
     font-family: var(--font-family-sans);
     background: var(--surface-1);
-    color: var(--text-1);
+    color: var(--text-2);
     overflow-x: hidden;
     font-weight: normal;
   }
@@ -356,6 +376,7 @@
     gap: var(--size-3);
     container-type: inline-size;
     margin-bottom: var(--size-8);
+    color: var(--text-1);
 
     @media (min-width: 768px) {
       gap: var(--size-7);
@@ -472,49 +493,6 @@
       width: 300px;
       height: 600px;
     }
-  }
-
-  /* Courses */
-  .courses {
-    display: grid;
-    gap: var(--space-lg);
-  }
-
-  .courses-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-  }
-
-  .sessions-wrapper {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: var(--space-sm);
-  }
-
-  .courses-content {
-    display: flex;
-    width: 100%;
-    justify-content: space-between;
-    padding-bottom: var(--space-sm);
-
-    .content-main {
-      display: grid;
-      gap: var(--space-xxs);
-    }
-
-    .content-price {
-      place-self: end;
-    }
-  }
-
-  .session_card {
-    padding: var(--space-sm);
-    border-radius: var(--radius-md);
-    background: var(--surface-1);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xxs);
   }
 
   /* FAQ */
