@@ -94,6 +94,7 @@ ul {
 
   .courses-content {
     display: flex;
+    flex-direction: column;
     width: 100%;
     justify-content: space-between;
     padding-bottom: var(--space-sm);
@@ -109,9 +110,18 @@ ul {
     }
 
     .content-price {
-      place-self: end;
+      place-self: start;
       padding: var(--space-xxs) var(--space-xxs);
       border-radius: var(--radius-lg);
+    }
+
+    @media (min-width: 768px) {
+      flex-direction: row;
+
+      .content-price {
+        place-self: end;
+      }
+
     }
   }
 

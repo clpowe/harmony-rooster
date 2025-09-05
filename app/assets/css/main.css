@@ -85,7 +85,7 @@
     --neutral-950: #262626;
 
     --text-1-light: hsla(0, 0%, 10%, 1);
-    --text-2-light: hsla(0, 0%, 50%, 1);
+    --text-2-light: hsla(0, 0%, 40%, 1);
 
     --background-1-light: var(--neutral-50);
     --background-2-light: #fff;
@@ -199,7 +199,7 @@
   /* Page container */
   .l-container {
     display: grid;
-    gap: var(--size-7);
+    gap: var(--space-xl);
     max-width: 80rem;
     margin-inline: auto;
     container-type: inline-size;
@@ -207,6 +207,7 @@
 
     @media (min-width: 768px) {
       padding: 2rem;
+      gap: var(--space-xxl);
     }
   }
 
@@ -214,7 +215,7 @@
   .l-grid-1-2 {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: var(--space-md);
     container-type: inline-size;
 
     @media (min-width: 600px) {
@@ -445,13 +446,14 @@
     position: relative;
     grid-template-columns: 1fr;
     background-color: var(--surface-2);
-    gap: var(--size-3);
+    gap: var(--space-md);
     align-items: center;
     border-radius: var(--radius-lg);
-    padding: var(--size-6);
+    padding: var(--space-md);
 
     @container (min-width: 700px) {
       grid-template-columns: 1fr 2fr;
+      padding: var(--size-6);
     }
   }
   .about__content {
@@ -532,7 +534,11 @@
   /* If composes is unsupported in your tooling, mirror with duplicate classes: */
   .card {
     border-radius: var(--radius-lg);
-    padding: var(--size-5);
+    padding: var(--size-3);
+
+    @media (min-width: 768px) {
+      padding: var(--size-5);
+    }
   }
   .base-text {
     max-width: 75ch;

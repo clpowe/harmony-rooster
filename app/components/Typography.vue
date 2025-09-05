@@ -91,7 +91,7 @@ const variantClass = computed(() => {
 	max-width: 75ch;
 	line-height: 150%;
 	font-weight: 100;
-	font-size: 1rem;
+	font-size: clamp(.85rem, 5vw, 1rem);
   text-wrap: balance;
 
   :deep(span) {
