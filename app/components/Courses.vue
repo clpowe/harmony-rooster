@@ -53,10 +53,10 @@ function formatDate(dateString: string) {
           <div class="content-main">
             <Typography tag="h3" variant="heading-small">{{
               course.course_name
-              }}</Typography>
+            }}</Typography>
             <Typography tag="p" variant="text">{{
               course.description
-              }}</Typography>
+            }}</Typography>
           </div>
           <div class="content-price">
             <Typography tag="p" variant="text-large">Price ${{ course.cost }}.00</Typography>
