@@ -1,39 +1,7 @@
 <script setup lang="ts">
+
 const { data } = useAsyncData("courses", () => $fetch("/api/courses"));
 
-function formatDate(dateString: string) {
-  // Use noon UTC so the calendar date is stable in ET regardless of DST
-  const [year, month, day] = dateString.split("-").map(Number);
-  if (!year || !month || !day) return "";
-  const utcNoon = new Date(Date.UTC(year, month - 1, day, 12));
-  const tz = "America/New_York";
-
-  const dayName = new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    timeZone: tz,
-  }).format(utcNoon);
-  const monthName = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    timeZone: tz,
-  }).format(utcNoon);
-  const dayNumber = Number(
-    new Intl.DateTimeFormat("en-US", { day: "numeric", timeZone: tz }).format(
-      utcNoon,
-    ),
-  );
-
-  const suffix =
-    dayNumber > 3 && dayNumber < 21
-      ? "th"
-      : dayNumber % 10 === 1
-        ? "st"
-        : dayNumber % 10 === 2
-          ? "nd"
-          : dayNumber % 10 === 3
-            ? "rd"
-            : "th";
-  return `${dayName} ${monthName} ${dayNumber}${suffix}`;
-}
 </script>
 
 <template>
@@ -53,10 +21,10 @@ function formatDate(dateString: string) {
           <div class="content-main">
             <Typography tag="h3" variant="heading-small">{{
               course.course_name
-            }}</Typography>
+              }}</Typography>
             <Typography tag="p" variant="text">{{
               course.description
-            }}</Typography>
+              }}</Typography>
           </div>
           <div class="content-price">
             <Typography tag="p" variant="text-large">Price ${{ course.cost }}.00</Typography>
@@ -64,33 +32,7 @@ function formatDate(dateString: string) {
         </div>
         <ul class="sessions-wrapper">
           <li v-for="session in course.sessions" :key="session.id">
-            <div class="session_card">
-              <div>
-                <div class="date-wrapper">
-                  <Icon name="lucide:calendar-range" size="1.75em" />
-                  <h4 class="date">
-                    {{ formatDate(session.date) }}
-                  </h4>
-                </div>
-              </div>
-              <div class="item-wrapper">
-                <p class="item">
-                  <Icon name="i-lucide-lightbulb" size="1.25em" />
-                  {{ session.location }}
-                </p>
-                <p class="item">
-                  <Icon name="i-lucide-lightbulb" size="1.25em" />
-                  {{ session.time }}
-                </p>
-                <p class="item">
-                  <Icon name="i-lucide-lightbulb" size="1.25em" />{{
-                    session.spots_available
-                  }}
-                  seats available
-                </p>
-              </div>
-              <button class="u-btn u-btn--md u-btn--primary">Register</button>
-            </div>
+            <CourseCard :session :course-name="course.course_name" :course-price="course.cost" />
           </li>
         </ul>
       </div>
@@ -154,37 +96,6 @@ ul {
 
     .content-price {
       place-self: end;
-    }
-  }
-}
-
-.session_card {
-  display: grid;
-  gap: var(--space-sm);
-
-  padding: var(--space-sm);
-  border: 1px solid var(--neutral-500);
-  border-radius: var(--radius-sm);
-
-  .date-wrapper {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-
-    .date {
-      color: var(--text-1);
-      font-size: 1.125rem;
-      font-weight: bold;
-    }
-  }
-
-  .item-wrapper {
-    display: grid;
-    gap: var(--space-xxs);
-
-    .item {
-      display: flex;
-      gap: var(--space-xxxs);
     }
   }
 }
