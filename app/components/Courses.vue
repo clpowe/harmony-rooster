@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-const { data } = useAsyncData("courses", () => $fetch("/api/courses"));
+const { courses } = useCourses();
 
 </script>
 
@@ -15,8 +15,8 @@ const { data } = useAsyncData("courses", () => $fetch("/api/courses"));
         who are passionate about providing exceptional in-home care services
         that empower individuals to live their best lives.</Typography>
     </div>
-    <div v-if="data" class="courses-wrapper">
-      <div v-for="course in data" :key="course.id">
+    <div v-if="courses" class="courses-wrapper">
+      <div v-for="course in courses" :key="course.id">
         <div class="courses-content">
           <div class="content-main">
             <Typography tag="h3" variant="heading-small">{{
@@ -74,6 +74,7 @@ ul {
   width: 100%;
   justify-content: space-between;
   padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--neutral-200);
 
   .content-main {
     display: grid;
@@ -87,8 +88,14 @@ ul {
 
   .content-price {
     place-self: start;
-    padding: var(--space-xxs) var(--space-xxs);
-    border-radius: var(--radius-lg);
+    display: inline-flex;
+    align-items: center;
+    background: var(--primary-100, #e0f2fe);
+    color: var(--primary-700, #0369a1);
+    padding: var(--space-xxs) var(--space-xs);
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    font-size: 0.875rem;
   }
 
   @media (min-width: 768px) {

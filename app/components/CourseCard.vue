@@ -55,12 +55,25 @@ const [email, emailAttrs] = defineField('email')
 const [phonenumber, phonenumberAttrs] = defineField('phonenumber')
 
 // Submit handler: log all inputs + session_Id
-const onSubmit = handleSubmit((values) => {
+const { refreshCourses } = useCourses()
+
+const onSubmit = handleSubmit(async (values) => {
   const payload = {
     ...values,
     session_Id: (props.session?.id ?? 'N/A') as string,
   }
-  console.log(payload)
+
+  try {
+    await $fetch('/api/courses', {
+      method: 'POST',
+      body: payload,
+    })
+    await refreshCourses()
+  } catch (e) {
+    // optionally handle toast/notification
+    console.error('Registration failed', e)
+  }
+
   // Optionally close and reset
   resetForm()
   isOpen.value = false
@@ -70,42 +83,42 @@ const onSubmit = handleSubmit((values) => {
 </script>
 
 <template>
-  <div class="session_card">
-    <div class="card-header">
-      <div class="date-badge">
-        <Icon name="lucide:calendar" class="date-icon" />
-        <span>{{ formatDate(session.date) }}</span>
-      </div>
-      <div class="price-tag" v-if="coursePrice">
-        ${{ coursePrice }}
-      </div>
-    </div>
-    
-    <div class="card-details">
-      <div class="detail-row">
-        <Icon name="lucide:clock" class="detail-icon" />
+  <article class="session_card">
+    <header class="card-header">
+      <time class="date-badge" :datetime="session.date">
+        <Icon name="lucide:calendar" class="date-icon" aria-hidden="true" />
+        {{ formatDate(session.date) }}
+      </time>
+      <span class="price-tag" v-if="session.spots_available == 0" aria-label="Price">
+        FULL
+      </span>
+    </header>
+
+    <ul class="card-details">
+      <li class="detail-row">
+        <Icon name="lucide:clock" class="detail-icon" aria-hidden="true" />
         <div class="detail-content">
           <span class="detail-label">Time</span>
           <span class="detail-value">{{ session.time }}</span>
         </div>
-      </div>
-      
-      <div class="detail-row">
-        <Icon name="lucide:map-pin" class="detail-icon" />
+      </li>
+
+      <li class="detail-row">
+        <Icon name="lucide:map-pin" class="detail-icon" aria-hidden="true" />
         <div class="detail-content">
           <span class="detail-label">Location</span>
           <span class="detail-value">{{ session.location }}</span>
         </div>
-      </div>
-      
-      <div class="detail-row">
-        <Icon name="lucide:users" class="detail-icon" />
+      </li>
+
+      <li class="detail-row">
+        <Icon name="lucide:users" class="detail-icon" aria-hidden="true" />
         <div class="detail-content">
           <span class="detail-label">Available</span>
           <span class="detail-value">{{ session.spots_available }} seats</span>
         </div>
-      </div>
-    </div>
+      </li>
+    </ul>
     <DialogRoot v-model:open="isOpen">
       <DialogTrigger as-child>
         <button class="u-btn u-btn--md u-btn--primary">Register</button>
@@ -115,48 +128,48 @@ const onSubmit = handleSubmit((values) => {
         <DialogContent class="dialog-content">
           <DialogTitle class="dialog-title">Course Registration</DialogTitle>
           <DialogDescription class="dialog-description">
-            <div class="session-info">
-              <div class="course-header" v-if="courseName">
+            <section class="session-info">
+              <header class="course-header" v-if="courseName">
                 <h3>{{ courseName }}</h3>
-                <div class="price-badge" v-if="coursePrice">
+                <div class="price-badge" v-if="coursePrice" aria-label="Price">
                   ${{ coursePrice }}.00
                 </div>
-              </div>
+              </header>
 
-              <div class="session-details-grid">
-                <div class="detail-item">
-                  <Icon name="lucide:calendar" class="detail-icon" />
+              <ul class="session-details-grid">
+                <li class="detail-item">
+                  <Icon name="lucide:calendar" class="detail-icon" aria-hidden="true" />
                   <div>
                     <span class="detail-label">Date</span>
-                    <span class="detail-value">{{ formatDate(session.date) }}</span>
+                    <time class="detail-value" :datetime="session.date">{{ formatDate(session.date) }}</time>
                   </div>
-                </div>
+                </li>
 
-                <div class="detail-item">
-                  <Icon name="lucide:clock" class="detail-icon" />
+                <li class="detail-item">
+                  <Icon name="lucide:clock" class="detail-icon" aria-hidden="true" />
                   <div>
                     <span class="detail-label">Time</span>
                     <span class="detail-value">{{ session.time }}</span>
                   </div>
-                </div>
+                </li>
 
-                <div class="detail-item">
-                  <Icon name="lucide:map-pin" class="detail-icon" />
+                <li class="detail-item">
+                  <Icon name="lucide:map-pin" class="detail-icon" aria-hidden="true" />
                   <div>
                     <span class="detail-label">Location</span>
                     <span class="detail-value">{{ session.location }}</span>
                   </div>
-                </div>
+                </li>
 
-                <div class="detail-item">
-                  <Icon name="lucide:users" class="detail-icon" />
+                <li class="detail-item">
+                  <Icon name="lucide:users" class="detail-icon" aria-hidden="true" />
                   <div>
                     <span class="detail-label">Available Spots</span>
                     <span class="detail-value">{{ session.spots_available }} seats</span>
                   </div>
-                </div>
-              </div>
-            </div>
+                </li>
+              </ul>
+            </section>
 
             <form @submit.prevent="onSubmit" class="registration-form">
               <div class="form-group">
@@ -191,7 +204,7 @@ const onSubmit = handleSubmit((values) => {
         </DialogContent>
       </DialogPortal>
     </DialogRoot>
-  </div>
+  </article>
 </template>
 
 <style>
@@ -204,7 +217,7 @@ const onSubmit = handleSubmit((values) => {
   border-radius: var(--radius-md);
   background: var(--surface-1);
   transition: all 0.2s ease;
-  
+
   &:hover {
     border-color: var(--primary-300);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -235,8 +248,8 @@ const onSubmit = handleSubmit((values) => {
 }
 
 .price-tag {
-  background: var(--primary-100, #e0f2fe);
-  color: var(--primary-700, #0369a1);
+  background: red;
+  color: var(--neutral-50);
   padding: var(--space-xxs) var(--space-xs);
   border-radius: var(--radius-full);
   font-weight: 700;
@@ -247,6 +260,9 @@ const onSubmit = handleSubmit((values) => {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .detail-row {
@@ -279,7 +295,7 @@ const onSubmit = handleSubmit((values) => {
 }
 
 .detail-row .detail-value {
-  font-size: 0.875rem;
+  font-size: 1.15rem;
   color: var(--text-1);
   font-weight: 500;
 }
@@ -363,6 +379,9 @@ const onSubmit = handleSubmit((values) => {
   grid-template-columns: 1fr 1fr;
   gap: var(--space-sm);
   margin-top: var(--space-md);
+  list-style: none;
+  margin-inline: 0;
+  padding: 0;
 }
 
 .detail-item {
@@ -394,7 +413,7 @@ const onSubmit = handleSubmit((values) => {
 }
 
 .detail-value {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--text-1);
   font-weight: 500;
 }
