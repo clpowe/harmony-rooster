@@ -30,7 +30,7 @@ const services: Service[] = [
 ]
 </script>
 <template>
-	<div class="l-grid-1-2 card u-surface-2">
+	<div class="our-services card u-surface-2">
 		<div class="content_wrapper">
 			<Typography tag="h2" variant="heading-medium">Our <span>Services</span></Typography>
 			<Typography tag="p" variant="text">Harmony Rooster, LLC is here to help. Our team of dedicated and
@@ -38,7 +38,7 @@ const services: Service[] = [
 				including</Typography>
 		</div>
 
-    <ul class="services_wrapper">
+    <ul class="services-wrapper">
       <li v-for="item in services" :key="item.text" class="service-item">
         <component :is="item.icon" class="icon" />
         <Typography tag="p" variant="text">{{ item.text }}</Typography>
@@ -48,25 +48,33 @@ const services: Service[] = [
 </template>
 
 <style scoped>
+ul { list-style: none; }
 
-.content_wrapper {
+.our-services {
+  display: grid;
+  gap: var(--space-lg);
 }
 
-.services_wrapper {
+.content_wrapper {}
+
+.our-services h2 { margin-bottom: var(--space-xxxs); }
+
+.services-wrapper {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: var(--space-sm);
 }
 
 .service-item {
   display: grid;
 	background: var(--surface-1);
-	padding: var(--size-3);
+	padding: var(--space-sm);
 	border-radius: var(--radius-3);
+	border: 1px solid var(--neutral-200);
 
 	.icon {
 		font-size: var(--size-8);
-		margin-bottom: var(--size-2);
+		margin-bottom: var(--space-xs);
 	}
 }
 </style>
