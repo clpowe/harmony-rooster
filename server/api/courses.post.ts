@@ -1,16 +1,6 @@
 import AIRTABLE from "airtable";
 import * as z from "zod";
 
-type Session = {
-  id: string;
-  session_name: string;
-  date: string;
-  time: string;
-  capacity: number;
-  spots_available: number;
-  location: string;
-};
-
 const registrationSchema = z.object({
   name: z
     .string({ required_error: "Name is required" })
@@ -24,6 +14,7 @@ const registrationSchema = z.object({
     ),
   // Accept multiple casings for session id used on the client
   sessionId: z.string().min(1, "Session ID is required"),
+  token: z.string().min(1, "Token is required"),
 });
 
 export default defineEventHandler(async (event) => {
@@ -54,20 +45,51 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const { name, email, phonenumber, sessionId } = parsed.data;
+    const { name, email, phonenumber, sessionId, token } = parsed.data;
 
     AIRTABLE.configure({ apiKey: config.airtableKey });
     const base = AIRTABLE.base("apptCFjP3Ns4FdGGi");
 
     // Verify session exists
-    let sessionRecord;
-    try {
-      sessionRecord = await base("Sessions").find(sessionId);
-    } catch (err: any) {
+
+    const [sessionError, sessionRecord] = await catchError<SessionRecord>(
+      base("Sessions").find(sessionId),
+    );
+    if (sessionError) {
       throw createError({
         statusCode: 404,
         statusMessage: "Not Found",
         message: "Session not found",
+      });
+    }
+
+    console.log(sessionRecord);
+
+    const [authorizationError, authorization] = await catchError(
+      $fetch(config.chargeUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${config.qbAccessToken}`,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "Request-Id": crypto.randomUUID(),
+          "Accept-Encoding": "identity",
+        },
+        body: {
+          amount: String(sessionRecord.fields.cost[0]),
+          currency: "USD",
+          token: token,
+          capture: true,
+          context: { mobile: false, isEcommerce: true },
+        },
+      }),
+    );
+    if (authorizationError) {
+      console.log(authorizationError);
+      throw createError({
+        statusCode: 402,
+        statusMessage: "Payment Failed",
+        message: authorizationError.message,
       });
     }
 
@@ -84,6 +106,51 @@ export default defineEventHandler(async (event) => {
       },
     ]);
 
+    const [salesReceiptError, salesReceipt] = await catchError(
+      $fetch(
+        `https://sandbox-quickbooks.api.intuit.com/v3/company/9341455226679859/salesreceipt`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${config.qbAccessToken}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: {
+            Line: [
+              {
+                Description: "Pest Control Services",
+                DetailType: "SalesItemLineDetail",
+                SalesItemLineDetail: {
+                  TaxCodeRef: {
+                    value: "NON",
+                  },
+                  Qty: 1,
+                  UnitPrice: 35,
+                  ItemRef: {
+                    name: "Pest Control",
+                    value: "10",
+                  },
+                },
+                LineNum: 1,
+                Amount: 35.0,
+              },
+            ],
+          },
+        },
+      ),
+    );
+
+    if (salesReceiptError) {
+      console.log(salesReceiptError);
+      throw createError({
+        statusCode: 402,
+        statusMessage: "Payment Failed",
+        message: salesReceiptError.message,
+      });
+    }
+    console.log(salesReceipt);
+
     setResponseStatus(event, 201);
     return {
       ok: true,
@@ -91,7 +158,6 @@ export default defineEventHandler(async (event) => {
       sessionId,
     };
   } catch (error: any) {
-    // If it's an H3 error, rethrow as-is
     if (error?.statusCode) {
       throw error;
     }

@@ -1,125 +1,157 @@
 <script setup lang="ts">
 import {
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogOverlay,
-  DialogPortal,
-  DialogRoot,
-  DialogTitle,
-  DialogTrigger,
-} from 'reka-ui'
-import { useForm } from 'vee-validate'
-import { toTypedSchema } from '@vee-validate/zod'
-import * as z from 'zod'
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogOverlay,
+    DialogPortal,
+    DialogRoot,
+    DialogTitle,
+    DialogTrigger,
+} from "reka-ui";
+import { useForm } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/zod";
+import * as z from "zod";
 
 type Session = {
-  id?: string,
-  date: string,
-  location: string,
-  time: string,
-  spots_available: number,
-}
+    id?: string;
+    date: string;
+    location: string;
+    time: string;
+    spots_available: number;
+};
 
 const props = defineProps<{
-  session: Session,
-  courseName?: string,
-  coursePrice?: number | string
-}>()
+    session: Session;
+    courseName?: string;
+    courseId: string;
+    coursePrice?: number | string;
+}>();
 
-const isOpen = ref(false)
+const isOpen = ref(false);
 
 // Zod schema for validation
 const registrationSchema = z.object({
-  name: z
-    .string()
-    .min(2, 'Name must be at least 2 characters')
-    .max(50, 'Name must be less than 50 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  phonenumber: z
-    .string()
-    .regex(
-      /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/,
-      'Please enter a valid phone number'
-    ),
-})
+    name: z
+        .string()
+        .min(2, "Name must be at least 2 characters")
+        .max(50, "Name must be less than 50 characters"),
+    email: z.string().email("Please enter a valid email address"),
+    phonenumber: z
+        .string()
+        .regex(
+            /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/,
+            "Please enter a valid phone number",
+        ),
+});
 
 // Setup VeeValidate form
 const { defineField, handleSubmit, errors, resetForm } = useForm({
-  validationSchema: toTypedSchema(registrationSchema),
-})
+    validationSchema: toTypedSchema(registrationSchema),
+});
 
 // Bind fields
-const [name, nameAttrs] = defineField('name')
-const [email, emailAttrs] = defineField('email')
-const [phonenumber, phonenumberAttrs] = defineField('phonenumber')
+const [name, nameAttrs] = defineField("name");
+const [email, emailAttrs] = defineField("email");
+const [phonenumber, phonenumberAttrs] = defineField("phonenumber");
 
 // Submit handler: log all inputs + session_Id
-const { refreshCourses } = useCourses()
+const { refreshCourses } = useCourses();
 
 const onSubmit = handleSubmit(async (values) => {
-  const payload = {
-    ...values,
-    session_Id: (props.session?.id ?? 'N/A') as string,
-  }
+    const payload = {
+        ...values,
+        session_Id: (props.session?.id ?? "N/A") as string,
+    };
 
-  try {
-    await $fetch('/api/courses', {
-      method: 'POST',
-      body: payload,
-    })
-    await refreshCourses()
-  } catch (e) {
-    // optionally handle toast/notification
-    console.error('Registration failed', e)
-  }
+    try {
+        await $fetch("/api/courses", {
+            method: "POST",
+            body: payload,
+        });
+        await refreshCourses();
+    } catch (e) {
+        // optionally handle toast/notification
+        console.error("Registration failed", e);
+    }
 
-  // Optionally close and reset
-  resetForm()
-  isOpen.value = false
-})
-
-
+    // Optionally close and reset
+    resetForm();
+    isOpen.value = false;
+});
 </script>
 
 <template>
-  <article class="session_card">
-    <header class="card-header">
-      <time class="date-badge" :datetime="session.date">
-        <Icon name="lucide:calendar" class="date-icon" aria-hidden="true" />
-        {{ formatDate(session.date) }}
-      </time>
-      <span class="price-tag" v-if="session.spots_available == 0" aria-label="Price">
-        FULL
-      </span>
-    </header>
+    <article class="session_card">
+        <header class="card-header">
+            <time class="date-badge" :datetime="session.date">
+                <Icon
+                    name="lucide:calendar"
+                    class="date-icon"
+                    aria-hidden="true"
+                />
+                {{ formatDate(session.date) }}
+            </time>
+            <span
+                class="price-tag"
+                v-if="session.spots_available == 0"
+                aria-label="Price"
+            >
+                FULL
+            </span>
+        </header>
 
-    <ul class="card-details">
-      <li class="detail-row">
-        <Icon name="lucide:clock" class="detail-icon" aria-hidden="true" />
-        <div class="detail-content">
-          <span class="detail-label">Time</span>
-          <span class="detail-value">{{ session.time }}</span>
-        </div>
-      </li>
+        <ul class="card-details">
+            <li class="detail-row">
+                <Icon
+                    name="lucide:clock"
+                    class="detail-icon"
+                    aria-hidden="true"
+                />
+                <div class="detail-content">
+                    <span class="detail-label">Time</span>
+                    <span class="detail-value">{{ session.time }}</span>
+                </div>
+            </li>
 
-      <li class="detail-row">
-        <Icon name="lucide:map-pin" class="detail-icon" aria-hidden="true" />
-        <div class="detail-content">
-          <span class="detail-label">Location</span>
-          <span class="detail-value">{{ session.location }}</span>
-        </div>
-      </li>
+            <li class="detail-row">
+                <Icon
+                    name="lucide:map-pin"
+                    class="detail-icon"
+                    aria-hidden="true"
+                />
+                <div class="detail-content">
+                    <span class="detail-label">Location</span>
+                    <span class="detail-value">{{ session.location }}</span>
+                </div>
+            </li>
 
-      <li class="detail-row">
-        <Icon name="lucide:users" class="detail-icon" aria-hidden="true" />
-        <div class="detail-content">
-          <span class="detail-label">Available</span>
-          <span class="detail-value">{{ session.spots_available }} seats</span>
+            <li class="detail-row">
+                <Icon
+                    name="lucide:users"
+                    class="detail-icon"
+                    aria-hidden="true"
+                />
+                <div class="detail-content">
+                    <span class="detail-label">Available</span>
+                    <span class="detail-value"
+                        >{{ session.spots_available }} seats</span
+                    >
+                </div>
+            </li>
+        </ul>
+        <div>
+            <NuxtLink
+                class="u-btn u-btn--md u-btn--primary"
+                :to="{
+                    name: 'course-register',
+                    query: { session_id: session.id, course_id: courseId },
+                }"
+            >
+                Register
+            </NuxtLink>
         </div>
-      </li>
-    </ul>
-    <DialogRoot v-model:open="isOpen">
+        <!-- <DialogRoot v-model:open="isOpen">
       <DialogTrigger as-child>
         <button class="u-btn u-btn--md u-btn--primary">Register</button>
       </DialogTrigger>
@@ -203,294 +235,296 @@ const onSubmit = handleSubmit(async (values) => {
           </DialogDescription>
         </DialogContent>
       </DialogPortal>
-    </DialogRoot>
-  </article>
+    </DialogRoot>-->
+    </article>
 </template>
 
 <style>
 .session_card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-md);
-  border: 1px solid var(--neutral-200);
-  border-radius: var(--radius-md);
-  background: var(--surface-1);
-  transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+    transition: all 0.2s ease;
 
-  &:hover {
-    border-color: var(--primary-300);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
+    &:hover {
+        border-color: var(--primary-300);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
 }
 
 .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: var(--space-sm);
-  border-bottom: 1px solid var(--neutral-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--neutral-200);
 }
 
 .date-badge {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  color: var(--primary-600);
-  font-weight: 600;
-  font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    color: var(--primary-600);
+    font-weight: 600;
+    font-size: 1rem;
 }
 
 .date-icon {
-  width: 18px;
-  height: 18px;
-  color: var(--primary-500);
+    width: 18px;
+    height: 18px;
+    color: var(--primary-500);
 }
 
 .price-tag {
-  background: red;
-  color: var(--neutral-50);
-  padding: var(--space-xxs) var(--space-xs);
-  border-radius: var(--radius-full);
-  font-weight: 700;
-  font-size: 0.875rem;
+    background: red;
+    color: var(--neutral-50);
+    padding: var(--space-xxs) var(--space-xs);
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    font-size: 0.875rem;
 }
 
 .card-details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  list-style: none;
-  margin: 0;
-  padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
 .detail-row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-xs);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-xs);
 }
 
 .detail-row .detail-icon {
-  width: 16px;
-  height: 16px;
-  color: var(--primary-500);
-  flex-shrink: 0;
-  margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    color: var(--primary-500);
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
 .detail-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
 }
 
 .detail-row .detail-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--text-3, #6b7280);
-  font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-3, #6b7280);
+    font-weight: 500;
 }
 
 .detail-row .detail-value {
-  font-size: 1.15rem;
-  color: var(--text-1);
-  font-weight: 500;
+    font-size: 1.15rem;
+    color: var(--text-1);
+    font-weight: 500;
 }
 
 /* Button styling */
 .session_card .u-btn--primary {
-  margin-top: var(--space-xs);
-  width: 100%;
-  justify-content: center;
+    margin-top: var(--space-xs);
+    width: 100%;
+    justify-content: center;
 }
 
 /* Dialog styles */
 .dialog-overlay {
-  background-color: rgba(0, 0, 0, 0.5);
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    background-color: rgba(0, 0, 0, 0.5);
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dialog-content {
-  background-color: var(--surface-1);
-  border-radius: var(--radius-md);
-  box-shadow: 0 10px 38px -10px rgba(0, 0, 0, 0.35), 0 10px 20px -15px rgba(0, 0, 0, 0.2);
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90vw;
-  max-width: 520px;
-  min-height: 90dvh;
-  padding: var(--space-lg);
-  z-index: 100;
-  animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
-  overflow-y: auto;
+    background-color: var(--surface-1);
+    border-radius: var(--radius-md);
+    box-shadow:
+        0 10px 38px -10px rgba(0, 0, 0, 0.35),
+        0 10px 20px -15px rgba(0, 0, 0, 0.2);
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 520px;
+    min-height: 90dvh;
+    padding: var(--space-lg);
+    z-index: 100;
+    animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    overflow-y: auto;
 }
 
 .dialog-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-1);
-  margin-bottom: var(--space-sm);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-1);
+    margin-bottom: var(--space-sm);
 }
 
 .dialog-description {
-  color: var(--text-2);
-  line-height: 1.5;
+    color: var(--text-2);
+    line-height: 1.5;
 }
 
 .session-info {
-  margin-bottom: var(--space-lg);
-  padding-bottom: var(--space-lg);
-  border-bottom: 2px solid var(--neutral-200);
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-lg);
+    border-bottom: 2px solid var(--neutral-200);
 }
 
 .course-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
 }
 
 .course-header h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--primary-500);
-  margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary-500);
+    margin: 0;
 }
 
 .price-badge {
-  background: var(--primary-100, #e0f2fe);
-  color: var(--primary-700, #0369a1);
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-full);
-  font-weight: 700;
-  font-size: 1.125rem;
+    background: var(--primary-100, #e0f2fe);
+    color: var(--primary-700, #0369a1);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    font-size: 1.125rem;
 }
 
 .session-details-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-sm);
-  margin-top: var(--space-md);
-  list-style: none;
-  margin-inline: 0;
-  padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+    list-style: none;
+    margin-inline: 0;
+    padding: 0;
 }
 
 .detail-item {
-  display: flex;
-  gap: var(--space-xs);
-  align-items: flex-start;
+    display: flex;
+    gap: var(--space-xs);
+    align-items: flex-start;
 }
 
 .detail-icon {
-  color: var(--primary-500);
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  margin-top: 2px;
+    color: var(--primary-500);
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
-.detail-item>div {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xxxs);
+.detail-item > div {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xxxs);
 }
 
 .detail-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-3, #6b7280);
-  font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-3, #6b7280);
+    font-weight: 500;
 }
 
 .detail-value {
-  font-size: 1rem;
-  color: var(--text-1);
-  font-weight: 500;
+    font-size: 1rem;
+    color: var(--text-1);
+    font-weight: 500;
 }
 
 @media (max-width: 480px) {
-  .session-details-grid {
-    grid-template-columns: 1fr;
-  }
+    .session-details-grid {
+        grid-template-columns: 1fr;
+    }
 
-  .course-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-sm);
-  }
+    .course-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
 }
 
 .dialog-actions {
-  display: flex;
-  gap: var(--space-sm);
-  justify-content: flex-end;
-  margin-top: var(--space-md);
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: flex-end;
+    margin-top: var(--space-md);
 }
 
 /* Form styles */
 .registration-form {
-  display: grid;
-  gap: var(--space-sm);
+    display: grid;
+    gap: var(--space-sm);
 }
 
 .form-group {
-  display: grid;
-  gap: var(--space-xxs);
+    display: grid;
+    gap: var(--space-xxs);
 }
 
 .form-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-1);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-1);
 }
 
 .form-input {
-  width: 100%;
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--neutral-300);
-  border-radius: var(--radius-sm);
-  background: var(--surface-1);
-  color: var(--text-1);
+    width: 100%;
+    padding: var(--space-xs) var(--space-sm);
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-sm);
+    background: var(--surface-1);
+    color: var(--text-1);
 }
 
 .form-input.error {
-  border-color: var(--danger-500, #ef4444);
+    border-color: var(--danger-500, #ef4444);
 }
 
 .error-message {
-  color: var(--danger-500, #ef4444);
-  font-size: 0.8rem;
+    color: var(--danger-500, #ef4444);
+    font-size: 0.8rem;
 }
 
 @keyframes overlayShow {
-  from {
-    opacity: 0;
-  }
+    from {
+        opacity: 0;
+    }
 
-  to {
-    opacity: 1;
-  }
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes contentShow {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -48%) scale(0.96);
-  }
+    from {
+        opacity: 0;
+        transform: translate(-50%, -48%) scale(0.96);
+    }
 
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
 }
 </style>
