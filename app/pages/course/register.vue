@@ -174,6 +174,7 @@ const onSubmit = handleSubmit(async (values) => {
                         class="form-input"
                         :class="{ error: errors.cardnumber }"
                         placeholder="5555 5555 5555 5555"
+                        autocomplete="cc-number"
                     />
                     <span v-if="errors.cardnumber" class="error-message">{{
                         errors.cardnumber
@@ -183,6 +184,7 @@ const onSubmit = handleSubmit(async (values) => {
                     <label for="cvc" class="form-label">CVC</label>
                     <input
                         id="cvc"
+                        autocomplete="cc-csc"
                         v-model="cvc"
                         v-bind="cvcAttrs"
                         type="text"
@@ -201,6 +203,7 @@ const onSubmit = handleSubmit(async (values) => {
                         id="exp"
                         v-model="exp"
                         v-bind="expAttrs"
+                        autocomplete="cc-exp-month"
                         type="text"
                         inputmode="numeric"
                         class="form-input"
@@ -224,6 +227,7 @@ const onSubmit = handleSubmit(async (values) => {
                         inputmode="numeric"
                         class="form-input"
                         placeholder="2026"
+                        autocomplete="cc-exp-year"
                         :class="{ error: errors.expdate }"
                     />
                     <span v-if="errors.expdate" class="error-message">{{
