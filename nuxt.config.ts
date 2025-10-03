@@ -23,11 +23,28 @@ export default defineNuxtConfig({
     "@vee-validate/nuxt",
     "nuxt-security",
     "@nuxt/fonts",
+    "@unlok-co/nuxt-stripe",
   ],
   compatibilityDate: "2024-11-16",
   runtimeConfig: {
     airtableKey: "",
-    qbAccessToken: "",
-    chargeUrl: "",
+    stripeWebhookSecretKey: "",
+  },
+  stripe: {
+    // Server
+    server: {
+      key: process.env.STRIPE_SECRET_KEY,
+      options: {},
+    },
+    // Client
+    client: {
+      key: process.env.STRIPE_PUBLIC_KEY,
+      options: {},
+    },
+  },
+  vite: {
+    server: {
+      allowedHosts: ["nimbused-deborah-auricled.ngrok-free.dev"],
+    },
   },
 });
