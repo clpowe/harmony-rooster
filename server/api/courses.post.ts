@@ -38,7 +38,6 @@ export default defineEventHandler(async (event) => {
 
   const parsed = registrationSchema.safeParse(body);
   if (!parsed.success) {
-    console.log(parsed.error);
     throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
@@ -106,8 +105,8 @@ export default defineEventHandler(async (event) => {
     customerID = user.fields.stripeID;
   }
 
-  const product_cost = sessionRecord.fields.cost![0] * 100;
-  const productID = sessionRecord.fields.productID![0];
+  const product_cost = sessionRecord.fields.cost[0] * 100;
+  const productID = sessionRecord.fields.productID[0];
 
   const successUrl = `${config.public.siteUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${config.public.siteUrl}/cancel`;
