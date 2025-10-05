@@ -21,10 +21,10 @@ const registrationSchema = z.object({
   sessionId: z.string().min(1, "Session ID is required"),
 });
 
+const config = useRuntimeConfig();
+
 export default defineEventHandler(async (event) => {
   const stripe = await useServerStripe(event);
-
-  const config = useRuntimeConfig(event);
 
   if (!config.airtableKey) {
     throw createError({
@@ -106,6 +106,14 @@ export default defineEventHandler(async (event) => {
     customerID = user.fields.stripeID;
   }
 
+  const product_cost = sessionRecord.fields.cost![0] * 100;
+  const productID = sessionRecord.fields.productID![0];
+
+  const successUrl = `${config.public.siteUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = `${config.public.siteUrl}/cancel`;
+
+  console.log(config.public);
+
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     customer: customerID,
@@ -113,11 +121,8 @@ export default defineEventHandler(async (event) => {
       {
         price_data: {
           currency: "usd",
-          unit_amount: sessionRecord.fields.cost[0] * 100,
-          product: sessionRecord.fields.productID[0],
-          product_data: {
-            name: sessionRecord.fields.name,
-          },
+          unit_amount: product_cost,
+          product: productID,
         },
         quantity: 1,
       },
@@ -125,9 +130,16 @@ export default defineEventHandler(async (event) => {
     metadata: {
       sessionID: sessionRecord.id,
       customerID: user?.id,
+      first_name,
+      last_name,
+      email,
+      courseName: sessionRecord.fields["course-name"],
+      courseDate: sessionRecord.fields["date"],
+      courseLocation: sessionRecord.fields["location"],
+      courseTime: sessionRecord.fields["time"],
     },
-    success_url: `http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `http://localhost:3000/cancel`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
   });
 
   if (session.url == null) {

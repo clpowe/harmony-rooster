@@ -1,5 +1,4 @@
 import AIRTABLE from "airtable";
-import * as z from "zod";
 import { useServerStripe } from "#stripe/server";
 
 const config = useRuntimeConfig();
@@ -10,8 +9,7 @@ export default eventHandler(async (event) => {
   console.log("Stripe webhook received");
   const stripe = await useServerStripe(event);
   const body = await readRawBody(event);
-  let stripeEvent: any = body;
-  let status;
+  let stripeEvent = body;
 
   const signature = getHeader(event, "stripe-signature");
 
@@ -54,10 +52,9 @@ export default eventHandler(async (event) => {
       },
     );
 
-    console.log(checkoutSession.metadata);
-
     const sessionID = checkoutSession.metadata?.sessionID;
     const customerID = checkoutSession.metadata?.customerID;
+    const Name = `${checkoutSession.metadata?.first_name} + " " + ${checkoutSession.metadata?.last_name}`;
 
     let session = await base("Sessions")
       .select({
@@ -76,7 +73,7 @@ export default eventHandler(async (event) => {
     await base("Registrations").create([
       {
         fields: {
-          Name: customer[0].fields.Name,
+          Name,
           Session: [session[0].id],
           Customer: [customer[0].id],
         },

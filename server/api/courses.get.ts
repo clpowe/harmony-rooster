@@ -35,10 +35,10 @@ export default defineEventHandler(async (event) => {
 
   for (const record of records) {
     const sessionIds: string[] = record.get("sessions") || []; // be sure the field name is exact
-    const sessions: Session[] = [];:w
+    const sessions: Session[] = [];
 
     for (const id of sessionIds) {
-      const r = await base("Sessions").find(id:while);
+      const r = await base("Sessions").find(id);
 
       if (new Date(r.get("date") as string) < today) {
         continue;

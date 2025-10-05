@@ -1,6 +1,36 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useRoute } from "vue-router";
+import { ref } from "vue";
+
+const { stripe } = useClientStripe();
+
+const route = useRoute();
+const sessionId = ref(route.query.session_id as string);
+
+if (!sessionId.value) {
+    navigateTo("/");
+}
+
+// Fetch checkout data immediately when page loads
+const {
+    data: checkoutData,
+    error,
+    pending,
+} = await useFetch("/api/stripe/success", {
+    query: { session_id: sessionId.value },
+    server: true,
+    immediate: true,
+});
+
+const { data: courses } = useNuxtData("courses");
+
+// Handle errors
+if (error.value) {
+    console.error("Failed to load checkout data:", error.value);
+}
+</script>
 <template>
     <div>
-        <h1>Success</h1>
+        <pre>{{ checkoutData }}</pre>
     </div>
 </template>

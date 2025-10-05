@@ -29,6 +29,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     airtableKey: "",
     stripeWebhookSecretKey: "",
+    public: {
+      siteUrl: "http://localhost:3000",
+    },
   },
   stripe: {
     // Server
