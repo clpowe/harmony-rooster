@@ -1,16 +1,77 @@
-import AIRTABLE from "airtable";
 import { useServerStripe } from "#stripe/server";
+import { AirtableTs, type Table } from "airtable-ts";
+import type Stripe from "stripe";
 
-const config = useRuntimeConfig();
-AIRTABLE.configure({ apiKey: config.airtableKey });
-const base = AIRTABLE.base("apptCFjP3Ns4FdGGi");
+type SessionRecord = {
+  id: string;
+};
+
+type CustomerRecord = {
+  id: string;
+};
+
+type RegistrationRecord = {
+  id: string;
+  Name: string;
+  Session: string[];
+  Customer: string[];
+};
+
+type RegistrationEvent =
+  | Stripe.CheckoutSessionCompletedEvent
+  | Stripe.CheckoutSessionAsyncPaymentSucceededEvent
+  | Stripe.CheckoutSessionAsyncPaymentFailedEvent;
+
+const BASE_ID = "apptCFjP3Ns4FdGGi";
+
+const sessionsTable: Table<SessionRecord> = {
+  name: "session",
+  baseId: BASE_ID,
+  tableId: "Sessions",
+  schema: {},
+};
+
+const customersTable: Table<CustomerRecord> = {
+  name: "customer",
+  baseId: BASE_ID,
+  tableId: "Customers",
+  schema: {},
+};
+
+const registrationsTable: Table<RegistrationRecord> = {
+  name: "registration",
+  baseId: BASE_ID,
+  tableId: "Registrations",
+  schema: {
+    Name: "string",
+    Session: "string[]",
+    Customer: "string[]",
+  },
+};
+
+function isRegistrationEvent(event: Stripe.Event): event is RegistrationEvent {
+  return (
+    event.type === "checkout.session.completed" ||
+    event.type === "checkout.session.async_payment_succeeded" ||
+    event.type === "checkout.session.async_payment_failed"
+  );
+}
 
 export default eventHandler(async (event) => {
+  const config = useRuntimeConfig(event);
+
+  if (!config.airtableKey) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "Server Misconfiguration",
+      message: "Missing Airtable API key",
+    });
+  }
+
   console.log("Stripe webhook received");
   const stripe = await useServerStripe(event);
+  const db = new AirtableTs({ apiKey: config.airtableKey });
   const body = await readRawBody(event);
-  let stripeEvent = body;
-
   const signature = getHeader(event, "stripe-signature");
 
   if (!body) {
@@ -21,8 +82,9 @@ export default eventHandler(async (event) => {
     return { error: "Invalid stripe-signature" };
   }
 
+  let stripeEvent: Stripe.Event;
+
   try {
-    // 3
     stripeEvent = stripe.webhooks.constructEvent(
       body,
       signature,
@@ -36,13 +98,12 @@ export default eventHandler(async (event) => {
     return sendError(event, error);
   }
 
-  switch (stripeEvent.type) {
-    case "checkout.session.completed":
-    case "checkout.session.async_payment_succeeded":
-    case "checkout.session.async_payment_failed":
-      await handleCourseRegistration(stripeEvent.data.object.id);
-      break;
+  if (!isRegistrationEvent(stripeEvent)) {
+    return { received: true };
   }
+
+  await handleCourseRegistration(stripeEvent.data.object.id);
+  return { received: true };
 
   async function handleCourseRegistration(checkoutSessionID: string) {
     const checkoutSession = await stripe.checkout.sessions.retrieve(
@@ -54,30 +115,26 @@ export default eventHandler(async (event) => {
 
     const sessionID = checkoutSession.metadata?.sessionID;
     const customerID = checkoutSession.metadata?.customerID;
-    const Name = `${checkoutSession.metadata?.first_name} + " " + ${checkoutSession.metadata?.last_name}`;
+    const firstName = checkoutSession.metadata?.first_name?.trim() ?? "";
+    const lastName = checkoutSession.metadata?.last_name?.trim() ?? "";
+    const Name = `${firstName} ${lastName}`.trim();
 
-    let session = await base("Sessions")
-      .select({
-        maxRecords: 1,
-        filterByFormula: `id = '${sessionID}'`,
-      })
-      .all();
+    if (!sessionID || !customerID || !Name) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Bad Request",
+        message: "Missing required checkout metadata for registration",
+      });
+    }
 
-    let customer = await base("Customers")
-      .select({
-        maxRecords: 1,
-        filterByFormula: `id = '${customerID}'`,
-      })
-      .all();
+    // Validate linked records exist before creating the registration row.
+    await db.get(sessionsTable, sessionID);
+    await db.get(customersTable, customerID);
 
-    await base("Registrations").create([
-      {
-        fields: {
-          Name,
-          Session: [session[0].id],
-          Customer: [customer[0].id],
-        },
-      },
-    ]);
+    await db.insert(registrationsTable, {
+      Name,
+      Session: [sessionID],
+      Customer: [customerID],
+    });
   }
 });
