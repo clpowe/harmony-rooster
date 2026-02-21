@@ -1,11 +1,8 @@
 import { useServerStripe } from "#stripe/server";
 import { AirtableTs, type Table } from "airtable-ts";
-import {
-  AIRTABLE_BASE_ID,
-  AIRTABLE_TABLE_IDS,
-} from "../../../shared/constants/airtable";
+import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "@constants/airtable";
 
-type SessionRecord = {
+type StripeSuccessSessionRecord = {
   id: string;
   "session-name": string;
   date: string;
@@ -13,7 +10,7 @@ type SessionRecord = {
   location: string;
 };
 
-const sessionsTable: Table<SessionRecord> = {
+const sessionsTable: Table<StripeSuccessSessionRecord> = {
   name: "session",
   baseId: AIRTABLE_BASE_ID,
   tableId: AIRTABLE_TABLE_IDS.SESSIONS,

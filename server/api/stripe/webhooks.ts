@@ -1,46 +1,23 @@
 import { useServerStripe } from "#stripe/server";
 import { AirtableTs, type Table } from "airtable-ts";
 import type Stripe from "stripe";
-import {
-  AIRTABLE_BASE_ID,
-  AIRTABLE_TABLE_IDS,
-} from "../../../shared/constants/airtable";
+import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "@constants/airtable";
 
-type SessionRecord = {
-  id: string;
-};
-
-type CustomerRecord = {
-  id: string;
-};
-
-type RegistrationRecord = {
-  id: string;
-  Name: string;
-  Session: string[];
-  Customer: string[];
-};
-
-type RegistrationEvent =
-  | Stripe.CheckoutSessionCompletedEvent
-  | Stripe.CheckoutSessionAsyncPaymentSucceededEvent
-  | Stripe.CheckoutSessionAsyncPaymentFailedEvent;
-
-const sessionsTable: Table<SessionRecord> = {
+const sessionsTable: Table<StripeWebhookSessionRecord> = {
   name: "session",
   baseId: AIRTABLE_BASE_ID,
   tableId: AIRTABLE_TABLE_IDS.SESSIONS,
   schema: {},
 };
 
-const customersTable: Table<CustomerRecord> = {
+const customersTable: Table<StripeWebhookCustomerRecord> = {
   name: "customer",
   baseId: AIRTABLE_BASE_ID,
   tableId: AIRTABLE_TABLE_IDS.CUSTOMERS,
   schema: {},
 };
 
-const registrationsTable: Table<RegistrationRecord> = {
+const registrationsTable: Table<StripeWebhookRegistrationRecord> = {
   name: "registration",
   baseId: AIRTABLE_BASE_ID,
   tableId: AIRTABLE_TABLE_IDS.REGISTRATIONS,
@@ -51,7 +28,9 @@ const registrationsTable: Table<RegistrationRecord> = {
   },
 };
 
-function isRegistrationEvent(event: Stripe.Event): event is RegistrationEvent {
+function isRegistrationEvent(
+  event: Stripe.Event,
+): event is StripeWebhookRegistrationEvent {
   return (
     event.type === "checkout.session.completed" ||
     event.type === "checkout.session.async_payment_succeeded" ||

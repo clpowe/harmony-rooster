@@ -1,8 +1,16 @@
 import postcssNesting from "postcss-nesting";
+import { fileURLToPath } from "node:url";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  alias: {
+    "@": fileURLToPath(new URL("./app", import.meta.url)),
+    "@types": fileURLToPath(new URL("./shared/types", import.meta.url)),
+    "@utils": fileURLToPath(new URL("./shared/utils", import.meta.url)),
+    "@constants": fileURLToPath(new URL("./shared/constants", import.meta.url)),
+    "~": fileURLToPath(new URL("./", import.meta.url)),
+  },
   css: ["@/assets/css/main.css"],
   future: {
     compatibilityVersion: 4,
