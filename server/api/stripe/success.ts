@@ -1,56 +1,94 @@
 import { useServerStripe } from "#stripe/server";
+import { AirtableTs, type Table } from "airtable-ts";
+import {
+  AIRTABLE_BASE_ID,
+  AIRTABLE_TABLE_IDS,
+} from "../../../shared/constants/airtable";
 
-import AIRTABLE from "airtable";
-
-type Session = {
+type SessionRecord = {
   id: string;
-  session_name: string;
+  "session-name": string;
   date: string;
   time: string;
-  capacity: number;
-  spots_available: number;
   location: string;
 };
 
-type Course = {
-  id: string;
-  course_name: string;
-  description: string;
-  duration: number;
-  cost: number;
-  sessions?: Session[];
+const sessionsTable: Table<SessionRecord> = {
+  name: "session",
+  baseId: AIRTABLE_BASE_ID,
+  tableId: AIRTABLE_TABLE_IDS.SESSIONS,
+  schema: {
+    "session-name": "string",
+    date: "string",
+    time: "string",
+    location: "string",
+  },
 };
 
-const config = useRuntimeConfig();
 export default defineEventHandler(async (event) => {
-  const { session_id } = getQuery(event);
+  const config = useRuntimeConfig(event);
+  const rawSessionID = getQuery(event).session_id;
+  const sessionID =
+    typeof rawSessionID === "string"
+      ? rawSessionID
+      : Array.isArray(rawSessionID)
+        ? rawSessionID[0]
+        : undefined;
 
-  console.log("Session ID:", session_id);
-
-  if (!session_id) {
+  if (!sessionID) {
     throw createError({
       statusCode: 400,
       message: "Session ID is required",
     });
   }
 
-  const stripe = await useServerStripe(event);
+  if (!config.airtableKey) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "Server Misconfiguration",
+      message: "Missing Airtable API key",
+    });
+  }
 
-  const session = await stripe.checkout.sessions.retrieve(session_id, {
-    expand: [
-      "line_items",
-      "customer",
-      "payment_intent",
-      "payment_intent.payment_method",
-    ], // Expand any needed data
+  const stripe = await useServerStripe(event);
+  const db = new AirtableTs({ apiKey: config.airtableKey });
+
+  const checkoutSession = await stripe.checkout.sessions.retrieve(sessionID, {
+    expand: ["payment_intent", "payment_intent.payment_method"],
   });
+
+  const paymentIntent =
+    checkoutSession.payment_intent &&
+    typeof checkoutSession.payment_intent !== "string"
+      ? checkoutSession.payment_intent
+      : null;
+
+  const paymentMethod =
+    paymentIntent?.payment_method &&
+    typeof paymentIntent.payment_method !== "string"
+      ? paymentIntent.payment_method
+      : null;
+
+  const linkedSessionID = checkoutSession.metadata?.sessionID;
+  const airtableSession = linkedSessionID
+    ? await db.get(sessionsTable, linkedSessionID)
+    : null;
 
   return {
     payment: {
-      brand: session.payment_intent?.payment_method?.card?.brand,
-      last4: session.payment_intent?.payment_method?.card?.last4,
+      brand: paymentMethod?.card?.brand ?? null,
+      last4: paymentMethod?.card?.last4 ?? null,
     },
-    total: session.amount_total,
-    metadata: session.metadata,
+    total: checkoutSession.amount_total,
+    metadata: checkoutSession.metadata,
+    session: airtableSession
+      ? {
+          id: airtableSession.id,
+          name: airtableSession["session-name"],
+          date: airtableSession.date,
+          time: airtableSession.time,
+          location: airtableSession.location,
+        }
+      : null,
   };
 });

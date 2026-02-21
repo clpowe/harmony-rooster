@@ -1,32 +1,33 @@
+import { format } from "@formkit/tempo";
+
+function getDaySuffix(dayNumber: number): string {
+  if (dayNumber > 3 && dayNumber < 21) return "th";
+  if (dayNumber % 10 === 1) return "st";
+  if (dayNumber % 10 === 2) return "nd";
+  if (dayNumber % 10 === 3) return "rd";
+  return "th";
+}
+
 export function formatDate(dateString: string) {
-  // Use noon UTC so the calendar date is stable in ET regardless of DST
   const [year, month, day] = dateString.split("-").map(Number);
   if (!year || !month || !day) return "";
-  const utcNoon = new Date(Date.UTC(year, month - 1, day, 12));
-  const tz = "America/New_York";
 
-  const dayName = new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    timeZone: tz,
-  }).format(utcNoon);
-  const monthName = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    timeZone: tz,
-  }).format(utcNoon);
+  // Use noon UTC to keep calendar date stable when converting to ET.
+  const isoAtNoonUTC = `${dateString}T12:00:00.000Z`;
   const dayNumber = Number(
-    new Intl.DateTimeFormat("en-US", { day: "numeric", timeZone: tz }).format(
-      utcNoon,
-    ),
+    format({
+      date: isoAtNoonUTC,
+      format: "D",
+      tz: "America/New_York",
+      locale: "en-US",
+    }),
   );
+  const dayWithSuffix = `${dayNumber}${getDaySuffix(dayNumber)}`;
 
-  const suffix = dayNumber > 3 && dayNumber < 21
-    ? "th"
-    : dayNumber % 10 === 1
-      ? "st"
-      : dayNumber % 10 === 2
-        ? "nd"
-        : dayNumber % 10 === 3
-          ? "rd"
-          : "th";
-  return `${dayName} ${monthName} ${dayNumber}${suffix}`;
+  return format({
+    date: isoAtNoonUTC,
+    format: `dddd MMM ${dayWithSuffix}`,
+    tz: "America/New_York",
+    locale: "en-US",
+  });
 }

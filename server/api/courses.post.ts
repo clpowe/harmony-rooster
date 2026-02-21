@@ -1,6 +1,10 @@
-import AIRTABLE from "airtable";
-import * as z from "zod";
 import { useServerStripe } from "#stripe/server";
+import { AirtableTs, type Table } from "airtable-ts";
+import * as z from "zod";
+import {
+  AIRTABLE_BASE_ID,
+  AIRTABLE_TABLE_IDS,
+} from "../../shared/constants/airtable";
 
 const registrationSchema = z.object({
   first_name: z
@@ -21,9 +25,73 @@ const registrationSchema = z.object({
   sessionId: z.string().min(1, "Session ID is required"),
 });
 
-const config = useRuntimeConfig();
+type SessionRecord = {
+  id: string;
+  cost: number[];
+  productID: string[];
+  courseName: string;
+  date: string;
+  location: string;
+  time: string;
+};
+
+type CustomerRecord = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  stripeID: string | null;
+};
+
+const sessionsTable: Table<SessionRecord> = {
+  name: "session",
+  baseId: AIRTABLE_BASE_ID,
+  tableId: AIRTABLE_TABLE_IDS.SESSIONS,
+  schema: {
+    cost: "number[]",
+    productID: "string[]",
+    courseName: "string",
+    date: "string",
+    location: "string",
+    time: "string",
+  },
+  mappings: {
+    cost: "cost",
+    productID: "productID",
+    courseName: "course-name",
+    date: "date",
+    location: "location",
+    time: "time",
+  },
+};
+
+const customersTable: Table<CustomerRecord> = {
+  name: "customer",
+  baseId: AIRTABLE_BASE_ID,
+  tableId: AIRTABLE_TABLE_IDS.CUSTOMERS,
+  schema: {
+    first_name: "string",
+    last_name: "string",
+    email: "string",
+    phone: "string",
+    stripeID: "string | null",
+  },
+  mappings: {
+    first_name: "first_name",
+    last_name: "last_name",
+    email: "email",
+    phone: "phone",
+    stripeID: "stripeID",
+  },
+};
+
+function escapeAirtableFormulaValue(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
 
 export default defineEventHandler(async (event) => {
+  const config = useRuntimeConfig(event);
   const stripe = await useServerStripe(event);
 
   if (!config.airtableKey) {
@@ -35,7 +103,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event);
-
   const parsed = registrationSchema.safeParse(body);
   if (!parsed.success) {
     throw createError({
@@ -46,47 +113,36 @@ export default defineEventHandler(async (event) => {
   }
 
   const { first_name, last_name, email, phonenumber, sessionId } = parsed.data;
+  const db = new AirtableTs({ apiKey: config.airtableKey });
 
-  AIRTABLE.configure({ apiKey: config.airtableKey });
-  const base = AIRTABLE.base("apptCFjP3Ns4FdGGi");
-
-  // Verify session exists
-  const [sessionError, sessionRecord] = await catchError(
-    base("Sessions").find(sessionId),
-  );
-  if (sessionError) {
+  let sessionRecord: SessionRecord;
+  try {
+    sessionRecord = await db.get(sessionsTable, sessionId);
+  } catch (error: any) {
     throw createError({
       statusCode: 404,
       statusMessage: "Session Not Found",
-      message: sessionError.message,
+      message: error?.message ?? "Session not found",
     });
   }
 
-  const [userError, userRecord] = await catchError(
-    base("Customers")
-      .select({
-        filterByFormula: `{email}="${email}"`,
-      })
-      .all(),
-  );
-  if (userError) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: "Not Found",
-      message: "User not found",
-    });
-  }
+  const escapedEmail = escapeAirtableFormulaValue(email.toLowerCase().trim());
+  const existingUsers = await db.scan(customersTable, {
+    maxRecords: 1,
+    filterByFormula: `{email}="${escapedEmail}"`,
+  });
 
-  let customerID: string | undefined;
-  let user: any | undefined;
+  let user = existingUsers[0];
+  let customerID = user?.stripeID ?? undefined;
 
-  if (userRecord.length < 1) {
-    user = await base("Customers").create({
-      first_name: first_name,
-      last_name: last_name,
-      email: email,
+  if (!user) {
+    user = await db.insert(customersTable, {
+      first_name,
+      last_name,
+      email: email.toLowerCase().trim(),
       phone: phonenumber,
     });
+
     const customer = await stripe.customers.create({
       email,
       name: `${first_name} ${last_name}`,
@@ -95,32 +151,51 @@ export default defineEventHandler(async (event) => {
         sessionId: user.id,
       },
     });
-    await base("Customers").update(user.id, {
+
+    user = await db.update(customersTable, {
+      id: user.id,
       stripeID: customer.id,
     });
-
     customerID = customer.id;
-  } else {
-    user = userRecord[0];
-    customerID = user.fields.stripeID;
+  } else if (!customerID) {
+    const customer = await stripe.customers.create({
+      email,
+      name: `${first_name} ${last_name}`,
+      phone: phonenumber,
+      metadata: {
+        sessionId: user.id,
+      },
+    });
+
+    user = await db.update(customersTable, {
+      id: user.id,
+      stripeID: customer.id,
+    });
+    customerID = customer.id;
   }
 
-  const product_cost = sessionRecord.fields.cost[0] * 100;
-  const productID = sessionRecord.fields.productID[0];
+  const productCost = sessionRecord.cost[0];
+  const productID = sessionRecord.productID[0];
+
+  if (!productCost || !productID) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "Server Misconfiguration",
+      message: "Session is missing Stripe product/cost configuration",
+    });
+  }
 
   const successUrl = `${config.public.siteUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${config.public.siteUrl}/cancel`;
 
-  console.log(config.public);
-
-  const session = await stripe.checkout.sessions.create({
+  const checkoutSession = await stripe.checkout.sessions.create({
     mode: "payment",
     customer: customerID,
     line_items: [
       {
         price_data: {
           currency: "usd",
-          unit_amount: product_cost,
+          unit_amount: Math.round(productCost * 100),
           product: productID,
         },
         quantity: 1,
@@ -128,20 +203,20 @@ export default defineEventHandler(async (event) => {
     ],
     metadata: {
       sessionID: sessionRecord.id,
-      customerID: user?.id,
+      customerID: user.id,
       first_name,
       last_name,
       email,
-      courseName: sessionRecord.fields["course-name"],
-      courseDate: sessionRecord.fields["date"],
-      courseLocation: sessionRecord.fields["location"],
-      courseTime: sessionRecord.fields["time"],
+      courseName: sessionRecord.courseName,
+      courseDate: sessionRecord.date,
+      courseLocation: sessionRecord.location,
+      courseTime: sessionRecord.time,
     },
     success_url: successUrl,
     cancel_url: cancelUrl,
   });
 
-  if (session.url == null) {
+  if (!checkoutSession.url) {
     throw createError({
       statusCode: 500,
       statusMessage: "Internal Server Error",
@@ -150,6 +225,6 @@ export default defineEventHandler(async (event) => {
   }
 
   return {
-    url: session.url,
+    url: checkoutSession.url,
   };
 });

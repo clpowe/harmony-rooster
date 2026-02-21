@@ -1,6 +1,10 @@
 import { useServerStripe } from "#stripe/server";
 import { AirtableTs, type Table } from "airtable-ts";
 import type Stripe from "stripe";
+import {
+  AIRTABLE_BASE_ID,
+  AIRTABLE_TABLE_IDS,
+} from "../../../shared/constants/airtable";
 
 type SessionRecord = {
   id: string;
@@ -22,26 +26,24 @@ type RegistrationEvent =
   | Stripe.CheckoutSessionAsyncPaymentSucceededEvent
   | Stripe.CheckoutSessionAsyncPaymentFailedEvent;
 
-const BASE_ID = "apptCFjP3Ns4FdGGi";
-
 const sessionsTable: Table<SessionRecord> = {
   name: "session",
-  baseId: BASE_ID,
-  tableId: "Sessions",
+  baseId: AIRTABLE_BASE_ID,
+  tableId: AIRTABLE_TABLE_IDS.SESSIONS,
   schema: {},
 };
 
 const customersTable: Table<CustomerRecord> = {
   name: "customer",
-  baseId: BASE_ID,
-  tableId: "Customers",
+  baseId: AIRTABLE_BASE_ID,
+  tableId: AIRTABLE_TABLE_IDS.CUSTOMERS,
   schema: {},
 };
 
 const registrationsTable: Table<RegistrationRecord> = {
   name: "registration",
-  baseId: BASE_ID,
-  tableId: "Registrations",
+  baseId: AIRTABLE_BASE_ID,
+  tableId: AIRTABLE_TABLE_IDS.REGISTRATIONS,
   schema: {
     Name: "string",
     Session: "string[]",

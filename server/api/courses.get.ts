@@ -1,4 +1,8 @@
-import AIRTABLE from "airtable";
+import { AirtableTs, type Table } from "airtable-ts";
+import {
+  AIRTABLE_BASE_ID,
+  AIRTABLE_TABLE_IDS,
+} from "../../shared/constants/airtable";
 
 type Session = {
   id: string;
@@ -19,51 +23,115 @@ type Course = {
   sessions?: Session[];
 };
 
+type CourseRecord = {
+  id: string;
+  sessions: string[];
+  courseName: string;
+  description: string;
+  duration: number;
+  cost: number;
+};
+
+type SessionRecord = {
+  id: string;
+  sessionName: string;
+  date: string;
+  time: string;
+  capacity: number;
+  spotsAvailable: number;
+  location: string;
+};
+
+const coursesTable: Table<CourseRecord> = {
+  name: "course",
+  baseId: AIRTABLE_BASE_ID,
+  tableId: AIRTABLE_TABLE_IDS.COURSES,
+  schema: {
+    sessions: "string[]",
+    courseName: "string",
+    description: "string",
+    duration: "number",
+    cost: "number",
+  },
+  mappings: {
+    sessions: "sessions",
+    courseName: "course-name",
+    description: "description",
+    duration: "duration",
+    cost: "cost",
+  },
+};
+
+const sessionsTable: Table<SessionRecord> = {
+  name: "session",
+  baseId: AIRTABLE_BASE_ID,
+  tableId: AIRTABLE_TABLE_IDS.SESSIONS,
+  schema: {
+    sessionName: "string",
+    date: "string",
+    time: "string",
+    capacity: "number",
+    spotsAvailable: "number",
+    location: "string",
+  },
+  mappings: {
+    sessionName: "session-name",
+    date: "date",
+    time: "time",
+    capacity: "capacity",
+    spotsAvailable: "spots-available",
+    location: "location",
+  },
+};
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
 
-  AIRTABLE.configure({ apiKey: config.airtableKey });
-  const base = AIRTABLE.base("apptCFjP3Ns4FdGGi");
+  if (!config.airtableKey) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "Server Misconfiguration",
+      message: "Missing Airtable API key",
+    });
+  }
 
-  const records = await base("Courses")
-    .select({ maxRecords: 4, view: "Grid view" })
-    .firstPage();
+  const db = new AirtableTs({ apiKey: config.airtableKey });
 
-  const courses: Course[] = [];
+  const records = await db.scan(coursesTable, {
+    maxRecords: 4,
+    view: "Grid view",
+  });
 
   const today = new Date();
 
-  for (const record of records) {
-    const sessionIds: string[] = record.get("sessions") || []; // be sure the field name is exact
-    const sessions: Session[] = [];
+  const courses = await Promise.all(
+    records.map(async (record): Promise<Course> => {
+      const sessionRecords = await Promise.all(
+        (record.sessions ?? []).map((id) => db.get(sessionsTable, id)),
+      );
 
-    for (const id of sessionIds) {
-      const r = await base("Sessions").find(id);
+      const sessions: Session[] = sessionRecords
+        .filter((session) => new Date(session.date) >= today)
+        .map((session) => ({
+          id: session.id,
+          session_name: session.sessionName,
+          date: session.date,
+          time: session.time,
+          capacity: session.capacity,
+          spots_available: session.spotsAvailable,
+          location: session.location,
+        }));
 
-      if (new Date(r.get("date") as string) < today) {
-        continue;
-      }
-
-      sessions.push({
-        id: r.id as string,
-        session_name: r.get("session-name") as string,
-        date: r.get("date") as string,
-        time: r.get("time") as string,
-        capacity: r.get("capacity") as number,
-        spots_available: r.get("spots-available") as number,
-        location: r.get("location") as string,
-      });
-    }
-
-    courses.push({
-      id: record.id,
-      course_name: record.get("course-name") as string,
-      description: record.get("description") as string,
-      duration: record.get("duration") as number,
-      cost: record.get("cost") as number,
-      sessions,
-    });
-  }
+      return {
+        id: record.id,
+        course_name: record.courseName,
+        description: record.description,
+        duration: record.duration,
+        cost: record.cost,
+        sessions,
+      };
+    }),
+  );
 
   return courses;
 });

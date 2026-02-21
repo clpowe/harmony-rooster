@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@formkit/tempo':
+        specifier: ^0.1.2
+        version: 0.1.2
       '@nuxtjs/robots':
         specifier: ^4.1.11
         version: 4.1.11(magicast@0.5.2)(vite@5.4.21(@types/node@25.3.0)(terser@5.46.0))(vue@3.5.28(typescript@5.9.3))
@@ -830,6 +833,9 @@ packages:
 
   '@floating-ui/vue@1.1.10':
     resolution: {integrity: sha512-vdf8f6rHnFPPLRsmL4p12wYl+Ux4mOJOkjzKEMYVnwdf7UFdvBtHlLvQyx8iKG5vhPRbDRgZxdtpmyigDPjzYg==}
+
+  '@formkit/tempo@0.1.2':
+    resolution: {integrity: sha512-jNPPbjL8oj7hK3eHX++CwbR6X4GKQt+x00/q4yeXkwynXHGKL27dylYhpEgwrmediPP4y7s0XtN1if/M/JYujg==}
 
   '@iconify-json/bi@1.2.7':
     resolution: {integrity: sha512-IPz8WNxmLkH1I9msl+0Q4OnmjjvP4uU0Z61a4i4sqonB6vKSbMGUWuGn8/YuuszlReVj8rf+3gNv5JU8Xoljyg==}
@@ -5423,6 +5429,8 @@ snapshots:
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
+
+  '@formkit/tempo@0.1.2': {}
 
   '@iconify-json/bi@1.2.7':
     dependencies:
