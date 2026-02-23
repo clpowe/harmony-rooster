@@ -29,7 +29,7 @@ type SessionRecord = {
   id: string;
   cost: number[];
   productID: string[];
-  courseName: string;
+  sessionName: string;
   date: string;
   location: string;
   time: string;
@@ -51,7 +51,7 @@ const sessionsTable: Table<SessionRecord> = {
   schema: {
     cost: "number[]",
     productID: "string[]",
-    courseName: "string",
+    sessionName: "string",
     date: "string",
     location: "string",
     time: "string",
@@ -59,7 +59,7 @@ const sessionsTable: Table<SessionRecord> = {
   mappings: {
     cost: "cost",
     productID: "productID",
-    courseName: "course-name",
+    sessionName: "session-name",
     date: "date",
     location: "location",
     time: "time",
@@ -190,6 +190,7 @@ export default defineEventHandler(async (event) => {
 
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: "payment",
+    payment_method_types: ["card"],
     customer: customerID,
     line_items: [
       {
@@ -207,7 +208,7 @@ export default defineEventHandler(async (event) => {
       first_name,
       last_name,
       email,
-      courseName: sessionRecord.courseName,
+      courseName: sessionRecord.sessionName,
       courseDate: sessionRecord.date,
       courseLocation: sessionRecord.location,
       courseTime: sessionRecord.time,

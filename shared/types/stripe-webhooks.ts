@@ -17,5 +17,4 @@ export type StripeWebhookRegistrationRecord = {
 
 export type StripeWebhookRegistrationEvent =
   | Stripe.CheckoutSessionCompletedEvent
-  | Stripe.CheckoutSessionAsyncPaymentSucceededEvent
-  | Stripe.CheckoutSessionAsyncPaymentFailedEvent;
+  | Stripe.CheckoutSessionAsyncPaymentSucceededEvent;

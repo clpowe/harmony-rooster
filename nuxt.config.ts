@@ -32,13 +32,39 @@ export default defineNuxtConfig({
     "nuxt-security",
     "@nuxt/fonts",
     "@unlok-co/nuxt-stripe",
+    "@posthog/nuxt",
   ],
   compatibilityDate: "2024-11-16",
   runtimeConfig: {
     airtableKey: "",
     stripeWebhookSecretKey: "",
     public: {
-      siteUrl: "http://localhost:3000",
+      siteUrl: "",
+    },
+  },
+  sourcemap: {
+    client: "hidden",
+  },
+  nitro: {
+    rollupConfig: {
+      output: {
+        sourcemapExcludeSources: false,
+      },
+    },
+  },
+  posthogConfig: {
+    publicKey: "phc_qTwFbI32FdKblt68dmmYUaStTr4e0s3dzXdnlWc0AP9",
+    host: "https://us.i.posthog.com",
+    clientConfig: {
+      capture_exceptions: true,
+    },
+    serverConfig: {
+      enableExceptionAutocapture: true,
+    },
+    sourcemaps: {
+      enabled: true,
+      project: process.env.POSTHOG_PROJECTID,
+      personalApiKey: process.env.POSTHOG_KEY ?? "",
     },
   },
   stripe: {

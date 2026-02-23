@@ -30,6 +30,13 @@ if (error.value) {
 }
 </script>
 <template>
+    <div v-if="checkoutData?.status === 'paid'">
+        <h1>Payment Successful!</h1>
+        <p>Thank you for your purchase.</p>
+    </div>
+    <div v-else>
+        <h1>Payment Pending or Failed</h1>
+    </div>
     <div>
         <pre>{{ checkoutData }}</pre>
     </div>

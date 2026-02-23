@@ -72,6 +72,7 @@ export default defineEventHandler(async (event) => {
     : null;
 
   return {
+    status: checkoutSession.payment_status,
     payment: {
       brand: paymentMethod?.card?.brand ?? null,
       last4: paymentMethod?.card?.last4 ?? null,
