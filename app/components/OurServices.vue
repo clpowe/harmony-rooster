@@ -48,8 +48,12 @@ const services: Service[] = [
 
         <ul class="services-wrapper">
             <li v-for="item in services" :key="item.title" class="service-item">
-                <component :is="item.icon" class="icon" />
-                <Typography tag="p" variant="text">{{ item.title }}</Typography>
+                <div class="title">
+                    <component :is="item.icon" class="icon" />
+                    <Typography tag="h3" variant="heading-small">{{
+                        item.title
+                    }}</Typography>
+                </div>
                 <Typography tag="p" variant="text">{{ item.text }}</Typography>
             </li>
         </ul>
@@ -64,6 +68,11 @@ ul {
 .our-services {
     display: grid;
     gap: var(--space-lg);
+    grid-template-columns: 1fr;
+
+    @media (min-width: 1000px) {
+        grid-template-columns: minmax(400px, 1fr) auto;
+    }
 }
 
 .content_wrapper {
@@ -76,7 +85,11 @@ ul {
 .services-wrapper {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: var(--space-sm);
+    gap: var(--space-md);
+
+    @media (min-width: 768px) {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 .service-item {
@@ -84,11 +97,18 @@ ul {
     background: var(--surface-1);
     padding: var(--space-sm);
     border-radius: var(--radius-3);
-    border: 1px solid var(--neutral-200);
+    gap: var(--space-sm);
+
+    .title {
+        display: flex;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+    }
 
     .icon {
         font-size: var(--size-8);
-        margin-bottom: var(--space-xs);
+        margin: 0;
     }
 }
 </style>
