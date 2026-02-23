@@ -11,6 +11,7 @@ export type StripeWebhookCustomerRecord = {
 export type StripeWebhookRegistrationRecord = {
   id: string;
   Name: string;
+  Status: string;
   Session: string[];
   Customer: string[];
 };

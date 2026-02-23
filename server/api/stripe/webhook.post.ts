@@ -22,6 +22,8 @@ const registrationsTable: Table<StripeWebhookRegistrationRecord> = {
   },
 };
 
+let airtableClient: AirtableTs | null = null;
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
   const stripe = await useServerStripe(event);
@@ -63,7 +65,19 @@ export default defineEventHandler(async (event) => {
     stripeEvent.type === "checkout.session.completed" ||
     stripeEvent.type === "checkout.session.async_payment_succeeded"
   ) {
-    const session = stripeEvent.data.object as Stripe.Checkout.Session;
+    const session = stripeEvent.data.object;
+
+    // For checkout.session.completed, only proceed if payment is confirmed.
+    // Async payment methods will trigger async_payment_succeeded separately.
+    if (
+      stripeEvent.type === "checkout.session.completed" &&
+      session.payment_status === "unpaid"
+    ) {
+      console.log(
+        `Skipping registration for session ${session.id}: payment still processing`,
+      );
+      return { received: true };
+    }
 
     // Extract metadata
     const { sessionID, customerID, first_name, last_name, email } =
@@ -83,7 +97,10 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const db = new AirtableTs({ apiKey: config.airtableKey });
+    if (!airtableClient) {
+      airtableClient = new AirtableTs({ apiKey: config.airtableKey });
+    }
+    const db = airtableClient;
 
     try {
       await db.insert(registrationsTable, {

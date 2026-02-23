@@ -2,13 +2,11 @@
 import { useRoute } from "vue-router";
 import { ref } from "vue";
 
-const { stripe } = useClientStripe();
-
 const route = useRoute();
 const sessionId = ref(route.query.session_id as string);
 
 if (!sessionId.value) {
-    navigateTo("/");
+    await navigateTo("/");
 }
 
 // Fetch checkout data immediately when page loads
