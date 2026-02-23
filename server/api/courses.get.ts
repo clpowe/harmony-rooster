@@ -1,46 +1,5 @@
 import { AirtableTs, type Table } from "airtable-ts";
-import {
-  AIRTABLE_BASE_ID,
-  AIRTABLE_TABLE_IDS,
-} from "../../shared/constants/airtable";
-
-type Session = {
-  id: string;
-  session_name: string;
-  date: string;
-  time: string;
-  capacity: number;
-  spots_available: number;
-  location: string;
-};
-
-type Course = {
-  id: string;
-  course_name: string;
-  description: string;
-  duration: number;
-  cost: number;
-  sessions?: Session[];
-};
-
-type CourseRecord = {
-  id: string;
-  sessions: string[];
-  courseName: string;
-  description: string;
-  duration: number;
-  cost: number;
-};
-
-type SessionRecord = {
-  id: string;
-  sessionName: string;
-  date: string;
-  time: string;
-  capacity: number;
-  spotsAvailable: number;
-  location: string;
-};
+import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "@constants/airtable";
 
 const coursesTable: Table<CourseRecord> = {
   name: "course",
@@ -62,7 +21,7 @@ const coursesTable: Table<CourseRecord> = {
   },
 };
 
-const sessionsTable: Table<SessionRecord> = {
+const sessionsTable: Table<CourseSessionRecord> = {
   name: "session",
   baseId: AIRTABLE_BASE_ID,
   tableId: AIRTABLE_TABLE_IDS.SESSIONS,
@@ -104,34 +63,48 @@ export default defineEventHandler(async (event) => {
 
   const today = new Date();
 
-  const courses = await Promise.all(
-    records.map(async (record): Promise<Course> => {
-      const sessionRecords = await Promise.all(
-        (record.sessions ?? []).map((id) => db.get(sessionsTable, id)),
-      );
-
-      const sessions: Session[] = sessionRecords
-        .filter((session) => new Date(session.date) >= today)
-        .map((session) => ({
-          id: session.id,
-          session_name: session.sessionName,
-          date: session.date,
-          time: session.time,
-          capacity: session.capacity,
-          spots_available: session.spotsAvailable,
-          location: session.location,
-        }));
-
-      return {
-        id: record.id,
-        course_name: record.courseName,
-        description: record.description,
-        duration: record.duration,
-        cost: record.cost,
-        sessions,
-      };
-    }),
+  const allSessionIds = Array.from(
+    new Set(records.flatMap((r) => r.sessions ?? [])),
   );
+
+  const sessionMap = new Map<string, CourseSessionRecord & { id: string }>();
+
+  if (allSessionIds.length > 0) {
+    const formula = `OR(${allSessionIds
+      .map((id) => `RECORD_ID()='${id}'`)
+      .join(",")})`;
+
+    const sessionRecords = await db.scan(sessionsTable, {
+      filterByFormula: formula,
+    });
+
+    sessionRecords.forEach((s) => sessionMap.set(s.id, s));
+  }
+
+  const courses = records.map((record): Course => {
+    const sessions: Session[] = (record.sessions ?? [])
+      .map((id) => sessionMap.get(id))
+      .filter((s): s is CourseSessionRecord & { id: string } => !!s)
+      .filter((session) => new Date(session.date) >= today)
+      .map((session) => ({
+        id: session.id,
+        session_name: session.sessionName,
+        date: session.date,
+        time: session.time,
+        capacity: session.capacity,
+        spots_available: session.spotsAvailable,
+        location: session.location,
+      }));
+
+    return {
+      id: record.id,
+      course_name: record.courseName,
+      description: record.description,
+      duration: record.duration,
+      cost: record.cost,
+      sessions,
+    };
+  });
 
   return courses;
 });

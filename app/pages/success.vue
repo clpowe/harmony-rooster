@@ -2,13 +2,11 @@
 import { useRoute } from "vue-router";
 import { ref } from "vue";
 
-const { stripe } = useClientStripe();
-
 const route = useRoute();
 const sessionId = ref(route.query.session_id as string);
 
 if (!sessionId.value) {
-    navigateTo("/");
+    await navigateTo("/");
 }
 
 // Fetch checkout data immediately when page loads
@@ -30,6 +28,13 @@ if (error.value) {
 }
 </script>
 <template>
+    <div v-if="checkoutData?.status === 'paid'">
+        <h1>Payment Successful!</h1>
+        <p>Thank you for your purchase.</p>
+    </div>
+    <div v-else>
+        <h1>Payment Pending or Failed</h1>
+    </div>
     <div>
         <pre>{{ checkoutData }}</pre>
     </div>
