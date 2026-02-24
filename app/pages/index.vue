@@ -5,7 +5,7 @@ import RoosterBG from "@/assets/images/roosterbg.svg";
 <template>
     <main class="l-container">
         <HomeHero></HomeHero>
-        <OurServices />
+        <our-services />
         <section class="about">
             <div class="about__img">
                 <img

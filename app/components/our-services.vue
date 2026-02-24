@@ -75,9 +75,6 @@ ul {
     }
 }
 
-.content_wrapper {
-}
-
 .our-services h2 {
     margin-bottom: var(--space-xxxs);
 }
