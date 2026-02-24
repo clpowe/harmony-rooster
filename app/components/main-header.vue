@@ -1,10 +1,11 @@
 <template>
     <header class="header">
-        <NuxtLink to="/" class="logo">
+        <NuxtLink to="/" class="logo" aria-label="Harmony Rooster — Home">
             <SvgoIconRoosterbg
                 class="header__icon"
                 filled
                 :fontControlled="true"
+                aria-hidden="true"
             />
         </NuxtLink>
 
@@ -32,7 +33,7 @@
             </ul>
         </nav>
         <div class="header__actions desktop-actions">
-            <button class="u-btn u-btn--md u-btn--primary">Lets Chat</button>
+            <button class="u-btn u-btn--md u-btn--primary">Let's Chat</button>
             <button class="u-btn u-btn--md u-btn--accent">813-888-8888</button>
         </div>
     </header>
@@ -85,7 +86,6 @@
     margin-inline: auto;
     padding: var(--size-1);
     display: flex;
-    grid-template-columns: 1fr 1fr;
     align-items: center;
 }
 .header__icon {

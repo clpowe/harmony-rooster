@@ -26,9 +26,9 @@
         interpolate-size: allow-keywords;
 
         --font-family-sans:
-            "Verdana", "Sofia Pro", "Hiragino Maru Gothic ProN", Quicksand,
-            Comfortaa, Manjari, "Arial Rounded MT", "Arial Rounded MT Bold",
-            Calibri, source-sans-pro, sans-serif;
+            "Verdana", "Sofia Pro", "Hiragino Maru Gothic ProN", "Quicksand",
+            "Comfortaa", "Manjari", "Arial Rounded MT", "Arial Rounded MT Bold",
+            "Calibri", source-sans-pro, sans-serif;
 
         /* Brand hues */
         --primary-hue: 195;
@@ -495,21 +495,6 @@
    EXCEPTIONS (one-off tweaks)
    ------------------------- */
 @layer exceptions {
-    /* If you need legacy class compatibility */
-    main.l-container {
-    } /* maps old <main> styles to .l-container */
-
-    /* Back-compat aliases (optional) */
-    .card {
-        composes: u-card;
-    }
-    .base-text {
-        composes: u-text;
-    }
-    .header {
-        composes: u-header;
-    }
-
     /* If composes is unsupported in your tooling, mirror with duplicate classes: */
     .card {
         border-radius: var(--radius-lg);
