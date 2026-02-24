@@ -33,31 +33,56 @@ const services: Service[] = [
     },
 ];
 </script>
+
 <template>
-    <div class="our-services card u-surface-2">
+    <section
+        id="our-services"
+        class="our-services card u-surface-2"
+        aria-labelledby="our-services-title"
+    >
         <div class="content_wrapper">
-            <Typography tag="h2" variant="heading-medium"
+            <Typography
+                tag="h2"
+                variant="heading-medium"
+                id="our-services-title"
                 >Our <span>Services</span></Typography
             >
-            <Typography tag="p" variant="text"
+            <Typography tag="p" variant="text" id="our-services-intro"
                 >Harmony Rooster, LLC is here to help. Our team of dedicated and
                 qualified caregivers provides a helping hand with a variety of
-                needs, including</Typography
+                needs, including:</Typography
             >
         </div>
 
-        <ul class="services-wrapper">
-            <li v-for="item in services" :key="item.title" class="service-item">
+        <ul class="services-wrapper" aria-describedby="our-services-intro">
+            <li
+                v-for="(item, idx) in services"
+                :key="item.title"
+                class="service-item"
+            >
                 <div class="title">
-                    <component :is="item.icon" class="icon" />
-                    <Typography tag="h3" variant="heading-small">{{
-                        item.title
-                    }}</Typography>
+                    <component
+                        :is="item.icon"
+                        class="icon"
+                        aria-hidden="true"
+                        focusable="false"
+                    />
+                    <Typography
+                        tag="h3"
+                        variant="heading-small"
+                        :id="`service-title-${idx}`"
+                        >{{ item.title }}</Typography
+                    >
                 </div>
-                <Typography tag="p" variant="text">{{ item.text }}</Typography>
+                <Typography
+                    tag="p"
+                    variant="text"
+                    :id="`service-desc-${idx}`"
+                    >{{ item.text }}</Typography
+                >
             </li>
         </ul>
-    </div>
+    </section>
 </template>
 
 <style scoped>

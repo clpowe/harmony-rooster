@@ -11,6 +11,8 @@ type Variant =
 const props = defineProps<{
     tag: "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "p";
     variant: Variant;
+    uppercase?: boolean;
+    bold?: boolean;
 }>();
 
 const VARIANT_CLASSES: Record<Variant, string> = {
@@ -24,7 +26,13 @@ const VARIANT_CLASSES: Record<Variant, string> = {
 };
 
 const variantClass = computed(() => {
-    return VARIANT_CLASSES[props.variant];
+    return [
+        VARIANT_CLASSES[props.variant],
+        props.uppercase ? "uppercase" : "",
+        props.bold ? "bold" : "",
+    ]
+        .filter(Boolean)
+        .join(" ");
 });
 </script>
 <template>
@@ -41,8 +49,8 @@ const variantClass = computed(() => {
 
 .heading-large {
     line-break: auto;
-    font-size: clamp(2rem, 10cqw, 6rem);
-    line-height: 0.9em;
+    font-size: clamp(2.8rem, 10cqw, 6rem);
+    line-height: 1em;
 
     :deep(span:first-of-type) {
         color: var(--primary-500);
@@ -87,7 +95,7 @@ const variantClass = computed(() => {
     max-width: 75ch;
     line-height: 150%;
     font-weight: 100;
-    font-size: clamp(0.85rem, 5vw, 1rem);
+    font-size: 1rem;
     text-wrap: balance;
 
     :deep(span) {
@@ -105,5 +113,13 @@ const variantClass = computed(() => {
         font-size: 1.25rem;
         max-width: 32rem;
     }
+}
+
+.uppercase {
+    text-transform: uppercase;
+}
+
+.bold {
+    font-weight: bold;
 }
 </style>
