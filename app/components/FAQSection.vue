@@ -1,12 +1,4 @@
 <script setup lang="ts">
-import {
-  AccordionContent,
-  AccordionHeader,
-  AccordionItem,
-  AccordionRoot,
-  AccordionTrigger,
-} from "reka-ui";
-
 const accordionItems = [
   {
     value: "question-1",
@@ -16,8 +8,7 @@ const accordionItems = [
   {
     value: "question-2",
     question: "Who is eligible?",
-    answer:
-      "Yes. It's unstyled by default, giving you freedom over the look and feel.",
+    answer: "Yes. It's unstyled by default, giving you freedom over the look and feel.",
   },
   {
     value: "question-3",
@@ -38,19 +29,19 @@ const accordionItems = [
 </script>
 
 <template>
-  <section class="card faq twoCol">
-    <div>
+  <section class="faq-section u-card u-surface-2">
+    <div class="faq-section__intro l-flow">
       <Typography tag="h2" variant="heading-medium"
         ><span>Frequently</span> Asked
         <span>Questions</span>
       </Typography>
       <p>Find answers to common questions about our services</p>
     </div>
-    <div class="accordion">
+    <div class="faq-section__list">
       <template v-for="item in accordionItems" :key="item.value">
-        <div class="detailsColumn">
-          <details>
-            <summary>
+        <div class="faq-section__item">
+          <details class="faq-section__details">
+            <summary class="faq-section__summary">
               <Typography tag="h3" variant="heading-small">
                 {{ item.question }}
               </Typography>
@@ -64,29 +55,64 @@ const accordionItems = [
 </template>
 
 <style scoped>
-summary {
+.faq-section {
+  overflow: hidden;
+  display: grid;
+  position: relative;
+  grid-template-columns: 1fr 1fr;
+  container-type: inline-size;
+  background-color: var(--surface-2);
+  gap: var(--space-md);
+  align-items: center;
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-sm);
+
+  @container (inline-size > calc(25ch * 2 + 1rem)) {
+    padding: var(--space-lg) var(--space-md);
+  }
+}
+
+.faq-section__intro {
+  grid-column: span 2;
+
+  @container (inline-size > calc(25ch * 2 + 1rem)) {
+    grid-column: span 1;
+  }
+}
+
+.faq-section__list {
+  display: grid;
+  gap: var(--space-sm);
+  grid-column: span 2;
+
+  @container (inline-size > calc(25ch * 2 + 1rem)) {
+    grid-column: span 1;
+  }
+}
+
+.faq-section__item {
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--neutral-200);
+}
+
+.faq-section__summary {
   cursor: pointer;
   padding-block: 1em;
 }
-/* Chromium / Firefox */
-details summary {
-  /* Either remove the list style ... */
-  list-style: none;
 
-  /* ... or change the `display` property to something else */
+.faq-section__details summary {
+  list-style: none;
   display: flex;
 }
 
-/* Webkit */
-details summary::-webkit-details-marker {
+.faq-section__details summary::-webkit-details-marker {
   display: none;
 }
 
-details::details-content {
+.faq-section__details::details-content {
   overflow: hidden;
   height: 0;
   padding-bottom: 0;
-  /* Enable transitioning of `content-visibility` */
   transition:
     padding-bottom 0.3s,
     height 0.3s,
@@ -94,7 +120,7 @@ details::details-content {
   transition-behavior: allow-discrete;
 }
 
-details[open]::details-content {
+.faq-section__details[open]::details-content {
   height: auto;
   padding-bottom: 1em;
 }

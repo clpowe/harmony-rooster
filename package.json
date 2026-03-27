@@ -7,8 +7,9 @@
     "dev": "portless harmony-rooster nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "test": "vitest",
-    "postinstall": "nuxt prepare"
+    "test": "vp test",
+    "postinstall": "nuxt prepare",
+    "prepare": "vp config"
   },
   "dependencies": {
     "@formkit/tempo": "^0.1.2",
@@ -45,7 +46,14 @@
     "nuxt-svgo": "^4.2.6",
     "postcss-nesting": "^13.0.2",
     "typescript": "^5.9.3",
-    "vitest": "^2.1.9"
+    "vite-plus": "latest",
+    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
   },
-  "packageManager": "pnpm@10.15.1+sha512.34e538c329b5553014ca8e8f4535997f96180a1d0f614339357449935350d924e22f8614682191264ec33d1462ac21561aff97f6bb18065351c162c7e8f6de67"
+  "packageManager": "pnpm@10.15.1+sha512.34e538c329b5553014ca8e8f4535997f96180a1d0f614339357449935350d924e22f8614682191264ec33d1462ac21561aff97f6bb18065351c162c7e8f6de67",
+  "pnpm": {
+    "overrides": {
+      "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+      "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+    }
+  }
 }
