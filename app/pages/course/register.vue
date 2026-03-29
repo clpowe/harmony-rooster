@@ -1,16 +1,15 @@
 <script setup lang="ts">
-const route = useRoute();
-const { getSessionById } = useCourses();
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
 
+const route = useRoute();
+const { getSessionById, refreshCourses } = useCourses();
+
 const session = getSessionById(route.query.session_id as string);
+const isSessionFull = computed(() => (session.value?.spots_available ?? 0) <= 0);
+const submitDisabled = computed(() => !session.value || isSessionFull.value);
 
-// Submit handler: log all inputs + session_Id
-const { refreshCourses } = useCourses();
-
-// Zod schema for validation
 const registrationSchema = z.object({
   first_name: z
     .string()
@@ -29,17 +28,20 @@ const registrationSchema = z.object({
     ),
 });
 
-// Setup VeeValidate form
 const { defineField, handleSubmit, errors, resetForm } = useForm({
   validationSchema: toTypedSchema(registrationSchema),
 });
-// Bind fields
+
 const [first_name, first_nameAttrs] = defineField("first_name");
 const [last_name, last_nameAttrs] = defineField("last_name");
 const [email, emailAttrs] = defineField("email");
 const [phonenumber, phonenumberAttrs] = defineField("phonenumber");
 
 const onSubmit = handleSubmit(async (values) => {
+  if (submitDisabled.value) {
+    return;
+  }
+
   const payload = {
     first_name: first_name.value,
     last_name: last_name.value,
@@ -57,112 +59,156 @@ const onSubmit = handleSubmit(async (values) => {
     await navigateTo(response.url, { external: true });
     await refreshCourses();
   } catch (e) {
-    // optionally handle toast/notification
     console.error("Registration failed", e);
   }
 
-  // Optionally close and reset
   resetForm();
 });
 </script>
 
 <template>
   <section class="registration-page l-container">
-    <NuxtLink to="/" class="registration-page__back">Back</NuxtLink>
+    <NuxtLink to="/" class="registration-page__back button button--sm button--secondary">
+      <Icon name="lucide:arrow-left" aria-hidden="true" />
+      <span>Back</span>
+    </NuxtLink>
 
-    <div v-if="session" class="registration-page__layout">
-      <article class="registration-page__summary u-card u-surface-2">
-        <div class="l-flow">
-          <Typography tag="h1" variant="heading-medium"> Register for This Session </Typography>
-          <Typography tag="p" variant="text">
-            Review the session details, then complete your contact information to continue to
-            payment.
-          </Typography>
+    <div v-if="session" class="registration-page__shell">
+      <article class="registration-page__card">
+        <div class="registration-page__summary">
+          <p v-if="isSessionFull" class="registration-page__status">This Session is full</p>
+
+          <div class="registration-page__intro">
+            <h1 class="registration-page__title">{{ session.course_name }}</h1>
+            <p class="registration-page__description">{{ session.course_description }}</p>
+          </div>
+
+          <p class="registration-page__cost">Session Cost: ${{ session.course_cost }}</p>
+
+          <dl class="registration-page__details">
+            <div class="registration-page__detail">
+              <Icon
+                name="lucide:clock-4"
+                class="registration-page__detail-icon"
+                aria-hidden="true"
+              />
+              <div>
+                <dt>Date</dt>
+                <dd>{{ formatDate(session.date) }}</dd>
+              </div>
+            </div>
+
+            <div class="registration-page__detail">
+              <Icon
+                name="lucide:clock-4"
+                class="registration-page__detail-icon"
+                aria-hidden="true"
+              />
+              <div>
+                <dt>Time</dt>
+                <dd>{{ session.time }}</dd>
+              </div>
+            </div>
+
+            <div class="registration-page__detail">
+              <Icon
+                name="lucide:map-pin"
+                class="registration-page__detail-icon"
+                aria-hidden="true"
+              />
+              <div>
+                <dt>Location</dt>
+                <dd>{{ session.location }}</dd>
+              </div>
+            </div>
+
+            <div class="registration-page__detail">
+              <Icon name="lucide:users" class="registration-page__detail-icon" aria-hidden="true" />
+              <div>
+                <dt>Available Seats</dt>
+                <dd>{{ session.spots_available }}</dd>
+              </div>
+            </div>
+          </dl>
         </div>
 
-        <dl class="registration-page__details">
-          <div class="registration-page__detail">
-            <dt>Date</dt>
-            <dd>{{ formatDate(session.date) }}</dd>
+        <form @submit.prevent="onSubmit" class="registration-page__form">
+          <div class="registration-page__form-header">
+            <span class="registration-page__step">1</span>
+            <h2 class="registration-page__form-title">Contact Information</h2>
           </div>
-          <div class="registration-page__detail">
-            <dt>Time</dt>
-            <dd>{{ session.time }}</dd>
+
+          <div class="form-field">
+            <label for="first_name" class="form-field__label">First Name</label>
+            <input
+              id="first_name"
+              v-model="first_name"
+              v-bind="first_nameAttrs"
+              type="text"
+              class="form-field__input registration-page__input"
+              :class="{ 'is-invalid': errors.first_name }"
+              placeholder="Name"
+            />
+            <span v-if="errors.first_name" class="form-field__error">{{ errors.first_name }}</span>
           </div>
-          <div class="registration-page__detail">
-            <dt>Location</dt>
-            <dd>{{ session.location }}</dd>
+
+          <div class="form-field">
+            <label for="last_name" class="form-field__label">Last Name</label>
+            <input
+              id="last_name"
+              v-model="last_name"
+              v-bind="last_nameAttrs"
+              type="text"
+              class="form-field__input registration-page__input"
+              :class="{ 'is-invalid': errors.last_name }"
+              placeholder="Name"
+            />
+            <span v-if="errors.last_name" class="form-field__error">{{ errors.last_name }}</span>
           </div>
-          <div class="registration-page__detail">
-            <dt>Available Seats</dt>
-            <dd>{{ session.spots_available }}</dd>
+
+          <div class="form-field">
+            <label for="email" class="form-field__label">Email</label>
+            <input
+              id="email"
+              v-model="email"
+              v-bind="emailAttrs"
+              type="email"
+              class="form-field__input registration-page__input"
+              :class="{ 'is-invalid': errors.email }"
+              placeholder="ecample@example.com"
+            />
+            <span v-if="errors.email" class="form-field__error">{{ errors.email }}</span>
           </div>
-        </dl>
+
+          <div class="form-field">
+            <label for="phonenumber" class="form-field__label">Contact Number</label>
+            <input
+              id="phonenumber"
+              v-model="phonenumber"
+              v-bind="phonenumberAttrs"
+              type="tel"
+              class="form-field__input registration-page__input"
+              :class="{ 'is-invalid': errors.phonenumber }"
+              placeholder="ex. (555)-555-5555"
+            />
+            <span v-if="errors.phonenumber" class="form-field__error">{{
+              errors.phonenumber
+            }}</span>
+          </div>
+
+          <button
+            type="submit"
+            class="button button--sm button--primary registration-page__submit"
+            :disabled="submitDisabled"
+          >
+            Submit Registration
+          </button>
+        </form>
       </article>
-
-      <form @submit.prevent="onSubmit" class="registration-page__form u-card u-surface-2">
-        <Typography tag="h2" variant="heading-small"> Contact Information </Typography>
-
-        <div class="form-field">
-          <label for="first_name" class="form-field__label">First Name</label>
-          <input
-            id="first_name"
-            v-model="first_name"
-            v-bind="first_nameAttrs"
-            type="text"
-            class="form-field__input"
-            :class="{ 'is-invalid': errors.first_name }"
-            placeholder="Enter your full name"
-          />
-          <span v-if="errors.first_name" class="form-field__error">{{ errors.first_name }}</span>
-        </div>
-        <div class="form-field">
-          <label for="last_name" class="form-field__label">Last Name</label>
-          <input
-            id="last_name"
-            v-model="last_name"
-            v-bind="last_nameAttrs"
-            type="text"
-            class="form-field__input"
-            :class="{ 'is-invalid': errors.last_name }"
-            placeholder="Enter your full name"
-          />
-          <span v-if="errors.last_name" class="form-field__error">{{ errors.last_name }}</span>
-        </div>
-        <div class="form-field">
-          <label for="email" class="form-field__label">Email *</label>
-          <input
-            id="email"
-            v-model="email"
-            v-bind="emailAttrs"
-            type="email"
-            class="form-field__input"
-            :class="{ 'is-invalid': errors.email }"
-            placeholder="your.email@example.com"
-          />
-          <span v-if="errors.email" class="form-field__error">{{ errors.email }}</span>
-        </div>
-
-        <div class="form-field">
-          <label for="phonenumber" class="form-field__label">Phone Number *</label>
-          <input
-            id="phonenumber"
-            v-model="phonenumber"
-            v-bind="phonenumberAttrs"
-            type="tel"
-            class="form-field__input"
-            :class="{ 'is-invalid': errors.phonenumber }"
-            placeholder="(123) 456-7890"
-          />
-          <span v-if="errors.phonenumber" class="form-field__error">{{ errors.phonenumber }}</span>
-        </div>
-
-        <button type="submit" class="button button--md button--primary">Submit Registration</button>
-      </form>
     </div>
 
     <div v-else class="registration-page__empty u-card u-surface-2 l-flow">
-      <Typography tag="h2" variant="heading-small"> Session not found </Typography>
+      <Typography tag="h2" variant="heading-small">Session not found</Typography>
       <Typography tag="p" variant="text">
         We could not find the selected course session. Go back and pick another available date.
       </Typography>
@@ -173,57 +219,197 @@ const onSubmit = handleSubmit(async (values) => {
 <style scoped>
 .registration-page {
   display: grid;
-  gap: var(--space-lg);
+  gap: clamp(1rem, 3vw, 2rem);
+  padding-block: clamp(1rem, 4vw, 3rem) var(--space-xxl);
 }
 
 .registration-page__back {
-  width: fit-content;
-  font-weight: 700;
-  text-decoration: none;
-  color: var(--primary-500);
+  justify-self: start;
+  gap: 0.75rem;
+  min-height: 2.5rem;
+  color: var(--text-1);
+  border-color: oklch(53.48% 0 89.88);
+  background: var(--surface-1);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
-.registration-page__layout {
+.registration-page__back :deep(.icon) {
+  font-size: 1rem;
+}
+
+.registration-page__shell {
+  width: 100%;
+}
+
+.registration-page__card {
   display: grid;
-  gap: var(--space-lg);
+  gap: clamp(1.5rem, 4vw, 2.75rem);
+  padding: clamp(1.5rem, 4vw, 2rem);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--neutral-200) 65%, transparent);
 }
 
 .registration-page__summary,
 .registration-page__form {
   display: grid;
-  gap: var(--space-md);
+  align-content: start;
+}
+
+.registration-page__summary {
+  gap: 1rem;
+}
+
+.registration-page__form {
+  gap: 0.75rem;
+}
+
+.registration-page__status {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background: oklch(59.15% 0.1857 31.78);
+  color: var(--surface-1);
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.registration-page__intro {
+  display: grid;
+  gap: 1rem;
+}
+
+.registration-page__title {
+  color: var(--button-primary);
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.2;
+  font-weight: 400;
+}
+
+.registration-page__description {
+  max-width: 26rem;
+  color: var(--button-disabled-ink);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.registration-page__cost {
+  width: fit-content;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--button-primary-active);
+  color: var(--surface-1);
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .registration-page__details {
   display: grid;
-  gap: var(--space-sm);
+  gap: 1rem;
 }
 
 .registration-page__detail {
   display: grid;
-  gap: var(--space-xxxs);
-  padding-bottom: var(--space-sm);
-  border-bottom: 1px solid var(--neutral-200);
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.registration-page__detail-icon {
+  margin-top: 0.15rem;
+  font-size: 1.5rem;
+  color: var(--text-1);
 }
 
 .registration-page__detail dt {
-  color: var(--text-2);
-  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--text-1) 78%, var(--button-disabled-ink));
+  font-size: 1.5rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  line-height: 1.2;
 }
 
 .registration-page__detail dd {
-  color: var(--text-1);
+  color: color-mix(in oklch, var(--text-1) 82%, var(--button-disabled-ink));
   font-size: 1rem;
-  font-weight: 500;
+  line-height: 1.25;
 }
 
-@media (min-width: 768px) {
-  .registration-page__layout {
-    grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+.registration-page__form-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.registration-page__step {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: var(--button-accent);
+  color: var(--text-1);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.registration-page__form-title {
+  color: color-mix(in oklch, var(--text-1) 70%, var(--button-disabled-ink));
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.registration-page__input {
+  min-height: 4rem;
+  padding: 0.75rem 1rem;
+  border-color: oklch(57.52% 0 89.88);
+  border-radius: 0.75rem;
+  background: transparent;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.registration-page__input::placeholder {
+  color: oklch(74.52% 0 89.88);
+}
+
+.registration-page__submit {
+  justify-self: start;
+  margin-top: 0.75rem;
+}
+
+.registration-page__empty {
+  display: grid;
+  gap: var(--space-md);
+}
+
+@media (max-width: 47.99rem) {
+  .registration-page__card {
+    border-radius: var(--radius-md);
+  }
+
+  .registration-page__summary {
+    order: 1;
+  }
+
+  .registration-page__form {
+    order: 2;
+  }
+}
+
+@media (min-width: 48rem) {
+  .registration-page__card {
+    grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 23rem);
     align-items: start;
+  }
+}
+
+@media (min-width: 64rem) {
+  .registration-page__card {
+    padding: 2.5rem;
   }
 }
 </style>

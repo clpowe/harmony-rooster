@@ -203,7 +203,7 @@ function recordToOtlpAttributes(record: LogRecord) {
       return {
         key,
         value: {
-          stringValue: String(serializedValue),
+          stringValue: JSON.stringify(serializedValue),
         },
       };
     })

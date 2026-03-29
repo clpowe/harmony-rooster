@@ -48,11 +48,14 @@
     --neutral-950: oklch(26.86% 0 0);
 
     --text-1-light: oklch(21.46% 0 0);
-    --text-2-light: oklch(50.41% 0 0);
+    --text-2-light: var(--neutral-700);
     --danger-500: oklch(58% 0.217 27.33);
 
-    --background-1-light: var(--neutral-50);
-    --background-2-light: #fff;
+    --background-1-light: #fff;
+    --background-2-light: var(--neutral-50);
+    --surface-muted-light: var(--neutral-100);
+    --status-full-light: color-mix(in oklch, var(--danger-500) 16%, var(--surface-1));
+    --status-full-strong-light: color-mix(in oklch, var(--danger-500) 88%, var(--surface-1));
 
     --primary-100: var(--primary-light-100);
     --primary-300: var(--primary-light-300);
@@ -67,11 +70,25 @@
     --accent-500: var(--accent-light-500);
     --accent-600: var(--accent-light-600);
 
+    --button-primary: var(--primary-light-500);
+    --button-primary-active: var(--primary-light-400);
+    --button-primary-tint: var(--primary-light-400);
+    --button-accent: oklch(79.29% 0.1592 78.61);
+    --button-accent-active: oklch(70.69% 0.1482 72.36);
+    --button-accent-strong: oklch(62.8% 0.1409 62.64);
+    --button-accent-ink: oklch(26.89% 0.0666 42.47);
+    --button-surface: oklch(96.83% 0.0069 247.9);
+    --button-disabled: oklch(86.07% 0 89.88);
+    --button-disabled-ink: oklch(62.68% 0 89.88);
+
     --text-1: var(--text-1-light);
     --text-2: var(--text-2-light);
 
     --surface-1: var(--background-1-light);
     --surface-2: var(--background-2-light);
+    --surface-muted: var(--surface-muted-light);
+    --status-full: var(--status-full-light);
+    --status-full-strong: var(--status-full-strong-light);
 
     --radius-lg: 20px;
     --radius-md: 16px;
@@ -81,19 +98,30 @@
     --shadow-1: 0 12px 30px rgb(40 53 82 / 0.08);
     --shadow-2: 0 20px 40px rgb(40 53 82 / 0.12);
 
-    --space-unit: 1rem;
+    --space-unit: 1.25rem;
     --space-xxxs: calc(0.25 * var(--space-unit));
     --space-xxs: calc(0.375 * var(--space-unit));
     --space-xs: calc(0.5 * var(--space-unit));
     --space-sm: calc(0.75 * var(--space-unit));
-    --space-md: calc(1.25 * var(--space-unit));
-    --space-lg: calc(2 * var(--space-unit));
-    --space-xl: calc(3.25 * var(--space-unit));
-    --space-xxl: calc(5.25 * var(--space-unit));
-    --space-xxxl: calc(8.5 * var(--space-unit));
+    --space-md: calc(var(--space-unit));
+    --space-lg: calc(1.25 * var(--space-unit));
+    --space-xl: calc(2 * var(--space-unit));
+    --space-xxl: calc(3.25 * var(--space-unit));
+    --space-xxxl: calc(5.25 * var(--space-unit));
+    --space-xxxxl: calc(8.5 * var(--space-unit));
 
     --measure: 72rem;
     --measure-wide: 80rem;
+
+    --text-5xl: 6rem;
+    --text-4xl: 3.75rem;
+    --text-3xl: 2rem;
+    --text-2xl: 1.75rem;
+    --text-xl: 1.5rem;
+    --text-lg: 1.25rem;
+    --text-md: 1.125rem;
+    --text-base: 1rem;
+    --text-sm: 0.875rem;
   }
 }
 
@@ -149,7 +177,7 @@
 
   body {
     font-family: var(--font-family-sans);
-    background: linear-gradient(180deg, var(--surface-1) 0%, #f9fbff 100%);
+    background: var(--background-2-light);
     color: var(--text-2);
     overflow-x: hidden;
     font-weight: 400;
@@ -264,72 +292,132 @@
     justify-content: center;
     gap: var(--space-xs);
     width: fit-content;
-    border: none;
+    border: 1px solid transparent;
     border-radius: var(--radius-full);
-    font-size: 0.875rem;
-    font-weight: 700;
-    line-height: 1;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
     text-decoration: none;
     cursor: pointer;
     transition:
       background-color 180ms ease,
       border-color 180ms ease,
       color 180ms ease,
-      transform 180ms ease,
       box-shadow 180ms ease;
   }
 
-  .button:hover {
-    transform: translateY(-1px);
-  }
-
   .button:focus-visible {
-    outline: 3px solid var(--primary-500);
-    outline-offset: 3px;
+    outline: none;
   }
 
   .button--sm {
-    padding: 0.625rem 1rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
   }
 
   .button--md {
-    padding: 0.8rem 1.2rem;
+    padding: 0.5rem 1rem;
   }
 
   .button--lg {
-    padding: 1rem 1.45rem;
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
   }
 
   .button--primary {
-    color: var(--neutral-50);
-    background-color: var(--primary-500);
+    color: var(--button-surface);
+    background-color: var(--button-primary);
+    border-color: var(--button-primary-active);
   }
 
-  .button--primary:hover,
+  .button--primary:hover {
+    border-color: var(--button-primary);
+    background-color: var(--button-primary);
+    box-shadow:
+      0 0 0 2px var(--surface-1),
+      0 0 0 4px var(--button-primary);
+  }
+
   .button--primary:focus-visible {
-    background-color: var(--primary-600);
+    border-width: 2px;
+    border-color: var(--button-accent-active);
+    background-color: var(--button-primary);
+    box-shadow: inset 0 0 0 2px var(--surface-1);
+  }
+
+  .button--primary:active {
+    border-width: 2px;
+    border-color: var(--button-primary-active);
+    background-color: var(--button-primary-active);
+    box-shadow: inset 0 0 0 2px var(--surface-1);
   }
 
   .button--accent {
-    color: var(--neutral-50);
-    background-color: var(--accent-500);
+    color: var(--button-accent-ink);
+    background-color: var(--button-accent);
+    border-color: var(--button-accent-active);
   }
 
-  .button--accent:hover,
+  .button--accent:hover {
+    border-color: var(--button-accent);
+    background-color: var(--button-accent);
+    box-shadow:
+      0 0 0 2px var(--surface-1),
+      0 0 0 4px var(--button-accent);
+  }
+
   .button--accent:focus-visible {
-    background-color: var(--accent-400);
+    border-width: 2px;
+    border-color: var(--button-accent);
+    background-color: var(--button-accent);
+    box-shadow: inset 0 0 0 2px var(--surface-1);
+  }
+
+  .button--accent:active {
+    border-width: 2px;
+    border-color: var(--button-accent);
+    background-color: var(--button-accent-active);
+    box-shadow: inset 0 0 0 2px var(--surface-1);
   }
 
   .button--secondary {
-    color: var(--text-1);
+    color: var(--button-primary);
     background-color: transparent;
-    border: 1px solid var(--neutral-300);
+    border-color: var(--button-primary);
   }
 
-  .button--secondary:hover,
+  .button--secondary:hover {
+    border-color: var(--button-primary);
+    background-color: var(--button-primary-tint);
+    box-shadow:
+      0 0 0 2px var(--surface-1),
+      0 0 0 4px var(--button-primary);
+  }
+
   .button--secondary:focus-visible {
-    border-color: var(--primary-300);
-    background-color: var(--primary-100);
+    border-width: 2px;
+    border-color: var(--button-accent-active);
+    background-color: transparent;
+    box-shadow: inset 0 0 0 2px var(--button-primary);
+  }
+
+  .button--secondary:active {
+    border-width: 2px;
+    border-color: var(--button-primary-active);
+    background-color: color-mix(in oklch, var(--button-primary-active) 12%, var(--surface-1));
+    box-shadow: inset 0 0 0 2px var(--button-primary-active);
+  }
+
+  .button:disabled,
+  .button[aria-disabled="true"] {
+    color: var(--button-disabled-ink);
+    background-color: var(--button-disabled);
+    border-color: var(--button-disabled);
+    box-shadow: none;
+    cursor: not-allowed;
+    pointer-events: none;
   }
 
   .form-field {

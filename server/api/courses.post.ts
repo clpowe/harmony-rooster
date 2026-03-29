@@ -1,10 +1,7 @@
 import { useServerStripe } from "#stripe/server";
 import { AirtableTs, type Table } from "airtable-ts";
 import * as z from "zod";
-import {
-  AIRTABLE_BASE_ID,
-  AIRTABLE_TABLE_IDS,
-} from "../../shared/constants/airtable";
+import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "../../shared/constants/airtable";
 
 const registrationSchema = z.object({
   first_name: z
@@ -18,10 +15,7 @@ const registrationSchema = z.object({
   email: z.string().email("Invalid email address"),
   phonenumber: z
     .string({ required_error: "Phone number is required" })
-    .regex(
-      /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/,
-      "Invalid phone number",
-    ),
+    .regex(/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/, "Invalid phone number"),
   sessionId: z.string().min(1, "Session ID is required"),
 });
 

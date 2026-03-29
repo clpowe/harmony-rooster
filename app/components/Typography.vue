@@ -1,14 +1,20 @@
 <script setup lang="ts">
 type Variant =
-  | "heading"
+  | "heading-2xl"
+  | "heading-xl"
   | "heading-large"
   | "heading-medium"
   | "heading-small"
-  | "text-large"
-  | "text"
-  | "text-display";
+  | "body-large"
+  | "body-medium"
+  | "body-small";
 
-const props = defineProps<{
+const {
+  tag = "p",
+  variant = "body-medium",
+  uppercase = false,
+  bold = false,
+} = defineProps<{
   tag: "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "p";
   variant: Variant;
   uppercase?: boolean;
@@ -16,21 +22,18 @@ const props = defineProps<{
 }>();
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  heading: "type type--heading",
-  "heading-large": "type type--heading-large",
-  "heading-medium": "type type--heading-medium",
-  "heading-small": "type type--heading-small",
-  "text-large": "type type--text-large",
-  text: "type type--text",
-  "text-display": "type type--text-display",
+  "heading-2xl": "type heading-2xl",
+  "heading-xl": "type heading-xl",
+  "heading-large": "type heading-large",
+  "heading-medium": "type heading-medium",
+  "heading-small": "type heading-small",
+  "body-large": "type body-large",
+  "body-medium": "type body-medium",
+  "body-small": "type body-small",
 };
 
-const variantClass = computed(() => {
-  return [
-    VARIANT_CLASSES[props.variant],
-    props.uppercase ? "type--uppercase" : "",
-    props.bold ? "type--bold" : "",
-  ]
+const variantClass = computed((): string => {
+  return [VARIANT_CLASSES[variant], uppercase ? "uppercase" : "", bold ? "bold" : ""]
     .filter(Boolean)
     .join(" ");
 });
@@ -46,14 +49,8 @@ const variantClass = computed(() => {
   color: inherit;
 }
 
-.type--heading {
-  font-size: clamp(0.75rem, 5vw, 1.5rem);
-  margin-bottom: 0.25rem;
-}
-
-.type--heading-large {
-  line-break: auto;
-  font-size: clamp(2.8rem, 10cqw, 6rem);
+.heading-2xl {
+  font-size: var(--text-5xl);
   line-height: 1em;
 
   :deep(span:first-of-type) {
@@ -65,12 +62,10 @@ const variantClass = computed(() => {
   }
 }
 
-.type--heading-medium {
+.heading-large {
   line-break: auto;
-  font-size: clamp(2rem, 8cqw, 2.5rem);
-  line-height: 0.9em;
-  font-weight: 400;
-  margin-bottom: var(--space-xxxs);
+  font-size: var(--text-4xl);
+  line-height: 1em;
 
   :deep(span:first-of-type) {
     color: var(--primary-500);
@@ -81,50 +76,59 @@ const variantClass = computed(() => {
   }
 }
 
-.type--heading-small {
+.heading-medium {
   line-break: auto;
-  font-size: clamp(1.5rem, 5vw, 1.75rem);
+  font-size: var(--text-3xl);
   line-height: 0.9em;
   font-weight: 400;
-}
 
-.type--text-large {
-  max-width: 65ch;
-  line-height: 140%;
-  font-weight: bold;
-  font-size: clamp(1.25rem, 10vw, 1.35rem);
-}
-
-.type--text {
-  max-width: 65ch;
-  line-height: 150%;
-  font-weight: 100;
-  font-size: 1rem;
-  text-wrap: balance;
-  opacity: 0.7;
+  :deep(span:first-of-type) {
+    color: var(--primary-500);
+  }
 
   :deep(span) {
-    font-weight: bold;
+    color: var(--accent-500);
   }
 }
 
-.type--text-display {
-  font-size: 0.875rem;
-  max-width: 28rem;
-}
+.heading-small {
+  line-break: auto;
+  font-size: var(--text-lg);
+  line-height: 0.9em;
+  font-weight: 400;
 
-@media (min-width: 768px) {
-  .type--text-display {
-    font-size: 1.25rem;
-    max-width: 32rem;
+  :deep(span:first-of-type) {
+    color: var(--primary-500);
+  }
+
+  :deep(span) {
+    color: var(--accent-500);
   }
 }
 
-.type--uppercase {
+.body-large {
+  max-width: 65ch;
+  line-height: 120%;
+  font-size: var(--text-lg);
+  text-wrap: balance;
+}
+
+.bodv-medium {
+  max-width: 65ch;
+  line-height: 120%;
+  font-size: var(--text-md);
+  text-wrap: balance;
+}
+
+.body-small {
+  font-size: var(--text-sm);
+}
+
+.uppercase {
   text-transform: uppercase;
 }
 
-.type--bold {
+.bold {
   font-weight: bold;
 }
 </style>

@@ -28,9 +28,8 @@ type SessionWithCourse = Session & {
 };
 
 export function useCourses() {
-  const { data, pending, error, refresh } = useAsyncData<Course[]>(
-    "courses",
-    () => $fetch("/api/courses"),
+  const { data, pending, error, refresh } = useAsyncData<Course[]>("courses", () =>
+    $fetch<Course[]>("/api/courses" as string),
   );
 
   const getSessionById = (id: string) =>

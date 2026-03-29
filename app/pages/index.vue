@@ -10,7 +10,7 @@ import RoosterBG from "@/assets/images/roosterbg.svg";
     <Courses />
     <FAQSection />
 
-    <section class="contact-panel u-card u-surface-2">
+    <section id="contact" class="contact-panel u-card u-surface-2">
       <div class="contact-panel__content l-flow">
         <Typography tag="h2" variant="heading-medium">Contact <span>Us</span> </Typography>
         <Typography tag="p" variant="text">have a question? We’re here to help!</Typography>
