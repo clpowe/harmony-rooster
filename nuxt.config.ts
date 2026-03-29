@@ -1,6 +1,14 @@
 import postcssNesting from "postcss-nesting";
 import { fileURLToPath } from "node:url";
 
+const posthogHost = process.env.NUXT_POSTHOG_HOST ?? "https://us.i.posthog.com";
+const posthogProjectApiKey =
+  process.env.NUXT_POSTHOG_PROJECT_API_KEY ??
+  process.env.NUXT_PUBLIC_POSTHOG_KEY ??
+  "phc_qTwFbI32FdKblt68dmmYUaStTr4e0s3dzXdnlWc0AP9";
+const posthogServerLogEnabled =
+  process.env.POSTHOG_SERVER_LOG_ENABLED === "true" || process.env.NODE_ENV === "production";
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
@@ -37,6 +45,10 @@ export default defineNuxtConfig({
   compatibilityDate: "2024-11-16",
   runtimeConfig: {
     airtableKey: "",
+    posthogHost,
+    posthogLogEndpoint: `${posthogHost}/i/v1/logs`,
+    posthogProjectApiKey,
+    posthogServerLogEnabled,
     stripeWebhookSecretKey: "",
     public: {
       siteUrl: "",
@@ -53,8 +65,8 @@ export default defineNuxtConfig({
     },
   },
   posthogConfig: {
-    publicKey: "phc_qTwFbI32FdKblt68dmmYUaStTr4e0s3dzXdnlWc0AP9",
-    host: "https://us.i.posthog.com",
+    publicKey: posthogProjectApiKey,
+    host: posthogHost,
     clientConfig: {
       capture_exceptions: true,
     },

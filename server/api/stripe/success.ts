@@ -55,21 +55,17 @@ export default defineEventHandler(async (event) => {
   });
 
   const paymentIntent =
-    checkoutSession.payment_intent &&
-    typeof checkoutSession.payment_intent !== "string"
+    checkoutSession.payment_intent && typeof checkoutSession.payment_intent !== "string"
       ? checkoutSession.payment_intent
       : null;
 
   const paymentMethod =
-    paymentIntent?.payment_method &&
-    typeof paymentIntent.payment_method !== "string"
+    paymentIntent?.payment_method && typeof paymentIntent.payment_method !== "string"
       ? paymentIntent.payment_method
       : null;
 
   const linkedSessionID = checkoutSession.metadata?.sessionID;
-  const airtableSession = linkedSessionID
-    ? await db.get(sessionsTable, linkedSessionID)
-    : null;
+  const airtableSession = linkedSessionID ? await db.get(sessionsTable, linkedSessionID) : null;
 
   return {
     status: checkoutSession.payment_status,
@@ -78,7 +74,6 @@ export default defineEventHandler(async (event) => {
       last4: paymentMethod?.card?.last4 ?? null,
     },
     total: checkoutSession.amount_total,
-    metadata: checkoutSession.metadata,
     session: airtableSession
       ? {
           id: airtableSession.id,

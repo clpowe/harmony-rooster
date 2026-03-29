@@ -24,6 +24,11 @@ describe("isRegistrationEvent", () => {
     expect(isRegistrationEvent(event)).toBe(false);
   });
 
+  it('should return false for checkout.session.completed with payment_status="no_payment_required"', () => {
+    const event = createMockEvent("checkout.session.completed", "no_payment_required");
+    expect(isRegistrationEvent(event)).toBe(false);
+  });
+
   it("should return true for checkout.session.async_payment_succeeded", () => {
     const event = createMockEvent("checkout.session.async_payment_succeeded");
     expect(isRegistrationEvent(event)).toBe(true);
