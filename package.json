@@ -27,6 +27,7 @@
     "open-props": "^1.7.23",
     "postcss-jit-props": "^1.0.16",
     "reka-ui": "^2.8.2",
+    "rolldown": "1.0.0-rc.12",
     "stripe": "^19.3.0",
     "ufo": "^1.6.3",
     "vue": "^3.5.28",
