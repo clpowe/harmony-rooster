@@ -25,7 +25,7 @@ main > * + * {
   --flow-space: var(--space-sm);
 
   @media (min-width: 768px) {
-    --flow-space: var(--space-lg);
+    --flow-space: var(--space-xxl);
   }
 }
 

@@ -35,16 +35,12 @@ const services: Service[] = [
 </script>
 
 <template>
-  <section
-    id="our-services"
-    class="services-section u-card u-surface-2"
-    aria-labelledby="our-services-title"
-  >
+  <section id="our-services" class="services-section" aria-labelledby="our-services-title">
     <div class="services-section__intro l-flow">
-      <Typography tag="h2" variant="heading-medium" id="our-services-title"
+      <Typography tag="h2" variant="heading-large" id="our-services-title"
         >Our <span>Services</span></Typography
       >
-      <Typography tag="p" variant="text" id="our-services-intro"
+      <Typography tag="p" variant="body-medium" id="our-services-intro"
         >Harmony Rooster, LLC is here to help. Our team of dedicated and qualified caregivers
         provides a helping hand with a variety of needs, including:</Typography
       >
@@ -52,13 +48,13 @@ const services: Service[] = [
 
     <ul class="services-grid u-list-reset" aria-describedby="our-services-intro">
       <li v-for="(item, idx) in services" :key="item.title" class="service-card">
+        <component
+          :is="item.icon"
+          class="service-card__icon"
+          aria-hidden="true"
+          focusable="false"
+        />
         <div class="service-card__header">
-          <component
-            :is="item.icon"
-            class="service-card__icon"
-            aria-hidden="true"
-            focusable="false"
-          />
           <Typography
             tag="h3"
             variant="heading-small"
@@ -66,8 +62,10 @@ const services: Service[] = [
             class="service-card__title"
             >{{ item.title }}</Typography
           >
+          <Typography tag="p" variant="text" :id="`service-desc-${idx}`">{{
+            item.text
+          }}</Typography>
         </div>
-        <Typography tag="p" variant="text" :id="`service-desc-${idx}`">{{ item.text }}</Typography>
       </li>
     </ul>
   </section>
@@ -76,36 +74,53 @@ const services: Service[] = [
 <style scoped>
 .services-section {
   display: grid;
-  gap: var(--space-lg);
+  gap: var(--space-xl);
   grid-template-columns: 1fr;
+
+  display: grid;
+  gap: var(--space-xl);
+  padding: var(--space-md) var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--background-1-light);
 
   @media (min-width: 1000px) {
     gap: var(--space-xl);
-    grid-template-columns: 2fr 3fr;
+    grid-template-columns: 1fr 1fr;
   }
+}
+
+.services-section__intro {
+  --flow-space: var(--space-sm);
 }
 
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
   gap: var(--space-md);
+  container-type: inline-size;
 
-  @media (min-width: 500px) {
+  @container (inline-size > calc(25ch * 2 + 1rem)) {
     grid-template-columns: 1fr 1fr;
   }
 }
 
 .service-card {
   display: grid;
-  background: var(--surface-1);
+  background: var(--background-2-light);
+  grid-template-columns: auto 1fr;
   padding: var(--space-sm);
   border-radius: var(--radius-md);
   gap: var(--space-sm);
+  align-content: flex-start;
+  grid-column: span 1;
+
+  @container (inline-size < calc(25ch * 2 + 1rem)) {
+    grid-column: span 2;
+  }
 }
 
 .service-card__header {
   display: flex;
-  flex-direction: column;
   flex-wrap: wrap;
   gap: var(--space-xs);
 }
@@ -115,7 +130,8 @@ const services: Service[] = [
 }
 
 .service-card__icon {
-  font-size: var(--size-8);
+  width: var(--text-2xl);
+  height: var(--text-2xl);
   color: var(--primary-500);
   margin: 0;
 }

@@ -35,17 +35,17 @@
     --accent-light-500: oklch(62.53% 0.139 63.56);
     --accent-light-600: oklch(53.22% 0.117 64.18);
 
-    --neutral-50: oklch(97.31% 0 0);
-    --neutral-100: oklch(92.8% 0 0);
-    --neutral-200: oklch(86.07% 0 0);
-    --neutral-300: oklch(75.72% 0 0);
-    --neutral-400: oklch(62.68% 0 0);
-    --neutral-500: oklch(53.48% 0 0);
-    --neutral-600: oklch(47.84% 0 0);
-    --neutral-700: oklch(41.65% 0 0);
-    --neutral-800: oklch(39.04% 0 0);
-    --neutral-900: oklch(36% 0 0);
-    --neutral-950: oklch(26.86% 0 0);
+    --neutral-50: oklch(97.1% 0 0);
+    --neutral-100: oklch(91.8% 0 0);
+    --neutral-200: oklch(84.1% 0 0);
+    --neutral-300: oklch(72.8% 0 0);
+    --neutral-400: oklch(59.2% 0 0);
+    --neutral-500: oklch(50.2% 0 0);
+    --neutral-600: oklch(44.1% 0 0);
+    --neutral-700: oklch(37.5% 0 0);
+    --neutral-800: oklch(34.1% 0 0);
+    --neutral-900: oklch(31.4% 0 0);
+    --neutral-950: oklch(21.8% 0 0);
 
     --text-1-light: oklch(21.46% 0 0);
     --text-2-light: var(--neutral-700);

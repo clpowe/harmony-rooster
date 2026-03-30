@@ -12,10 +12,10 @@
     </div>
     <div class="about-section__content" aria-labelledby="about-us-title">
       <div class="l-flow">
-        <Typography tag="h2" variant="heading-medium" id="about-us-title"
+        <Typography tag="h2" variant="heading-large" id="about-us-title"
           >About<span></span> <span>Us</span>
         </Typography>
-        <Typography tag="p" variant="text">
+        <Typography tag="p" variant="body-medium">
           Harmony Rooster, LLC is a locally owned and operated company based in Tampa, Florida. The
           company was founded by Derek and Cynthia Robinson, who are passionate about providing
           exceptional in-home care services that empower individuals to live their best
@@ -23,10 +23,10 @@
         >
       </div>
       <div class="l-flow">
-        <Typography class="u-text-primary" tag="h3" variant="heading-small"
+        <Typography class="u-text-primary" tag="h3" variant="heading-medium"
           >Our<span></span> <span>team</span>
         </Typography>
-        <Typography tag="p" variant="text"
+        <Typography tag="p" variant="body-medium"
           >Our caregivers are not just qualified; they are compassionate and dedicated to making a
           difference in the lives of our clients. They undergo rigorous background checks, training,
           and ongoing education to ensure they provide the highest quality of care.</Typography
@@ -56,15 +56,17 @@
 <style scoped>
 .about-section {
   overflow: hidden;
-  display: grid;
   position: relative;
   grid-template-columns: 1fr 1fr;
   container-type: inline-size;
-  background-color: var(--surface-2);
-  gap: var(--space-md);
-  align-items: center;
-  border-radius: var(--radius-lg);
   padding: var(--space-md) var(--space-sm);
+
+  display: grid;
+  gap: var(--space-xl);
+  padding: var(--space-md) var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--background-1-light);
+  align-items: center;
 
   @container (inline-size > calc(25ch * 2 + 1rem)) {
     padding: var(--space-lg) var(--space-md);
@@ -72,15 +74,18 @@
 }
 
 .about-section__content {
+  --flow-space: var(--spacing-sm);
+
   padding: var(--space-xs);
   max-width: 60ch;
   z-index: 1;
-  display: grid;
-  gap: var(--space-lg);
-  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  grid-column: span 1;
 
-  @container (inline-size > calc(25ch * 2 + 1rem)) {
-    grid-column: span 1;
+  @container (inline-size < calc(30ch * 2 + 1rem)) {
+    grid-column: span 2;
   }
 }
 
@@ -91,10 +96,10 @@
   z-index: 1;
   height: 100%;
   width: 100%;
-  grid-column: span 2;
+  grid-column: span 1;
 
-  @container (inline-size > calc(25ch * 2 + 1rem)) {
-    grid-column: span 1;
+  @container (inline-size < calc(30ch * 2 + 1rem)) {
+    grid-column: span 2;
   }
 }
 

@@ -5,7 +5,7 @@ const { courses, pending, error, refreshCourses } = useCourses();
 </script>
 
 <template>
-  <section id="courses" class="courses-section u-card u-surface-2">
+  <section id="courses" class="courses-section">
     <div class="courses-section__intro l-flow">
       <Typography tag="h2" variant="heading-large">
         <span>Courses We</span> <span>Offer</span>
@@ -64,9 +64,8 @@ const { courses, pending, error, refreshCourses } = useCourses();
 .courses-section {
   display: grid;
   gap: var(--space-xxl);
-  padding: clamp(1.5rem, 3vw, 2rem) clamp(1.25rem, 2.5vw, 1.625rem);
+  padding: var(--space-md) var(--space-sm);
   border-radius: var(--radius-md);
-  box-shadow: none;
   background: var(--background-1-light);
 }
 

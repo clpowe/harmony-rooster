@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Typography from "./Typography.vue";
+
 const accordionItems = [
   {
     value: "question-1",
@@ -31,11 +33,13 @@ const accordionItems = [
 <template>
   <section class="faq-section u-card u-surface-2">
     <div class="faq-section__intro l-flow">
-      <Typography tag="h2" variant="heading-medium"
+      <Typography tag="h2" variant="heading-large"
         ><span>Frequently</span> Asked
         <span>Questions</span>
       </Typography>
-      <p>Find answers to common questions about our services</p>
+      <Typography tag="p" variant="body-medium">
+        Find answers to common questions about our services
+      </Typography>
     </div>
     <div class="faq-section__list">
       <template v-for="item in accordionItems" :key="item.value">
@@ -45,6 +49,7 @@ const accordionItems = [
               <Typography tag="h3" variant="heading-small">
                 {{ item.question }}
               </Typography>
+              <span class="faq-section__toggle" aria-hidden="true"></span>
             </summary>
             <Typography tag="p" variant="text">{{ item.answer }}</Typography>
           </details>
@@ -61,7 +66,7 @@ const accordionItems = [
   position: relative;
   grid-template-columns: 1fr 1fr;
   container-type: inline-size;
-  background-color: var(--surface-2);
+  background-color: var(--background-1-light);
   gap: var(--space-md);
   align-items: center;
   border-radius: var(--radius-lg);
@@ -91,22 +96,49 @@ const accordionItems = [
 }
 
 .faq-section__item {
-  padding-bottom: var(--space-sm);
-  border-bottom: 1px solid var(--neutral-200);
+  padding: var(--space-sm);
+  background-color: var(--background-2-light);
+  border-radius: var(--radius-sm);
 }
 
 .faq-section__summary {
   cursor: pointer;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-sm);
   padding-block: 1em;
 }
 
 .faq-section__details summary {
   list-style: none;
-  display: flex;
 }
 
 .faq-section__details summary::-webkit-details-marker {
   display: none;
+}
+
+.faq-section__summary :deep(.type--heading-small) {
+  flex: 1;
+}
+
+.faq-section__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  color: var(--accent-500);
+  font-size: 1.25rem;
+  line-height: 1;
+  font-weight: 400;
+}
+
+.faq-section__toggle::before {
+  content: "+";
+}
+
+.faq-section__details[open] .faq-section__toggle::before {
+  content: "−";
 }
 
 .faq-section__details::details-content {
