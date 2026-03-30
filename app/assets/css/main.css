@@ -1,20 +1,6 @@
 @layer settings, reset, base, composition, utilities, blocks, exceptions;
 
-@import "open-props/style";
-
 @layer settings {
-  @font-face {
-    font-family: "Verdana";
-    src: url("../fonts/Verdana.ttf");
-    font-weight: 400;
-  }
-
-  @font-face {
-    font-family: "Verdana";
-    src: url("../fonts/Verdana Bold.ttf");
-    font-weight: 600;
-  }
-
   :root {
     interpolate-size: allow-keywords;
 
