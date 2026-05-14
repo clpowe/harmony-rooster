@@ -50,7 +50,7 @@ const variantClass = computed((): string => {
 }
 
 .heading-2xl {
-  font-size: var(--text-5xl);
+  font-size: clamp(var(--text-2xl), 1px + 10vw, var(--text-5xl));
   line-height: 1em;
 
   :deep(span:first-of-type) {
@@ -64,7 +64,7 @@ const variantClass = computed((): string => {
 
 .heading-large {
   line-break: auto;
-  font-size: var(--text-4xl);
+  font-size: clamp(var(--text-2xl), 1px + 10vw, var(--text-4xl));
   line-height: 1em;
 
   :deep(span:first-of-type) {
@@ -78,7 +78,7 @@ const variantClass = computed((): string => {
 
 .heading-medium {
   line-break: auto;
-  font-size: var(--text-3xl);
+  font-size: clamp(var(--text-2xl), 1px + 10vw, var(--text-3xl));
   line-height: 0.9em;
   font-weight: 400;
 

@@ -31,16 +31,14 @@ const accordionItems = [
 </script>
 
 <template>
-  <section class="faq-section u-card u-surface-2">
-    <div class="faq-section__intro l-flow">
-      <Typography tag="h2" variant="heading-large"
-        ><span>Frequently</span> Asked
+  <section class="faq-section">
+    <section-header class="faq-section__intro">
+      <template #title>
+        <span>Frequently</span> Asked
         <span>Questions</span>
-      </Typography>
-      <Typography tag="p" variant="body-medium">
-        Find answers to common questions about our services
-      </Typography>
-    </div>
+      </template>
+      <template #description> Find answers to common questions about our services </template>
+    </section-header>
     <div class="faq-section__list">
       <template v-for="item in accordionItems" :key="item.value">
         <div class="faq-section__item">
@@ -61,6 +59,8 @@ const accordionItems = [
 
 <style scoped>
 .faq-section {
+  --_container-space: calc(40ch * 2 + 1rem);
+
   overflow: hidden;
   display: grid;
   position: relative;
@@ -72,15 +72,18 @@ const accordionItems = [
   border-radius: var(--radius-lg);
   padding: var(--space-md) var(--space-sm);
 
-  @container (inline-size > calc(25ch * 2 + 1rem)) {
+  @container (inline-size > calc(40ch * 2 + 1rem)) {
     padding: var(--space-lg) var(--space-md);
   }
 }
 
 .faq-section__intro {
+  --flow-space: var(--spacing-sm);
+
+  place-self: start;
   grid-column: span 2;
 
-  @container (inline-size > calc(25ch * 2 + 1rem)) {
+  @container (inline-size > calc(40ch * 2 + 1rem)) {
     grid-column: span 1;
   }
 }
@@ -90,7 +93,7 @@ const accordionItems = [
   gap: var(--space-sm);
   grid-column: span 2;
 
-  @container (inline-size > calc(25ch * 2 + 1rem)) {
+  @container (inline-size > calc(40ch * 2 + 1rem)) {
     grid-column: span 1;
   }
 }

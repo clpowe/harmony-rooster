@@ -79,62 +79,41 @@ const onSubmit = handleSubmit(async (values) => {
           <p v-if="isSessionFull" class="registration-page__status">This Session is full</p>
 
           <div class="registration-page__intro">
-            <h1 class="registration-page__title">{{ session.course_name }}</h1>
-            <p class="registration-page__description">{{ session.course_description }}</p>
+            <Typography tag="h1" variant="heading-medium" class=""
+              >{{ session.course_name }}
+            </Typography>
+            <Typography tag="p" variant="body-large" class="registration-page__description">{{
+              session.course_description
+            }}</Typography>
           </div>
 
           <p class="registration-page__cost">Session Cost: ${{ session.course_cost }}</p>
 
-          <dl class="registration-page__details">
-            <div class="registration-page__detail">
-              <Icon
-                name="lucide:clock-4"
-                class="registration-page__detail-icon"
-                aria-hidden="true"
-              />
-              <div>
-                <dt>Date</dt>
-                <dd>{{ formatDate(session.date) }}</dd>
-              </div>
-            </div>
+          <div class="registration-page__details">
+            <CourseRegistrationDetail
+              icon="lucide:clock-4"
+              label="Date"
+              :value="formatDate(session.date)"
+            />
 
-            <div class="registration-page__detail">
-              <Icon
-                name="lucide:clock-4"
-                class="registration-page__detail-icon"
-                aria-hidden="true"
-              />
-              <div>
-                <dt>Time</dt>
-                <dd>{{ session.time }}</dd>
-              </div>
-            </div>
+            <CourseRegistrationDetail icon="lucide:clock-4" label="Time" :value="session.time" />
 
-            <div class="registration-page__detail">
-              <Icon
-                name="lucide:map-pin"
-                class="registration-page__detail-icon"
-                aria-hidden="true"
-              />
-              <div>
-                <dt>Location</dt>
-                <dd>{{ session.location }}</dd>
-              </div>
-            </div>
+            <CourseRegistrationDetail
+              icon="lucide:map-pin"
+              label="Location"
+              :value="session.location"
+            />
 
-            <div class="registration-page__detail">
-              <Icon name="lucide:users" class="registration-page__detail-icon" aria-hidden="true" />
-              <div>
-                <dt>Available Seats</dt>
-                <dd>{{ session.spots_available }}</dd>
-              </div>
-            </div>
-          </dl>
+            <CourseRegistrationDetail
+              icon="lucide:users"
+              label="Available Seats"
+              :value="session.spots_available"
+            />
+          </div>
         </div>
 
         <form @submit.prevent="onSubmit" class="registration-page__form">
           <div class="registration-page__form-header">
-            <span class="registration-page__step">1</span>
             <h2 class="registration-page__form-title">Contact Information</h2>
           </div>
 
@@ -198,7 +177,7 @@ const onSubmit = handleSubmit(async (values) => {
 
           <button
             type="submit"
-            class="button button--sm button--primary registration-page__submit"
+            class="button button--md button--primary registration-page__submit"
             :disabled="submitDisabled"
           >
             Submit Registration
@@ -209,7 +188,7 @@ const onSubmit = handleSubmit(async (values) => {
 
     <div v-else class="registration-page__empty u-card u-surface-2 l-flow">
       <Typography tag="h2" variant="heading-small">Session not found</Typography>
-      <Typography tag="p" variant="text">
+      <Typography tag="p" variant="body-medium">
         We could not find the selected course session. Go back and pick another available date.
       </Typography>
     </div>
@@ -306,33 +285,8 @@ const onSubmit = handleSubmit(async (values) => {
 
 .registration-page__details {
   display: grid;
-  gap: 1rem;
-}
-
-.registration-page__detail {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.5rem;
-  align-items: start;
-}
-
-.registration-page__detail-icon {
-  margin-top: 0.15rem;
-  font-size: 1.5rem;
-  color: var(--text-1);
-}
-
-.registration-page__detail dt {
-  color: color-mix(in oklch, var(--text-1) 78%, var(--button-disabled-ink));
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.registration-page__detail dd {
-  color: color-mix(in oklch, var(--text-1) 82%, var(--button-disabled-ink));
-  font-size: 1rem;
-  line-height: 1.25;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
 }
 
 .registration-page__form-header {
@@ -402,7 +356,7 @@ const onSubmit = handleSubmit(async (values) => {
 
 @media (min-width: 48rem) {
   .registration-page__card {
-    grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 23rem);
+    grid-template-columns: repeat(2, 1fr);
     align-items: start;
   }
 }

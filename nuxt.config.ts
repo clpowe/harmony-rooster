@@ -45,11 +45,14 @@ export default defineNuxtConfig({
   compatibilityDate: "2024-11-16",
   runtimeConfig: {
     airtableKey: "",
+    contactFromEmail: "",
+    contactToEmail: "clpowe@gmail.com",
     posthogHost,
     posthogLogEndpoint: `${posthogHost}/i/v1/logs`,
     posthogProjectApiKey,
     posthogServerLogEnabled,
     stripeWebhookSecretKey: "",
+    resendApiKey: "",
     public: {
       siteUrl: "",
     },

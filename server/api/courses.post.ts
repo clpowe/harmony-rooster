@@ -150,6 +150,7 @@ export default defineEventHandler(async (event) => {
       id: user.id,
       stripeID: customer.id,
     });
+
     customerID = customer.id;
   } else if (!customerID) {
     const customer = await stripe.customers.create({

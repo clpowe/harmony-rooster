@@ -36,15 +36,14 @@ const services: Service[] = [
 
 <template>
   <section id="our-services" class="services-section" aria-labelledby="our-services-title">
-    <div class="services-section__intro l-flow">
-      <Typography tag="h2" variant="heading-large" id="our-services-title"
-        >Our <span>Services</span></Typography
-      >
-      <Typography tag="p" variant="body-medium" id="our-services-intro"
-        >Harmony Rooster, LLC is here to help. Our team of dedicated and qualified caregivers
-        provides a helping hand with a variety of needs, including:</Typography
-      >
-    </div>
+    <section-header>
+      <template #title> Our <span>Services</span> </template>
+      <template #description>
+        Harmony Rooster, LLC is a locally owned and operated company based in Tampa, Florida. The
+        company was founded by Derek and Cynthia Robinson, who are passionate about providing
+        exceptional in-home care services that empower individuals to live their best lives.
+      </template>
+    </section-header>
 
     <ul class="services-grid u-list-reset" aria-describedby="our-services-intro">
       <li v-for="(item, idx) in services" :key="item.title" class="service-card">
@@ -87,10 +86,6 @@ const services: Service[] = [
     gap: var(--space-xl);
     grid-template-columns: 1fr 1fr;
   }
-}
-
-.services-section__intro {
-  --flow-space: var(--space-sm);
 }
 
 .services-grid {

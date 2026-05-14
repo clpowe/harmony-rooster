@@ -6,17 +6,14 @@ const { courses, pending, error, refreshCourses } = useCourses();
 
 <template>
   <section id="courses" class="courses-section">
-    <div class="courses-section__intro l-flow">
-      <Typography tag="h2" variant="heading-large">
-        <span>Courses We</span> <span>Offer</span>
-      </Typography>
-      <Typography tag="p" variant="text"
-        >Harmony Rooster, LLC is a locally owned and operated company based in Tampa, Florida. The
+    <section-header class="courses-section__intro">
+      <template #title> <span>Courses We</span> <span>Offer</span> </template>
+      <template #description>
+        Harmony Rooster, LLC is a locally owned and operated company based in Tampa, Florida. The
         company was founded by Derek and Cynthia Robinson, who are passionate about providing
-        exceptional in-home care services that empower individuals to live their best
-        lives.</Typography
-      >
-    </div>
+        exceptional in-home care services that empower individuals to live their best lives.
+      </template>
+    </section-header>
     <div
       v-if="pending"
       class="courses-section__state courses-section__state--loading"
@@ -52,7 +49,7 @@ const { courses, pending, error, refreshCourses } = useCourses();
     </div>
 
     <div v-else class="courses-section__state courses-section__state--empty" aria-live="polite">
-      <Typography tag="p" variant="text-large">No courses are available right now.</Typography>
+      <Typography tag="p" variant="body-large">No courses are available right now.</Typography>
       <Typography tag="p" variant="body-medium">
         We’re updating the schedule. Check back soon or contact us for upcoming training dates.
       </Typography>
@@ -67,11 +64,6 @@ const { courses, pending, error, refreshCourses } = useCourses();
   padding: var(--space-md) var(--space-sm);
   border-radius: var(--radius-md);
   background: var(--background-1-light);
-}
-
-.courses-section__intro {
-  max-width: 55ch;
-  --flow-space: var(--space-sm);
 }
 
 .courses-section__list {

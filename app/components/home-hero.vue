@@ -12,13 +12,15 @@ import Rooster from "@/assets/icons/icon-rooster.svg";
       class="hero__art"
     />
     <div class="hero__body">
-      <Typography tag="h1" variant="heading" uppercase class="">Harmony Rooster LLC</Typography>
-      <Typography tag="h2" uppercase variant="heading-large"
+      <Typography tag="h1" variant="heading-small" uppercase class=""
+        >Harmony Rooster LLC</Typography
+      >
+      <Typography tag="h2" uppercase variant="heading-2xl"
         >Care you can <span>Trust</span> in <span>your Home</span>
       </Typography>
     </div>
     <div class="hero__lede">
-      <Typography tag="p" variant="text"
+      <Typography tag="p" variant="body-medium"
         >We offer compassionate, non-emergency in-home care services designed to promote
         independence, dignity, and overall well-being.</Typography
       >
