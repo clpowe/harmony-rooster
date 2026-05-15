@@ -128,14 +128,34 @@ function formatPaymentBrand(value: string) {
       <section class="receipt" aria-labelledby="receipt-title">
         <div v-if="pending" class="receipt__status">
           <Icon name="lucide:loader-circle" class="receipt__spinner" aria-hidden="true" />
-          <h1 id="receipt-title" class="receipt__title">Confirming your purchase</h1>
-          <p class="receipt__lede">Payment details are loading.</p>
+          <Typography
+            id="receipt-title"
+            tag="h1"
+            variant="heading-large"
+            uppercase
+            class="receipt__title"
+          >
+            Confirming your purchase
+          </Typography>
+          <Typography tag="p" variant="body-large" class="receipt__lede">
+            Payment details are loading.
+          </Typography>
         </div>
 
         <div v-else-if="error" class="receipt__status">
           <Icon name="lucide:circle-alert" class="receipt__alert-icon" aria-hidden="true" />
-          <h1 id="receipt-title" class="receipt__title">We could not load this receipt</h1>
-          <p class="receipt__lede">Please try again or contact Harmony Rooster.</p>
+          <Typography
+            id="receipt-title"
+            tag="h1"
+            variant="heading-large"
+            uppercase
+            class="receipt__title"
+          >
+            We could not load this receipt
+          </Typography>
+          <Typography tag="p" variant="body-large" class="receipt__lede">
+            Please try again or contact Harmony Rooster.
+          </Typography>
         </div>
 
         <div v-else-if="isPaid" class="receipt__ready">
@@ -144,16 +164,38 @@ function formatPaymentBrand(value: string) {
           <header class="receipt__intro">
             <Icon name="lucide:badge-check" class="receipt__seal" aria-hidden="true" />
             <div>
-              <p class="receipt__eyebrow">Purchase confirmed</p>
-              <h1 id="receipt-title" class="receipt__title">Thank you for your purchase</h1>
-              <p class="receipt__lede">Your spot has been reserved for {{ className }}.</p>
+              <Typography tag="p" variant="heading-small" uppercase class="receipt__eyebrow">
+                Purchase confirmed
+              </Typography>
+              <Typography
+                id="receipt-title"
+                tag="h1"
+                variant="heading-large"
+                uppercase
+                class="receipt__title"
+              >
+                Thank you for your <span>purchase</span>
+              </Typography>
+              <Typography tag="p" variant="body-large" class="receipt__lede">
+                Your spot has been reserved for {{ className }}.
+              </Typography>
             </div>
           </header>
 
           <section class="receipt-section receipt-section--class" aria-labelledby="class-title">
             <div class="receipt-section__header">
-              <h2 id="class-title">Class details</h2>
-              <p>{{ className }}</p>
+              <Typography
+                id="class-title"
+                tag="h2"
+                variant="heading-small"
+                bold
+                class="receipt-section__title"
+              >
+                Class details
+              </Typography>
+              <Typography tag="p" variant="body-large" bold class="receipt-section__meta">
+                {{ className }}
+              </Typography>
             </div>
 
             <dl class="class-grid">
@@ -185,8 +227,18 @@ function formatPaymentBrand(value: string) {
 
           <section class="receipt-section" aria-labelledby="order-title">
             <div class="receipt-section__header">
-              <h2 id="order-title">Order summary</h2>
-              <p>{{ formattedTotal }}</p>
+              <Typography
+                id="order-title"
+                tag="h2"
+                variant="heading-small"
+                bold
+                class="receipt-section__title"
+              >
+                Order summary
+              </Typography>
+              <Typography tag="p" variant="body-large" bold class="receipt-section__meta">
+                {{ formattedTotal }}
+              </Typography>
             </div>
 
             <dl class="summary-list">
@@ -208,8 +260,18 @@ function formatPaymentBrand(value: string) {
 
         <div v-else class="receipt__status">
           <Icon name="lucide:clock-alert" class="receipt__alert-icon" aria-hidden="true" />
-          <h1 id="receipt-title" class="receipt__title">Payment pending</h1>
-          <p class="receipt__lede">Your registration will be confirmed when payment completes.</p>
+          <Typography
+            id="receipt-title"
+            tag="h1"
+            variant="heading-large"
+            uppercase
+            class="receipt__title"
+          >
+            Payment pending
+          </Typography>
+          <Typography tag="p" variant="body-large" class="receipt__lede">
+            Your registration will be confirmed when payment completes.
+          </Typography>
         </div>
       </section>
     </main>
@@ -337,28 +399,20 @@ function formatPaymentBrand(value: string) {
 .receipt__eyebrow {
   --p-max-width: 100%;
   color: var(--accent-600);
-  font-size: 0.86rem;
   font-weight: 700;
-  line-height: 1.1;
-  text-transform: uppercase;
 }
 
 .receipt__title {
-  max-width: 14ch;
+  max-width: 11ch;
   margin-top: 0.45rem;
-  color: var(--primary-500);
-  font-size: clamp(2rem, 5.6vw, 2.85rem);
-  font-weight: 700;
-  line-height: 0.98;
-  letter-spacing: 0;
+  color: var(--text-1);
 }
 
 .receipt__lede {
   --p-max-width: 31rem;
   margin-top: 0.85rem;
   color: var(--neutral-600);
-  font-size: 1rem;
-  line-height: 1.35;
+  font-style: italic;
 }
 
 .receipt-section {
@@ -378,14 +432,12 @@ function formatPaymentBrand(value: string) {
   margin-bottom: 1rem;
 }
 
-.receipt-section__header h2 {
+.receipt-section__title {
   color: var(--secondary);
-  font-size: 1.25rem;
   font-weight: 700;
-  line-height: 1.15;
 }
 
-.receipt-section__header p {
+.receipt-section__meta {
   --p-max-width: 24rem;
   color: var(--primary-600);
   font-weight: 700;
