@@ -1,18 +1,30 @@
+<script setup lang="ts">
+const mobileMenuId = "mobile-menu";
+
+const navLinks = [
+  { label: "Our Services", to: "/#our-services" },
+  { label: "About Us", to: "/#about-us" },
+  { label: "Courses", to: "/#courses" },
+];
+
+const closeMobileMenu = () => {
+  if (!import.meta.client) return;
+
+  const menu = document.getElementById(mobileMenuId) as
+    | (HTMLElement & { hidePopover?: () => void })
+    | null;
+  menu?.hidePopover?.();
+};
+</script>
+
 <template>
   <header class="site-header">
-    <NuxtLink to="/" class="site-header__brand" aria-label="Harmony Rooster — Home">
-      <SvgoIconRoosterbg
-        class="site-header__mark"
-        filled
-        :fontControlled="true"
-        aria-hidden="true"
-      />
-    </NuxtLink>
+    <SiteBrand class="site-header__brand" aria-label="Harmony Rooster home" />
 
     <button
       class="site-header__toggle"
       type="button"
-      popovertarget="mobile-menu"
+      :popovertarget="mobileMenuId"
       aria-haspopup="dialog"
       aria-label="Open navigation menu"
     >
@@ -21,25 +33,20 @@
 
     <nav class="site-header__nav" aria-label="Primary navigation">
       <ul class="site-header__list">
-        <li>
-          <NuxtLink to="#our-services" class="site-header__link">Our Services</NuxtLink>
-        </li>
-        <li>
-          <NuxtLink to="#about-us" class="site-header__link">About Us</NuxtLink>
-        </li>
-        <li>
-          <NuxtLink to="#courses" class="site-header__link">Courses</NuxtLink>
+        <li v-for="link in navLinks" :key="link.to">
+          <NuxtLink :to="link.to" class="site-header__link">{{ link.label }}</NuxtLink>
         </li>
       </ul>
     </nav>
+
     <div class="site-header__actions site-header__actions--desktop">
-      <button class="button button--md button--primary">Let's Chat</button>
-      <button class="button button--md button--accent">813-888-8888</button>
+      <NuxtLink class="button button--md button--primary" to="/#contact">Let's Chat</NuxtLink>
+      <a class="button button--md button--accent" href="tel:+18138888888">813-888-8888</a>
     </div>
   </header>
 
   <div
-    id="mobile-menu"
+    :id="mobileMenuId"
     class="site-header__drawer"
     popover
     role="dialog"
@@ -50,7 +57,7 @@
       <button
         class="site-header__drawer-close"
         type="button"
-        popovertarget="mobile-menu"
+        :popovertarget="mobileMenuId"
         popovertargetaction="hide"
         aria-label="Close navigation menu"
       >
@@ -60,38 +67,33 @@
 
     <nav aria-label="Mobile navigation">
       <ul class="site-header__drawer-list">
-        <li>
-          <NuxtLink to="#our-services" class="site-header__link">Our Services</NuxtLink>
-        </li>
-        <li>
-          <NuxtLink to="#about-us" class="site-header__link">About Us</NuxtLink>
-        </li>
-        <li>
-          <NuxtLink to="#courses" class="site-header__link">Courses</NuxtLink>
+        <li v-for="link in navLinks" :key="link.to">
+          <NuxtLink :to="link.to" class="site-header__link" @click="closeMobileMenu">
+            {{ link.label }}
+          </NuxtLink>
         </li>
       </ul>
     </nav>
 
     <div class="site-header__actions site-header__actions--drawer">
-      <button class="button button--md button--primary">Lets Chat</button>
-      <button class="button button--md button--accent">813-888-8888</button>
+      <NuxtLink class="button button--md button--primary" to="/#contact" @click="closeMobileMenu">
+        Let's Chat
+      </NuxtLink>
+      <a class="button button--md button--accent" href="tel:+18138888888" @click="closeMobileMenu">
+        813-888-8888
+      </a>
     </div>
   </div>
 </template>
 
 <style scoped>
 .site-header {
-  width: 100%;
-  max-width: 72rem;
+  width: min(100% - 2rem, 72rem);
   margin-inline: auto;
-  padding: var(--space-xs) 1rem;
+  padding-block: clamp(1rem, 2.5vw, 1.5rem);
   display: flex;
   align-items: center;
-}
-
-.site-header__mark {
-  font-size: 4rem;
-  fill: var(--primary-500);
+  gap: 1rem;
 }
 
 .site-header__actions {
@@ -108,6 +110,8 @@
 }
 
 .site-header__brand {
+  --site-brand-wordmark-width: clamp(9.8rem, 20vw, 12.25rem);
+
   margin-right: auto;
 }
 
@@ -125,6 +129,7 @@
   min-height: 44px;
   font-size: 0.875rem;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .site-header__list {
@@ -251,6 +256,7 @@
   min-height: 44px;
   font-size: 0.875rem;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .site-header__drawer-list {

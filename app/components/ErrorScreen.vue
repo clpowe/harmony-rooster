@@ -16,18 +16,7 @@ defineEmits<{
 <template>
   <div class="error-screen">
     <header class="error-screen__header">
-      <NuxtLink to="/" class="error-screen__brand" aria-label="Harmony Rooster home">
-        <SvgoIconRoosterbg
-          class="error-screen__mark"
-          filled
-          :fontControlled="true"
-          aria-hidden="true"
-        />
-        <span class="error-screen__wordmark">
-          <span class="error-screen__wordmark-primary">Harmony</span>
-          <span class="error-screen__wordmark-accent">Rooster</span>
-        </span>
-      </NuxtLink>
+      <SiteBrand class="error-screen__brand" aria-label="Harmony Rooster home" />
     </header>
 
     <main class="error-screen__main">
@@ -82,42 +71,14 @@ defineEmits<{
 }
 
 .error-screen__brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-decoration: none;
+  --site-brand-mark-width: 1.5625rem;
+  --site-brand-mark-height: 2.185rem;
+  --site-brand-wordmark-width: clamp(9.4rem, 22vw, 11.5rem);
 }
 
-.error-screen__brand:focus-visible,
 .error-screen__button:focus-visible {
   outline: 3px solid var(--primary-500);
   outline-offset: 4px;
-}
-
-.error-screen__mark {
-  width: 1.5625rem;
-  height: 2.185rem;
-  color: var(--primary-500);
-  fill: currentColor;
-}
-
-.error-screen__wordmark {
-  display: inline-flex;
-  gap: 0.25rem;
-  align-items: baseline;
-  font-size: 1rem;
-  line-height: 1;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.error-screen__wordmark-primary {
-  color: var(--primary-500);
-}
-
-.error-screen__wordmark-accent {
-  color: var(--button-accent-strong);
 }
 
 .error-screen__main {
@@ -234,8 +195,8 @@ defineEmits<{
     padding-block: 2.5rem;
   }
 
-  .error-screen__wordmark {
-    font-size: 0.9375rem;
+  .error-screen__brand {
+    --site-brand-wordmark-width: 9.2rem;
   }
 
   .error-screen__title {

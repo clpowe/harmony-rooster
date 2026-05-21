@@ -111,20 +111,7 @@ function formatPaymentBrand(value: string) {
 <template>
   <div class="success-page">
     <header class="success-header" aria-label="Checkout confirmation">
-      <NuxtLink to="/" class="success-header__brand" aria-label="Harmony Rooster home">
-        <SvgoIconRoosterbg
-          class="success-header__mark"
-          filled
-          :fontControlled="true"
-          aria-hidden="true"
-        />
-        <SvgoIconWordmark
-          class="success-header__wordmark"
-          filled
-          :fontControlled="true"
-          aria-hidden="true"
-        />
-      </NuxtLink>
+      <SiteBrand class="success-header__brand" aria-label="Harmony Rooster home" />
 
       <NuxtLink to="/" class="success-back" aria-label="Return to Harmony Rooster home">
         <Icon name="lucide:arrow-left" class="success-back__icon" aria-hidden="true" />
@@ -333,30 +320,12 @@ function formatPaymentBrand(value: string) {
 }
 
 .success-header__brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-width: 0;
-  color: inherit;
-  text-decoration: none;
+  --site-brand-wordmark-width: clamp(9.8rem, 20vw, 12.25rem);
 }
 
-.success-header__brand:focus-visible,
 .success-back:focus-visible {
   outline: 3px solid var(--primary-400);
   outline-offset: 4px;
-}
-
-.success-header__mark {
-  width: 1.9rem;
-  height: 2.25rem;
-  flex: 0 0 auto;
-  fill: var(--primary-500);
-}
-
-.success-header__wordmark {
-  width: clamp(9.8rem, 20vw, 12.25rem);
-  height: auto;
 }
 
 .success-back {
@@ -579,8 +548,8 @@ function formatPaymentBrand(value: string) {
     padding-inline: 0.7rem;
   }
 
-  .success-header__wordmark {
-    width: 9.2rem;
+  .success-header__brand {
+    --site-brand-wordmark-width: 9.2rem;
   }
 
   .receipt__intro {
