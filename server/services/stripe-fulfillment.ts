@@ -349,7 +349,12 @@ export async function fulfillCheckout(
       internalCustomerId: context.internalCustomerId,
       internalSessionId: context.internalSessionId,
     });
-    const registration = await createRegistration(context, event, dependencies);
+
+    const registration = await createRegistration(context, event, dependencies, {
+      fulfillmentRecord: claim.record,
+      recordKey,
+    });
+
     logger.info("Created registration for checkout fulfillment", {
       registrationId: registration.id,
     });
@@ -390,6 +395,7 @@ export async function fulfillCheckout(
       claim && claim.ok
         ? {
             ...claim.record,
+            ...existingRecord,
             lastError: error?.message ?? "Unknown error",
           }
         : {
@@ -626,6 +632,10 @@ export async function createRegistration(
   context: CheckoutContext,
   event: H3Event,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
+  fulfillmentState?: {
+    fulfillmentRecord: FulfillmentRecord;
+    recordKey: string;
+  },
 ): Promise<RegistrationResult> {
   const logger = createRequestLogger(event, {
     defaults: {
@@ -642,29 +652,57 @@ export async function createRegistration(
     Customer: [context.internalCustomerId],
   };
 
-  logger.info("Creating Airtable registration", {
-    customerId: context.internalCustomerId,
-    customerStripeId: context.stripeCustomerId,
-    existingSessionRegistrationsCount: context.session.registrations?.length ?? 0,
-    registrationName: context.registrationName,
-    sessionId: context.internalSessionId,
-  });
+  let registrationId = fulfillmentState?.fulfillmentRecord.registrationId;
 
-  const registration = await airtable.insert(registrationsTable, registrationPayload);
+  if (!registrationId) {
+    logger.info("Creating Airtable registration", {
+      customerId: context.internalCustomerId,
+      customerStripeId: context.stripeCustomerId,
+      existingSessionRegistrationsCount: context.session.registrations?.length ?? 0,
+      registrationName: context.registrationName,
+      sessionId: context.internalSessionId,
+    });
 
-  logger.info("Created Airtable registration", {
-    registrationId: registration.id,
-    sessionId: context.internalSessionId,
-  });
+    const registration = await airtable.insert(registrationsTable, registrationPayload);
+    registrationId = registration.id;
+
+    logger.info("Created Airtable registration", {
+      registrationId,
+      sessionId: context.internalSessionId,
+    });
+
+    if (fulfillmentState) {
+      await writeFulfillmentRecord(
+        fulfillmentState.recordKey,
+        {
+          ...fulfillmentState.fulfillmentRecord,
+          internalCustomerId: context.internalCustomerId,
+          internalSessionId: context.internalSessionId,
+          registrationId,
+          status: "processing",
+        },
+        dependencies,
+      );
+      logger.info("Persisted fulfillment registration id before session update", {
+        registrationId,
+        sessionId: context.internalSessionId,
+      });
+    }
+  } else {
+    logger.info("Reusing persisted Airtable registration", {
+      registrationId,
+      sessionId: context.internalSessionId,
+    });
+  }
 
   const nextRegistrations = Array.from(
-    new Set([...(context.session.registrations ?? []), registration.id]),
+    new Set([...(context.session.registrations ?? []), registrationId]),
   );
 
   logger.info("Updating Airtable session registrations", {
     currentRegistrationsCount: context.session.registrations?.length ?? 0,
     nextRegistrationsCount: nextRegistrations.length,
-    registrationId: registration.id,
+    registrationId,
     sessionId: context.internalSessionId,
   });
 
@@ -674,7 +712,7 @@ export async function createRegistration(
       registrations: nextRegistrations,
     });
     logger.info("Updated Airtable session registrations", {
-      registrationId: registration.id,
+      registrationId,
       sessionId: context.internalSessionId,
       totalRegistrations: updatedSession.registrations?.length ?? 0,
     });
@@ -699,7 +737,7 @@ export async function createRegistration(
     captureServerError(error, {
       context: {
         nextRegistrationsCount: nextRegistrations.length,
-        registrationId: registration.id,
+        registrationId,
         sessionFieldNames,
         sessionId: context.internalSessionId,
         source: "stripe-fulfillment",
@@ -710,7 +748,7 @@ export async function createRegistration(
     throw error;
   }
 
-  return { id: registration.id };
+  return { id: registrationId };
 }
 
 export async function markFulfillmentSucceeded(

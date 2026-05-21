@@ -137,14 +137,24 @@ export default defineEventHandler(async (event) => {
       phone: phonenumber,
     });
 
-    const customer = await stripe.customers.create({
-      email,
-      name: `${first_name} ${last_name}`,
-      phone: phonenumber,
-      metadata: {
-        sessionId: user.id,
-      },
-    });
+    const [customerError, customer] = await catchError(
+      stripe.customers.create({
+        email,
+        name: `${first_name} ${last_name}`,
+        phone: phonenumber,
+        metadata: {
+          sessionId: user.id,
+        },
+      }),
+    );
+
+    if (customerError != undefined) {
+      throw customerError;
+    }
+
+    if (!customer) {
+      throw new Error("Failed to create customer");
+    }
 
     user = await db.update(customersTable, {
       id: user.id,

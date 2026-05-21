@@ -31,8 +31,10 @@ const sessionId = computed(() => {
   const rawSessionId = route.query.session_id;
   return typeof rawSessionId === "string" ? rawSessionId : rawSessionId?.[0];
 });
+const hasSessionId = computed(() => Boolean(sessionId.value));
+const receiptQuery = computed(() => ({ session_id: sessionId.value }));
 
-if (!sessionId.value) {
+if (!hasSessionId.value) {
   await navigateTo("/");
 }
 
@@ -40,10 +42,11 @@ const {
   data: checkoutData,
   error,
   pending,
+  refresh: refreshCheckoutData,
 } = await useFetch<CheckoutSuccessData>("/api/stripe/success", {
-  query: { session_id: sessionId.value },
+  query: receiptQuery,
   server: true,
-  immediate: true,
+  immediate: hasSessionId.value,
 });
 
 const isPaid = computed(() => checkoutData.value?.status === "paid");
@@ -60,14 +63,19 @@ const paymentMethod = computed(() => {
   const brand = payment?.brand ? formatPaymentBrand(payment.brand) : "card";
   return payment?.last4 ? `${brand} ending in ${payment.last4}` : brand;
 });
-
-const goBack = () => {
-  if (window.history.length > 1) {
-    window.history.back();
-    return;
+const receiptStatusMessage = computed(() => {
+  if (pending.value) return "Confirming your purchase. Payment details are loading.";
+  if (error.value) {
+    return "We could not load this receipt. Please try again or contact Harmony Rooster.";
   }
+  if (isPaid.value)
+    return `Purchase confirmed. Your spot has been reserved for ${className.value}.`;
 
-  navigateTo("/");
+  return "Payment pending. Your registration will be confirmed when payment completes.";
+});
+
+const retryReceiptLoad = async () => {
+  await refreshCheckoutData();
 };
 
 function formatClassDate(value?: string) {
@@ -118,14 +126,22 @@ function formatPaymentBrand(value: string) {
         />
       </NuxtLink>
 
-      <button class="success-back" type="button" @click="goBack">
+      <NuxtLink to="/" class="success-back" aria-label="Return to Harmony Rooster home">
         <Icon name="lucide:arrow-left" class="success-back__icon" aria-hidden="true" />
-        Back
-      </button>
+        Return home
+      </NuxtLink>
     </header>
 
     <main class="success-main">
-      <section class="receipt" aria-labelledby="receipt-title">
+      <section
+        class="receipt"
+        aria-labelledby="receipt-title"
+        :aria-busy="pending ? 'true' : 'false'"
+      >
+        <p class="u-visually-hidden" role="status" aria-live="polite" aria-atomic="true">
+          {{ receiptStatusMessage }}
+        </p>
+
         <div v-if="pending" class="receipt__status">
           <Icon name="lucide:loader-circle" class="receipt__spinner" aria-hidden="true" />
           <Typography
@@ -156,6 +172,19 @@ function formatPaymentBrand(value: string) {
           <Typography tag="p" variant="body-large" class="receipt__lede">
             Please try again or contact Harmony Rooster.
           </Typography>
+          <div class="receipt__actions" aria-label="Receipt recovery options">
+            <button
+              class="button button--md button--primary"
+              type="button"
+              :disabled="pending"
+              @click="retryReceiptLoad"
+            >
+              Try again
+            </button>
+            <NuxtLink class="button button--md button--secondary" to="/#contact">
+              Contact support
+            </NuxtLink>
+          </div>
         </div>
 
         <div v-else-if="isPaid" class="receipt__ready">
@@ -165,7 +194,7 @@ function formatPaymentBrand(value: string) {
             <Icon name="lucide:badge-check" class="receipt__seal" aria-hidden="true" />
             <div>
               <Typography tag="p" variant="heading-small" uppercase class="receipt__eyebrow">
-                Purchase confirmed
+                Receipt {{ orderNumber }}
               </Typography>
               <Typography
                 id="receipt-title"
@@ -215,7 +244,7 @@ function formatPaymentBrand(value: string) {
                 <dd>{{ checkoutData?.session?.time ?? "Time pending" }}</dd>
               </div>
 
-              <div class="class-grid__item class-grid__item--wide">
+              <div class="class-grid__item">
                 <dt>
                   <Icon name="lucide:map-pin" aria-hidden="true" />
                   Location
@@ -342,6 +371,7 @@ function formatPaymentBrand(value: string) {
   color: var(--text-1);
   font-size: 0.875rem;
   line-height: 1;
+  text-decoration: none;
   cursor: pointer;
   transition:
     background-color 160ms ease,
@@ -370,7 +400,7 @@ function formatPaymentBrand(value: string) {
   overflow: hidden;
   border-radius: 18px;
   background: var(--surface-1);
-  box-shadow: 0 18px 44px rgb(40 53 82 / 0.1);
+  box-shadow: var(--shadow-2);
 }
 
 .receipt__top-rule {
@@ -392,7 +422,7 @@ function formatPaymentBrand(value: string) {
 .receipt__seal {
   width: 2.75rem;
   height: 2.75rem;
-  color: oklch(52% 0.19 142);
+  color: var(--success-500);
   stroke-width: 1.8;
 }
 
@@ -448,15 +478,17 @@ function formatPaymentBrand(value: string) {
 
 .class-grid {
   display: grid;
-  gap: 0.9rem;
+  border-top: 1px solid color-mix(in oklch, var(--neutral-200) 86%, transparent);
 }
 
 .class-grid__item {
   min-width: 0;
-  padding: 1rem;
-  border: 1px solid color-mix(in oklch, var(--neutral-200) 88%, transparent);
-  border-radius: 12px;
-  background: var(--surface-1);
+  padding-block: 0.9rem;
+  display: grid;
+  grid-template-columns: minmax(6.75rem, max-content) 1fr;
+  gap: 1rem;
+  align-items: baseline;
+  border-bottom: 1px solid color-mix(in oklch, var(--neutral-200) 86%, transparent);
 }
 
 .class-grid__item dt,
@@ -478,7 +510,6 @@ function formatPaymentBrand(value: string) {
 }
 
 .class-grid__item dd {
-  margin-top: 0.55rem;
   color: var(--text-1);
   font-size: clamp(1.05rem, 2.3vw, 1.22rem);
   font-weight: 700;
@@ -506,11 +537,22 @@ function formatPaymentBrand(value: string) {
 }
 
 .receipt__status {
-  min-height: 24rem;
+  min-height: clamp(16rem, 42svh, 22rem);
   padding: clamp(1.5rem, 4vw, 2.5rem);
   display: grid;
   align-content: center;
   gap: 0.9rem;
+}
+
+.receipt__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.45rem;
+}
+
+.receipt__actions .button {
+  min-height: 44px;
 }
 
 .receipt__status .receipt__title {
@@ -528,16 +570,6 @@ function formatPaymentBrand(value: string) {
   animation: receipt-spin 900ms linear infinite;
 }
 
-@media (min-width: 38rem) {
-  .class-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .class-grid__item--wide {
-    grid-column: 1 / -1;
-  }
-}
-
 @media (max-width: 34rem) {
   .success-header {
     align-items: flex-start;
@@ -553,6 +585,17 @@ function formatPaymentBrand(value: string) {
 
   .receipt__intro {
     grid-template-columns: 1fr;
+  }
+
+  .receipt__status {
+    min-height: auto;
+    align-content: start;
+    padding-block: clamp(1.5rem, 9vw, 2rem);
+  }
+
+  .class-grid__item {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
   }
 
   .receipt-section__header,

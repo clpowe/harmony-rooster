@@ -36,6 +36,7 @@
     --text-1-light: oklch(21.46% 0 0);
     --text-2-light: var(--neutral-700);
     --danger-500: oklch(58% 0.217 27.33);
+    --success-500: oklch(52% 0.19 142);
 
     --background-1-light: #fff;
     --background-2-light: var(--neutral-50);

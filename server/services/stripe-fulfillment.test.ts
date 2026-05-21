@@ -45,6 +45,7 @@ class FakeRedis {
 
 class FakeAirtable {
   failInsert = false;
+  failSessionUpdateOnce = false;
   registrations: Array<Record<string, unknown>> = [];
   sessions = new Map<string, Record<string, unknown>>();
   customers = new Map<string, Record<string, unknown>>();
@@ -80,6 +81,11 @@ class FakeAirtable {
 
     if (!existing) {
       throw new Error(`Missing Airtable record ${payload.id}`);
+    }
+
+    if (table.tableId === "tbl1Ro2mdLntedaBm" && this.failSessionUpdateOnce) {
+      this.failSessionUpdateOnce = false;
+      throw new Error("Airtable session update failed");
     }
 
     const next = {
@@ -440,6 +446,38 @@ describe("fulfillCheckout", () => {
       await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
     ).toMatchObject({
       status: "failed",
+    });
+  });
+
+  it("reuses the persisted registration when session update fails then retries", async () => {
+    const airtable = new FakeAirtable();
+    airtable.failSessionUpdateOnce = true;
+    const { dependencies } = createDependencies({ airtable });
+
+    await expect(fulfillCheckout("cs_test_123", "evt_1", event, dependencies)).rejects.toThrow(
+      /Airtable session update failed/,
+    );
+
+    expect(airtable.registrations).toHaveLength(1);
+    expect(
+      await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
+    ).toMatchObject({
+      registrationId: "reg_1",
+      status: "failed",
+    });
+
+    await fulfillCheckout("cs_test_123", "evt_2", event, dependencies);
+
+    expect(airtable.registrations).toHaveLength(1);
+    expect(airtable.sessions.get("sess_airtable")).toMatchObject({
+      registrations: ["reg_1"],
+    });
+    expect(
+      await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
+    ).toMatchObject({
+      registrationId: "reg_1",
+      status: "fulfilled",
+      stripeEventId: "evt_2",
     });
   });
 });
