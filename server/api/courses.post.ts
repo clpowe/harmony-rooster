@@ -84,6 +84,20 @@ function escapeAirtableFormulaValue(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+function getConfiguredSiteOrigin(siteUrl: string | undefined): string | null {
+  const trimmedSiteUrl = siteUrl?.trim();
+
+  if (!trimmedSiteUrl) {
+    return null;
+  }
+
+  try {
+    return new URL(trimmedSiteUrl).origin;
+  } catch {
+    return null;
+  }
+}
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
   const stripe = await useServerStripe(event);
@@ -190,8 +204,9 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const successUrl = `${config.public.siteUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl = `${config.public.siteUrl}/cancel`;
+  const baseUrl = getConfiguredSiteOrigin(config.public.siteUrl) ?? getRequestURL(event).origin;
+  const successUrl = `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = `${baseUrl}/cancel`;
 
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: "payment",
