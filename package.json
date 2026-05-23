@@ -18,8 +18,8 @@
     "@upstash/redis": "^1.37.0",
     "@vee-validate/nuxt": "^4.15.1",
     "@vee-validate/zod": "^4.15.1",
-    "@vue-email/components": "^0.0.21",
-    "@vue-email/render": "^0.0.9",
+    "@vue-email/components": "0.0.21",
+    "@vue-email/render": "0.0.9",
     "@vueuse/core": "^10.11.1",
     "airtable": "^0.12.2",
     "airtable-ts": "^1.10.0",
@@ -34,7 +34,6 @@
     "stripe": "^19.3.0",
     "ufo": "^1.6.3",
     "vue": "^3.5.28",
-    "vue-email": "^0.8.11",
     "vue-router": "^4.6.4",
     "zod": "^3.25.76"
   },
