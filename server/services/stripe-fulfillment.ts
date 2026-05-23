@@ -831,7 +831,7 @@ async function retrieveCheckoutSession(
   });
 
   return stripe.checkout.sessions.retrieve(checkoutSessionId, {
-    expand: ["customer", "payment_intent"],
+    expand: ["customer", "payment_intent", "payment_intent.latest_charge"],
   });
 }
 
