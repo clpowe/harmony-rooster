@@ -80,10 +80,6 @@ const customersTable: Table<CustomerRecord> = {
   },
 };
 
-function escapeAirtableFormulaValue(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-}
-
 function getConfiguredSiteOrigin(siteUrl: string | undefined): string | null {
   const trimmedSiteUrl = siteUrl?.trim();
 
@@ -121,6 +117,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const { first_name, last_name, email, phonenumber, sessionId } = parsed.data;
+  const normalizedEmail = email.toLocaleLowerCase().trim();
+
   const db = new AirtableTs({ apiKey: config.airtableKey });
 
   let sessionRecord: SessionRecord;
@@ -134,64 +132,26 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const escapedEmail = escapeAirtableFormulaValue(email.toLowerCase().trim());
-  const existingUsers = await db.scan(customersTable, {
-    maxRecords: 1,
-    filterByFormula: `{email}="${escapedEmail}"`,
+  const user = await db.insert(customersTable, {
+    first_name,
+    last_name,
+    email: normalizedEmail,
+    phone: phonenumber,
   });
 
-  let user = existingUsers[0];
-  let customerID = user?.stripeID ?? undefined;
+  const customer = await stripe.customers.create({
+    email: normalizedEmail,
+    name: `${first_name} ${last_name}`,
+    phone: phonenumber,
+    metadata: {
+      sessionId: user.id,
+    },
+  });
 
-  if (!user) {
-    user = await db.insert(customersTable, {
-      first_name,
-      last_name,
-      email: email.toLowerCase().trim(),
-      phone: phonenumber,
-    });
-
-    const [customerError, customer] = await catchError(
-      stripe.customers.create({
-        email,
-        name: `${first_name} ${last_name}`,
-        phone: phonenumber,
-        metadata: {
-          sessionId: user.id,
-        },
-      }),
-    );
-
-    if (customerError != undefined) {
-      throw customerError;
-    }
-
-    if (!customer) {
-      throw new Error("Failed to create customer");
-    }
-
-    user = await db.update(customersTable, {
-      id: user.id,
-      stripeID: customer.id,
-    });
-
-    customerID = customer.id;
-  } else if (!customerID) {
-    const customer = await stripe.customers.create({
-      email,
-      name: `${first_name} ${last_name}`,
-      phone: phonenumber,
-      metadata: {
-        sessionId: user.id,
-      },
-    });
-
-    user = await db.update(customersTable, {
-      id: user.id,
-      stripeID: customer.id,
-    });
-    customerID = customer.id;
-  }
+  await db.update(customersTable, {
+    id: user.id,
+    stripeID: customer.id,
+  });
 
   const productCost = sessionRecord.cost[0];
   const productID = sessionRecord.productID[0];
@@ -210,8 +170,7 @@ export default defineEventHandler(async (event) => {
 
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: "payment",
-    payment_method_types: ["card"],
-    customer: customerID,
+    customer: customer.id,
     line_items: [
       {
         price_data: {
@@ -227,7 +186,7 @@ export default defineEventHandler(async (event) => {
       customerID: user.id,
       first_name,
       last_name,
-      email,
+      email: normalizedEmail,
       courseName: sessionRecord.sessionName,
       courseDate: sessionRecord.date,
       courseLocation: sessionRecord.location,

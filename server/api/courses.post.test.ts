@@ -86,6 +86,15 @@ async function getHandler() {
 describe("POST /api/courses", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    airtable.insert.mockResolvedValue({
+      id: "cust_attempt",
+      stripeID: null,
+    });
+
+    airtable.update.mockResolvedValue({
+      id: "cust_attempt",
+      stripeID: "cus_new",
+    });
     airtable.get.mockResolvedValue(sessionRecord);
     airtable.scan.mockResolvedValue([
       {
@@ -104,90 +113,71 @@ describe("POST /api/courses", () => {
     stripe.customers.create.mockResolvedValue({ id: "cus_new" });
   });
 
-  it("creates checkout for an existing customer with normalized lookup and safe redirect URLs", async () => {
-    const handler = await getHandler();
+  it("does not select an existing Stripe customer from an unverified email", async () => {
+    airtable.scan.mockResolvedValue([
+      {
+        id: "cust_victim",
+        email: "customer@example.com",
+        first_name: "Victim",
+        last_name: "Person",
+        phone: "615-555-9999",
+        stripeID: "cus_victim",
+      },
+    ]);
 
+    const handler = await getHandler();
     const result = await handler({ body: validBody });
 
-    expect(result).toEqual({ url: "https://checkout.stripe.com/c/pay/cs_test_123" });
-    expect(airtable.scan).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.objectContaining({
-        filterByFormula: '{email}="customer@example.com"',
-        maxRecords: 1,
-      }),
-    );
-    expect(stripe.customers.create).not.toHaveBeenCalled();
-    expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        cancel_url: "https://harmonyrooster.com/cancel",
-        customer: "cus_existing",
-        line_items: [
-          expect.objectContaining({
-            price_data: expect.objectContaining({
-              product: "prod_123",
-              unit_amount: 12050,
-            }),
-          }),
-        ],
-        metadata: expect.objectContaining({
-          customerID: "cust_airtable",
-          sessionID: "sess_airtable",
-        }),
-        success_url: "https://harmonyrooster.com/success?session_id={CHECKOUT_SESSION_ID}",
-      }),
-    );
-  });
-
-  it("creates and persists both Airtable and Stripe customers when none exists", async () => {
-    airtable.scan.mockResolvedValue([]);
-    airtable.insert.mockResolvedValue({
-      id: "cust_new",
-      stripeID: null,
+    expect(result).toEqual({
+      url: "https://checkout.stripe.com/c/pay/cs_test_123",
     });
-    airtable.update.mockResolvedValue({
-      id: "cust_new",
-      stripeID: "cus_new",
-    });
-    const handler = await getHandler();
 
-    await handler({ body: validBody });
+    expect(airtable.scan).not.toHaveBeenCalled();
 
     expect(airtable.insert).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({
         email: "customer@example.com",
         first_name: "Taylor",
+        last_name: "Swift",
+        phone: "615-555-1234",
       }),
     );
-    expect(stripe.customers.create).toHaveBeenCalledWith(
+
+    expect(stripe.customers.create).toHaveBeenCalledWith({
+      email: "customer@example.com",
+      name: "Taylor Swift",
+      phone: "615-555-1234",
+      metadata: {
+        sessionId: "cust_attempt",
+      },
+    });
+
+    expect(airtable.update).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.objectContaining({
-        email: "CUSTOMER@EXAMPLE.COM",
-        metadata: { sessionId: "cust_new" },
+        id: "cust_attempt",
+        stripeID: "cus_new",
       }),
     );
-    expect(airtable.update).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.objectContaining({ id: "cust_new", stripeID: "cus_new" }),
-    );
-    expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
-      expect.objectContaining({ customer: "cus_new" }),
-    );
-  });
 
-  it("adds a Stripe id when an existing Airtable customer does not have one", async () => {
-    airtable.scan.mockResolvedValue([{ id: "cust_airtable", stripeID: null }]);
-    airtable.update.mockResolvedValue({ id: "cust_airtable", stripeID: "cus_new" });
-    const handler = await getHandler();
+    const checkoutParams = stripe.checkout.sessions.create.mock.calls[0]![0];
 
-    await handler({ body: validBody });
-
-    expect(airtable.insert).not.toHaveBeenCalled();
-    expect(stripe.customers.create).toHaveBeenCalledOnce();
-    expect(airtable.update).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.objectContaining({ id: "cust_airtable", stripeID: "cus_new" }),
+    expect(checkoutParams).toEqual(
+      expect.objectContaining({
+        cancel_url: "https://harmonyrooster.com/cancel",
+        customer: "cus_new",
+        metadata: expect.objectContaining({
+          customerID: "cust_attempt",
+          email: "customer@example.com",
+          sessionID: "sess_airtable",
+        }),
+        success_url: "https://harmonyrooster.com/success?session_id={CHECKOUT_SESSION_ID}",
+      }),
     );
+
+    expect(checkoutParams.customer).not.toBe("cus_victim");
+    expect(checkoutParams).not.toHaveProperty("payment_method_types");
   });
 
   it("rejects invalid registration input before querying Airtable", async () => {
