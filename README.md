@@ -32,6 +32,18 @@ yarn dev
 bun run dev
 ```
 
+## Stripe Webhooks
+
+For local Stripe webhook testing, set `NUXT_STRIPE_WEBHOOK_SECRET_KEY` in `.env` to
+the signing secret printed by `stripe listen`, then restart `pnpm dev` so Nuxt
+loads the new value.
+
+```bash
+stripe listen --forward-to http://harmony-rooster.localhost:1355/api/stripe/webhook
+```
+
+The app also accepts the legacy path `/api/webhooks/stripe`.
+
 ## Production
 
 Build the application for production:

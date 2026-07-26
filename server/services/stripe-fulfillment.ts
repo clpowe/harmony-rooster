@@ -79,6 +79,7 @@ export type FulfillmentRecord = {
   registrationId?: string;
   status: FulfillmentStatus;
   stripeEventId: string;
+  receiptSentAt?: string;
 };
 
 export type ClaimResult =
@@ -115,6 +116,8 @@ type SafeRuntimeConfig = {
   posthogProjectApiKey?: string;
   posthogServerLogEnabled?: boolean | string;
   stripeWebhookSecretKey: string;
+  resendApiKey?: string;
+  contactFromEmail?: string;
 };
 
 type RedisClient = Pick<Redis, "del" | "get" | "set">;
@@ -302,6 +305,8 @@ export async function fulfillCheckout(
   let claim: ClaimResult | null = null;
   logger.info("Starting checkout fulfillment");
 
+  let registration: RegistrationResult;
+
   try {
     const checkoutSession = await retrieveCheckoutSession(checkoutSessionId, event, dependencies);
     logger.info("Retrieved Stripe checkout session", {
@@ -336,6 +341,7 @@ export async function fulfillCheckout(
       dependencies,
       checkoutSession,
     );
+
     logger.info("Loaded checkout context", {
       internalCustomerId: context.internalCustomerId,
       internalSessionId: context.internalSessionId,
@@ -350,7 +356,7 @@ export async function fulfillCheckout(
       internalSessionId: context.internalSessionId,
     });
 
-    const registration = await createRegistration(context, event, dependencies, {
+    registration = await createRegistration(context, event, dependencies, {
       fulfillmentRecord: claim.record,
       recordKey,
     });
@@ -372,6 +378,28 @@ export async function fulfillCheckout(
     logger.info("Marked fulfillment succeeded", {
       registrationId: registration.id,
     });
+
+    console.log("Sould send email");
+    try {
+      const { sendReceiptEmail } = await import("./receipt-emails");
+      console.log("sending email");
+      const result = await sendReceiptEmail(context, registration.id, event);
+      if (result) {
+        console.log("email Sent");
+        await markReceiptSent(checkoutSession.id, dependencies);
+      }
+    } catch (err) {
+      captureServerError(err, {
+        context: {
+          checkoutSessionId,
+          registrationId: registration.id,
+          operation: "send-receipt-email",
+          source: "stripe-fulfillment",
+        },
+        event,
+        message: "Receipt email failed",
+      });
+    }
   } catch (error: any) {
     const existingRecord = await readFulfillmentRecord(recordKey, dependencies);
     captureServerError(error, {
@@ -386,7 +414,6 @@ export async function fulfillCheckout(
       event,
       message: "Checkout fulfillment failed",
     });
-
     if (existingRecord?.status === "fulfilled") {
       throw error;
     }
@@ -862,7 +889,7 @@ function getRequiredMetadata(session: Stripe.Checkout.Session): {
   };
 }
 
-async function writeFulfillmentRecord(
+export async function writeFulfillmentRecord(
   recordKey: string,
   record: FulfillmentRecord,
   dependencies: FulfillmentDependencies,
@@ -892,4 +919,18 @@ export function getFulfillmentRecordKey(checkoutSessionId: string): string {
 
 export function getFulfillmentLockKey(checkoutSessionId: string): string {
   return `stripe:fulfillment-lock:${checkoutSessionId}`;
+}
+
+export async function markReceiptSent(
+  checkoutSessionId: string,
+  dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
+): Promise<void> {
+  const recordKey = getFulfillmentRecordKey(checkoutSessionId);
+  const current = await readFulfillmentRecord(recordKey, dependencies);
+  if (!current) return;
+  await writeFulfillmentRecord(
+    recordKey,
+    { ...current, receiptSentAt: new Date().toISOString() },
+    dependencies,
+  );
 }

@@ -1,11 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type Stripe from "stripe";
+
+const sendReceiptEmail = vi.hoisted(() => vi.fn(async () => ({ id: "email_123" })));
+
+vi.mock("./receipt-emails", () => ({
+  sendReceiptEmail,
+}));
+
+vi.stubGlobal(
+  "getHeader",
+  (event: { headers?: Record<string, string> }, name: string) => event.headers?.[name],
+);
+vi.stubGlobal("readRawBody", async (event: { rawBody?: string }) => event.rawBody);
+
 import {
   claimFulfillment,
   fulfillCheckout,
   getFulfillmentRecordKey,
+  isFulfillmentCandidate,
+  markReceiptSent,
   readFulfillmentRecord,
   type FulfillmentDependencies,
+  verifyStripeWebhook,
 } from "./stripe-fulfillment";
 
 class FakeRedis {
@@ -191,11 +207,13 @@ function createCheckoutSession(
 function createDependencies(options?: {
   airtable?: FakeAirtable;
   checkoutSession?: Stripe.Checkout.Session;
+  constructEvent?: ReturnType<typeof vi.fn>;
 }) {
   const redis = new FakeRedis();
   const airtable = options?.airtable ?? new FakeAirtable();
   const checkoutSession = options?.checkoutSession ?? createCheckoutSession();
   const retrieve = vi.fn().mockResolvedValue(checkoutSession);
+  const constructEvent = options?.constructEvent ?? vi.fn();
 
   airtable.sessions.set("sess_airtable", {
     id: "sess_airtable",
@@ -224,18 +242,107 @@ function createDependencies(options?: {
         airtableKey: "airtable_test_key",
         stripeWebhookSecretKey: "whsec_test",
       }) as never,
-    getStripeClient: async () =>
-      ({
-        checkout: {
-          sessions: {
-            retrieve,
+    getStripeClient: vi.fn(
+      async () =>
+        ({
+          checkout: {
+            sessions: {
+              retrieve,
+            },
           },
-        },
-      }) as never,
+          webhooks: {
+            constructEvent,
+          },
+        }) as never,
+    ),
   };
 
-  return { airtable, dependencies, redis, retrieve };
+  return { airtable, constructEvent, dependencies, redis, retrieve };
 }
+
+beforeEach(() => {
+  sendReceiptEmail.mockClear();
+  sendReceiptEmail.mockResolvedValue({ id: "email_123" });
+});
+
+describe("verifyStripeWebhook", () => {
+  it("rejects requests without a Stripe signature before creating a client", async () => {
+    const { dependencies } = createDependencies();
+
+    await expect(verifyStripeWebhook({ rawBody: "{}" }, dependencies)).rejects.toMatchObject({
+      message: "Missing Stripe signature",
+      statusCode: 400,
+    });
+    expect(dependencies.getStripeClient).not.toHaveBeenCalled();
+  });
+
+  it("rejects requests without a raw body", async () => {
+    const { dependencies } = createDependencies();
+
+    await expect(
+      verifyStripeWebhook({ headers: { "stripe-signature": "sig_test" } }, dependencies),
+    ).rejects.toMatchObject({
+      message: "Missing request body",
+      statusCode: 400,
+    });
+  });
+
+  it("constructs the event with the raw body and configured signing secret", async () => {
+    const stripeEvent = {
+      id: "evt_123",
+      type: "checkout.session.completed",
+    } as Stripe.Event;
+    const constructEvent = vi.fn().mockReturnValue(stripeEvent);
+    const { dependencies } = createDependencies({ constructEvent });
+
+    const result = await verifyStripeWebhook(
+      {
+        headers: { "stripe-signature": "sig_test" },
+        rawBody: "raw=request-body",
+      },
+      dependencies,
+    );
+
+    expect(result).toBe(stripeEvent);
+    expect(constructEvent).toHaveBeenCalledWith("raw=request-body", "sig_test", "whsec_test");
+  });
+
+  it("returns a safe 400 error when signature verification fails", async () => {
+    const constructEvent = vi.fn(() => {
+      throw new Error("signature mismatch");
+    });
+    const { dependencies } = createDependencies({ constructEvent });
+
+    await expect(
+      verifyStripeWebhook(
+        {
+          headers: { "stripe-signature": "sig_bad" },
+          rawBody: "{}",
+        },
+        dependencies,
+      ),
+    ).rejects.toMatchObject({
+      message: "Webhook Error: signature mismatch",
+      statusCode: 400,
+    });
+  });
+});
+
+describe("isFulfillmentCandidate", () => {
+  it.each(["checkout.session.completed", "checkout.session.async_payment_succeeded"])(
+    "accepts %s",
+    (type) => {
+      expect(isFulfillmentCandidate({ type } as Stripe.Event)).toBe(true);
+    },
+  );
+
+  it.each(["checkout.session.async_payment_failed", "payment_intent.succeeded"])(
+    "ignores %s",
+    (type) => {
+      expect(isFulfillmentCandidate({ type } as Stripe.Event)).toBe(false);
+    },
+  );
+});
 
 describe("claimFulfillment", () => {
   it("claims a checkout session the first time", async () => {
@@ -312,6 +419,39 @@ describe("claimFulfillment", () => {
   });
 });
 
+describe("markReceiptSent", () => {
+  it("adds a timestamp while preserving the fulfillment record", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-23T12:00:00.000Z"));
+    const { dependencies } = createDependencies();
+
+    try {
+      await claimFulfillment("cs_test_123", "evt_1", undefined, dependencies);
+      await markReceiptSent("cs_test_123", dependencies);
+
+      expect(
+        await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
+      ).toMatchObject({
+        attemptCount: 1,
+        receiptSentAt: "2026-05-23T12:00:00.000Z",
+        status: "processing",
+        stripeEventId: "evt_1",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("is a no-op when no fulfillment record exists", async () => {
+    const { dependencies } = createDependencies();
+
+    await expect(markReceiptSent("cs_missing", dependencies)).resolves.toBeUndefined();
+    expect(
+      await readFulfillmentRecord(getFulfillmentRecordKey("cs_missing"), dependencies),
+    ).toBeNull();
+  });
+});
+
 describe("fulfillCheckout", () => {
   let event: Record<string, never>;
 
@@ -338,10 +478,32 @@ describe("fulfillCheckout", () => {
     expect(record).toMatchObject({
       attemptCount: 1,
       checkoutSessionId: "cs_test_123",
+      receiptSentAt: expect.any(String),
       registrationId: "reg_1",
       status: "fulfilled",
       stripeEventId: "evt_1",
     });
+    expect(sendReceiptEmail).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a successful registration fulfilled when receipt delivery fails", async () => {
+    sendReceiptEmail.mockRejectedValueOnce(new Error("Resend unavailable"));
+    const { airtable, dependencies } = createDependencies();
+
+    await expect(
+      fulfillCheckout("cs_test_123", "evt_1", event, dependencies),
+    ).resolves.toBeUndefined();
+
+    expect(airtable.registrations).toHaveLength(1);
+    const record = await readFulfillmentRecord(
+      getFulfillmentRecordKey("cs_test_123"),
+      dependencies,
+    );
+    expect(record).toMatchObject({
+      registrationId: "reg_1",
+      status: "fulfilled",
+    });
+    expect(record).not.toHaveProperty("receiptSentAt");
   });
 
   it("skips unpaid sessions without creating records", async () => {

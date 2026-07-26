@@ -81,7 +81,7 @@ describe("handleContactSubmission", () => {
         from: "contact@harmonyrooster.com",
         replyTo: "clpowe@gmail.com",
         subject: "New contact form submission from Chris Powe",
-        to: ["clpowe@gmail.com"],
+        to: ["clpowe@gmail.com", "harmonyrooster@gmail.com"],
       }),
     );
   });
@@ -130,5 +130,97 @@ describe("handleContactSubmission", () => {
 
     expect(result).toEqual({ ok: true });
     expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid fields before applying rate limits or sending email", async () => {
+    const { handleContactSubmission } = await import("./contact.post");
+
+    await expect(
+      handleContactSubmission({
+        body: {
+          name: "Chris Powe",
+          email: "not-an-email",
+          message: "This message is long enough to pass validation.",
+          company: "",
+          startedAt: 8_000,
+        },
+        headers: { origin: "https://harmonyrooster.com" },
+        ip: "127.0.0.1",
+      }),
+    ).rejects.toMatchObject({ statusCode: 400 });
+    expect(storageState.size).toBe(0);
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects submissions completed faster than the minimum human timing", async () => {
+    const { handleContactSubmission } = await import("./contact.post");
+
+    await expect(
+      handleContactSubmission({
+        body: {
+          name: "Chris Powe",
+          email: "clpowe@gmail.com",
+          message: "This message is long enough to pass validation.",
+          company: "",
+          startedAt: 9_000,
+        },
+        headers: { origin: "https://harmonyrooster.com" },
+        ip: "127.0.0.1",
+      }),
+    ).rejects.toMatchObject({
+      message: "Submission rejected",
+      statusCode: 400,
+    });
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("rate limits repeated submissions from the same IP address", async () => {
+    storageState.set("contact-rate-limit:127.0.0.1", {
+      attempts: [5_000, 6_000, 7_000, 8_000, 9_000],
+    });
+    const { handleContactSubmission } = await import("./contact.post");
+
+    await expect(
+      handleContactSubmission({
+        body: {
+          name: "Chris Powe",
+          email: "clpowe@gmail.com",
+          message: "This message is long enough to pass validation.",
+          company: "",
+          startedAt: 8_000,
+        },
+        headers: { origin: "https://harmonyrooster.com" },
+        ip: "127.0.0.1",
+      }),
+    ).rejects.toMatchObject({
+      message: "Please wait before sending another message.",
+      statusCode: 429,
+    });
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("returns a gateway error when Resend rejects the delivery", async () => {
+    sendEmail.mockResolvedValue({
+      data: null,
+      error: { message: "Resend unavailable" },
+    });
+    const { handleContactSubmission } = await import("./contact.post");
+
+    await expect(
+      handleContactSubmission({
+        body: {
+          name: "Chris Powe",
+          email: "clpowe@gmail.com",
+          message: "This message is long enough to pass validation.",
+          company: "",
+          startedAt: 8_000,
+        },
+        headers: { origin: "https://harmonyrooster.com" },
+        ip: "127.0.0.1",
+      }),
+    ).rejects.toMatchObject({
+      message: "We could not send your message right now.",
+      statusCode: 502,
+    });
   });
 });

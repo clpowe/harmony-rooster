@@ -34,6 +34,7 @@ export async function handleStripeWebhook(event: any) {
     eventId: stripeEvent.id,
     eventType: stripeEvent.type,
   });
+
   await fulfillCheckout(stripeEvent.data.object.id, stripeEvent.id, event);
   logger.info("Stripe webhook fulfillment completed", {
     checkoutSessionId: stripeEvent.data.object.id,

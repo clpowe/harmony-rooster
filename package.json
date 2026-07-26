@@ -8,6 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "test": "vp test",
+    "test:coverage": "vp test --coverage",
     "postinstall": "nuxt prepare",
     "prepare": "vp config"
   },
@@ -46,19 +47,20 @@
     "@nuxt/kit": "^4.3.1",
     "@nuxt/schema": "^4.3.1",
     "@unlok-co/nuxt-stripe": "5.0.0",
+    "@vitest/coverage-v8": "^4.1.1",
     "nuxt": "^4.3.1",
     "nuxt-security": "2.4.0",
     "nuxt-svgo": "^4.2.6",
     "postcss-nesting": "^13.0.2",
     "typescript": "^5.9.3",
-    "vite-plus": "latest",
-    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+    "vite-plus": "0.1.14",
+    "vitest": "npm:@voidzero-dev/vite-plus-test@0.1.14"
   },
   "packageManager": "pnpm@10.33.0",
   "pnpm": {
     "overrides": {
-      "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-      "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+      "vite": "npm:@voidzero-dev/vite-plus-core@0.1.14",
+      "vitest": "npm:@voidzero-dev/vite-plus-test@0.1.14"
     }
   }
 }
