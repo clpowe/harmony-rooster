@@ -35,7 +35,7 @@ class FakeRedis {
 
   readonly del = vi.fn(async (key: string) => (this.store.delete(key) ? 1 : 0));
 
-  readonly get = vi.fn(async <T,>(key: string): Promise<T | null> => {
+  readonly get = vi.fn(async <T>(key: string): Promise<T | null> => {
     const value = this.store.get(key);
     if (!value) return null;
     return JSON.parse(value) as T;
@@ -60,9 +60,7 @@ class FakeRedis {
   }
 }
 
-function createCheckoutContext(
-  overrides: Partial<Stripe.Checkout.Session> = {},
-): CheckoutContext {
+function createCheckoutContext(overrides: Partial<Stripe.Checkout.Session> = {}): CheckoutContext {
   const receiptUrl = "https://pay.stripe.com/receipts/test_receipt";
   const checkoutSession = {
     id: "cs_test_123",
@@ -94,6 +92,7 @@ function createCheckoutContext(
     internalSessionId: "sess_airtable",
     registrationName: "Taylor Swift - Harmony Course",
     session: {
+      capacity: 3,
       date: "2026-05-01",
       id: "sess_airtable",
       location: "Nashville",
@@ -236,7 +235,7 @@ describe("sendReceiptEmail", () => {
 
     expect(result).toEqual({ id: "email_123" });
     expect(send).toHaveBeenCalledOnce();
-    const payload = send.mock.calls[0][0];
+    const payload = send.mock.calls[0]![0];
     expect(payload.html).not.toContain("https://pay.stripe.com/receipts");
     expect(payload.text).not.toContain("https://pay.stripe.com/receipts");
   });

@@ -1,6 +1,8 @@
 import {
   fulfillCheckout,
   isFulfillmentCandidate,
+  isRefundCandidate,
+  reconcileRefund,
   verifyStripeWebhook,
 } from "../../services/stripe-fulfillment";
 import { createRequestLogger } from "../../utils/logger";
@@ -20,6 +22,17 @@ export async function handleStripeWebhook(event: any) {
     eventId: stripeEvent.id,
     eventType: stripeEvent.type,
   });
+
+  if (isRefundCandidate(stripeEvent)) {
+    const reconciled = await reconcileRefund(stripeEvent.data.object, stripeEvent.id, event);
+    logger.info("Stripe refund webhook processed", {
+      eventId: stripeEvent.id,
+      eventType: stripeEvent.type,
+      reconciled,
+      refundId: stripeEvent.data.object.id,
+    });
+    return { received: true };
+  }
 
   if (!isFulfillmentCandidate(stripeEvent)) {
     logger.info("Stripe webhook ignored: non-fulfillment event", {

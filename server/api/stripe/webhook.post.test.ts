@@ -3,6 +3,8 @@ import type Stripe from "stripe";
 
 const fulfillCheckout = vi.fn();
 const isFulfillmentCandidate = vi.fn();
+const isRefundCandidate = vi.fn();
+const reconcileRefund = vi.fn();
 const verifyStripeWebhook = vi.fn();
 const logger = {
   error: vi.fn(),
@@ -16,6 +18,8 @@ vi.stubGlobal("defineEventHandler", (handler: unknown) => handler);
 vi.mock("../../services/stripe-fulfillment", () => ({
   fulfillCheckout,
   isFulfillmentCandidate,
+  isRefundCandidate,
+  reconcileRefund,
   verifyStripeWebhook,
 }));
 
@@ -27,6 +31,8 @@ describe("handleStripeWebhook", () => {
   beforeEach(() => {
     fulfillCheckout.mockReset();
     isFulfillmentCandidate.mockReset();
+    isRefundCandidate.mockReset();
+    reconcileRefund.mockReset();
     verifyStripeWebhook.mockReset();
     logger.debug.mockReset();
     logger.error.mockReset();
@@ -73,5 +79,34 @@ describe("handleStripeWebhook", () => {
         eventId: "evt_2",
       }),
     );
+  });
+
+  it("reconciles refund lifecycle events without running registration fulfillment", async () => {
+    const refund = {
+      id: "re_session_full",
+      object: "refund",
+      metadata: {
+        checkout_session_id: "cs_test_123",
+        remediation_reason: "session_full",
+      },
+      status: "succeeded",
+    } as unknown as Stripe.Refund;
+    verifyStripeWebhook.mockResolvedValue({
+      data: {
+        object: refund,
+      },
+      id: "evt_refund_1",
+      type: "refund.updated",
+    } as Stripe.Event);
+    isRefundCandidate.mockReturnValue(true);
+    reconcileRefund.mockResolvedValue(true);
+
+    const { handleStripeWebhook } = await import("./webhook.post");
+    const result = await handleStripeWebhook({});
+
+    expect(result).toEqual({ received: true });
+    expect(reconcileRefund).toHaveBeenCalledWith(refund, "evt_refund_1", expect.any(Object));
+    expect(isFulfillmentCandidate).not.toHaveBeenCalled();
+    expect(fulfillCheckout).not.toHaveBeenCalled();
   });
 });

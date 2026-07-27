@@ -63,16 +63,12 @@ export default defineEventHandler(async (event) => {
 
   const today = new Date();
 
-  const allSessionIds = Array.from(
-    new Set(records.flatMap((r) => r.sessions ?? [])),
-  );
+  const allSessionIds = Array.from(new Set(records.flatMap((r) => r.sessions ?? [])));
 
   const sessionMap = new Map<string, CourseSessionRecord & { id: string }>();
 
   if (allSessionIds.length > 0) {
-    const formula = `OR(${allSessionIds
-      .map((id) => `RECORD_ID()='${id}'`)
-      .join(",")})`;
+    const formula = `OR(${allSessionIds.map((id) => `RECORD_ID()='${id}'`).join(",")})`;
 
     const sessionRecords = await db.scan(sessionsTable, {
       filterByFormula: formula,

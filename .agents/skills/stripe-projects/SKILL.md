@@ -18,7 +18,6 @@ allowed-tools:
   - WebFetch
   - Skill
   - Read
-
 ---
 
 ## Stripe Projects — Service Provisioning

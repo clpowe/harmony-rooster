@@ -4,12 +4,22 @@ import Stripe from "stripe";
 import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "../../shared/constants/airtable";
 import { captureServerError, createRequestLogger, createServerLogger } from "../utils/logger";
 import type {
+  StripeWebhookRefundEvent,
   StripeWebhookRegistrationEvent,
   StripeWebhookRegistrationRecord,
 } from "../../shared/types/stripe-webhooks";
 
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 const FIFTEEN_MINUTES_IN_SECONDS = 60 * 15;
+
+const RELEASE_LOCK_SCRIPT = `
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("DEL", KEYS[1])
+end
+
+return 0
+`;
+
 type H3Event = any;
 let redisClient: Redis | null = null;
 const fulfillmentLogger = createServerLogger({
@@ -46,6 +56,7 @@ function getAirtableClient(event: H3Event, dependencies: FulfillmentDependencies
 }
 
 type AirtableSessionRecord = {
+  capacity: number;
   id: string;
   sessionName: string;
   date: string;
@@ -64,19 +75,50 @@ type AirtableCustomerRecord = {
   stripeID: string | null;
 };
 
-type FulfillmentStatus = "processing" | "fulfilled" | "failed";
+type FulfillmentStatus =
+  | "processing"
+  | "fulfilled"
+  | "failed"
+  | "refund_required"
+  | "refund_pending"
+  | "refunded"
+  | "refund_failed"
+  | "manual_review";
+
+type FulfillmentFailureCode = "session_full";
+
+class SessionFullError extends Error {
+  readonly code = "SESSION_FULL";
+  readonly statusCode = 409;
+  readonly statusMessage = "Session Full";
+
+  constructor(readonly internalSessionId: string) {
+    super(`Session ${internalSessionId} has no seats remaining`);
+    this.name = "SessionFullError";
+  }
+}
 
 export type FulfillmentRecord = {
   attemptCount: number;
   checkoutSessionId: string;
   claimedAt?: string;
   failedAt?: string;
+  failureCode?: FulfillmentFailureCode;
   fulfilledAt?: string;
   internalCustomerId?: string;
   internalSessionId?: string;
   lastAttemptAt: string;
   lastError?: string;
+  manualReviewAt?: string;
+  paymentIntentId?: string;
   registrationId?: string;
+  refundEventId?: string;
+  refundFailedAt?: string;
+  refundId?: string;
+  refundAttemptIds?: string[];
+  refundRequestedAt?: string;
+  refundedAt?: string;
+  refundStatus?: string | null;
   status: FulfillmentStatus;
   stripeEventId: string;
   receiptSentAt?: string;
@@ -85,13 +127,14 @@ export type FulfillmentRecord = {
 export type ClaimResult =
   | {
       lockKey: string;
+      lockToken: string;
       ok: true;
       record: FulfillmentRecord;
       recordKey: string;
     }
   | {
       ok: false;
-      reason: "already_fulfilled" | "in_progress";
+      reason: "already_handled" | "in_progress";
       record?: FulfillmentRecord | null;
     };
 
@@ -120,7 +163,7 @@ type SafeRuntimeConfig = {
   contactFromEmail?: string;
 };
 
-type RedisClient = Pick<Redis, "del" | "get" | "set">;
+type RedisClient = Pick<Redis, "eval" | "get" | "set">;
 
 type StripeClient = Stripe;
 
@@ -138,6 +181,7 @@ const sessionsTable: Table<AirtableSessionRecord> = {
   baseId: AIRTABLE_BASE_ID,
   tableId: AIRTABLE_TABLE_IDS.SESSIONS,
   schema: {
+    capacity: "number",
     sessionName: "string",
     date: "string",
     location: "string",
@@ -146,6 +190,7 @@ const sessionsTable: Table<AirtableSessionRecord> = {
     spotsAvailable: "number",
   },
   mappings: {
+    capacity: "capacity",
     sessionName: "session-name",
     date: "date",
     location: "location",
@@ -286,6 +331,16 @@ export function isFulfillmentCandidate(
   );
 }
 
+export function isRefundCandidate(
+  stripeEvent: Stripe.Event,
+): stripeEvent is StripeWebhookRefundEvent {
+  return (
+    stripeEvent.type === "refund.created" ||
+    stripeEvent.type === "refund.updated" ||
+    stripeEvent.type === "refund.failed"
+  );
+}
+
 export async function fulfillCheckout(
   checkoutSessionId: string,
   stripeEventId: string,
@@ -325,13 +380,36 @@ export async function fulfillCheckout(
       return;
     }
 
-    claim = await claimFulfillment(checkoutSessionId, stripeEventId, undefined, dependencies);
+    const metadata = getRequiredMetadata(checkoutSession);
+
+    claim = await claimFulfillment(checkoutSessionId, stripeEventId, metadata, dependencies);
+
     logger.info("Claim fulfillment result", {
       claimReason: claim.ok ? undefined : claim.reason,
       claimStatus: claim.ok ? claim.record.status : undefined,
     });
 
     if (!claim.ok) {
+      if (claim.reason === "already_handled") {
+        return;
+      }
+
+      throw httpError({
+        statusCode: 503,
+        statusMessage: "Service Unavailable",
+        message: `Session ${metadata.internalSessionId} fulfillment is already in progress`,
+      });
+    }
+
+    if (claim.record.status === "refund_required") {
+      await refundCheckoutForFullSession(
+        checkoutSession,
+        metadata,
+        recordKey,
+        claim.record,
+        event,
+        dependencies,
+      );
       return;
     }
 
@@ -350,7 +428,45 @@ export async function fulfillCheckout(
       stripeCustomerId: context.stripeCustomerId,
     });
 
-    validateCheckoutContext(context);
+    try {
+      validateCheckoutContext(context);
+    } catch (error) {
+      if (!(error instanceof SessionFullError)) {
+        throw error;
+      }
+
+      if (claim.record.registrationId || claim.record.attemptCount > 1) {
+        const reason = claim.record.registrationId
+          ? `Checkout session ${checkoutSessionId} has a persisted registration and cannot be automatically refunded`
+          : `Checkout session ${checkoutSessionId} reached capacity on a retry without a persisted registration id`;
+        await writeFulfillmentRecord(
+          recordKey,
+          {
+            ...claim.record,
+            failureCode: "session_full",
+            lastError: reason,
+            manualReviewAt: new Date().toISOString(),
+            status: "manual_review",
+          },
+          dependencies,
+        );
+        logger.warn("Checkout requires manual capacity review", {
+          attemptCount: claim.record.attemptCount,
+          registrationId: claim.record.registrationId,
+        });
+        return;
+      }
+
+      await refundCheckoutForFullSession(
+        checkoutSession,
+        metadata,
+        recordKey,
+        claim.record,
+        event,
+        dependencies,
+      );
+      return;
+    }
     logger.info("Validated checkout context", {
       internalCustomerId: context.internalCustomerId,
       internalSessionId: context.internalSessionId,
@@ -388,8 +504,8 @@ export async function fulfillCheckout(
         console.log("email Sent");
         await markReceiptSent(checkoutSession.id, dependencies);
       }
-    } catch (err) {
-      captureServerError(err, {
+    } catch (error) {
+      captureServerError(error, {
         context: {
           checkoutSessionId,
           registrationId: registration.id,
@@ -401,6 +517,10 @@ export async function fulfillCheckout(
       });
     }
   } catch (error: any) {
+    if (claim && !claim.ok && claim.reason === "in_progress") {
+      throw error;
+    }
+
     const existingRecord = await readFulfillmentRecord(recordKey, dependencies);
     captureServerError(error, {
       context: {
@@ -414,6 +534,10 @@ export async function fulfillCheckout(
       event,
       message: "Checkout fulfillment failed",
     });
+    if (existingRecord && isRemediationStatus(existingRecord.status)) {
+      throw error;
+    }
+
     if (existingRecord?.status === "fulfilled") {
       throw error;
     }
@@ -447,7 +571,7 @@ export async function fulfillCheckout(
     throw error;
   } finally {
     if (claim?.ok) {
-      await releaseFulfillmentLock(claim.lockKey, dependencies);
+      await releaseFulfillmentLock(claim.lockKey, claim.lockToken, dependencies);
       logger.info("Released fulfillment lock", {
         lockKey: claim.lockKey,
       });
@@ -460,83 +584,98 @@ export async function claimFulfillment(
   stripeEventId: string,
   metadata: {
     internalCustomerId?: string;
-    internalSessionId?: string;
-  } = {},
+    internalSessionId: string;
+  },
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
 ): Promise<ClaimResult> {
   const redisClient = dependencies.getRedisClient();
   const recordKey = getFulfillmentRecordKey(checkoutSessionId);
-  const lockKey = getFulfillmentLockKey(checkoutSessionId);
-  const existingRecord = await readFulfillmentRecord(recordKey, dependencies);
-  fulfillmentLogger.info("Checking fulfillment claim state", {
-    checkoutSessionId,
-    existingRecord,
-    lockKey,
-    recordKey,
-    stripeEventId,
-  });
 
-  if (existingRecord?.status === "fulfilled") {
-    fulfillmentLogger.info("Skipping claim: checkout already fulfilled", {
-      checkoutSessionId,
-      existingRecord,
-    });
+  // The record remains Checkout-scoped, but the lock is course-session-scoped.
+  const lockKey = getFulfillmentLockKey(metadata.internalSessionId);
+
+  let existingRecord = await readFulfillmentRecord(recordKey, dependencies);
+
+  if (existingRecord && isHandledRecord(existingRecord)) {
     return {
       ok: false,
-      reason: "already_fulfilled",
+      reason: "already_handled",
       record: existingRecord,
     };
   }
 
-  const locked = await redisClient.set(lockKey, stripeEventId, {
+  // A unique token prevents an expired worker from releasing a newer lock.
+  const lockToken = globalThis.crypto.randomUUID();
+
+  const locked = await redisClient.set(lockKey, lockToken, {
     ex: FIFTEEN_MINUTES_IN_SECONDS,
     nx: true,
   });
-  fulfillmentLogger.info("Attempted fulfillment lock", {
-    checkoutSessionId,
-    locked,
-    lockKey,
-    stripeEventId,
-  });
 
   if (!locked) {
-    fulfillmentLogger.warn("Skipping claim: checkout already in progress", {
-      checkoutSessionId,
-      existingRecord,
-    });
+    const latestRecord = await readFulfillmentRecord(recordKey, dependencies);
+    if (latestRecord && isHandledRecord(latestRecord)) {
+      return {
+        ok: false,
+        reason: "already_handled",
+        record: latestRecord,
+      };
+    }
+
     return {
       ok: false,
       reason: "in_progress",
-      record: existingRecord,
+      record: latestRecord,
     };
   }
 
-  const now = new Date().toISOString();
-  const nextRecord: FulfillmentRecord = {
-    attemptCount: (existingRecord?.attemptCount ?? 0) + 1,
-    checkoutSessionId,
-    claimedAt: existingRecord?.claimedAt ?? now,
-    internalCustomerId: metadata.internalCustomerId ?? existingRecord?.internalCustomerId,
-    internalSessionId: metadata.internalSessionId ?? existingRecord?.internalSessionId,
-    lastAttemptAt: now,
-    registrationId: existingRecord?.registrationId,
-    status: "processing",
-    stripeEventId,
-  };
+  let passLockToCaller = false;
 
-  await writeFulfillmentRecord(recordKey, nextRecord, dependencies);
-  fulfillmentLogger.info("Stored processing fulfillment record", {
-    checkoutSessionId,
-    nextRecord,
-    recordKey,
-  });
+  try {
+    // Recheck after acquiring the lock because the pre-lock read can be stale.
+    existingRecord = await readFulfillmentRecord(recordKey, dependencies);
 
-  return {
-    ok: true,
-    lockKey,
-    record: nextRecord,
-    recordKey,
-  };
+    if (existingRecord && isHandledRecord(existingRecord)) {
+      return {
+        ok: false,
+        reason: "already_handled",
+        record: existingRecord,
+      };
+    }
+
+    const now = new Date().toISOString();
+    const resumeRefund = existingRecord?.status === "refund_required";
+
+    const nextRecord: FulfillmentRecord = {
+      ...existingRecord,
+      attemptCount: (existingRecord?.attemptCount ?? 0) + 1,
+      checkoutSessionId,
+      claimedAt: existingRecord?.claimedAt ?? now,
+      internalCustomerId: metadata.internalCustomerId ?? existingRecord?.internalCustomerId,
+      internalSessionId: metadata.internalSessionId,
+      lastAttemptAt: now,
+      registrationId: existingRecord?.registrationId,
+      status: resumeRefund ? "refund_required" : "processing",
+      stripeEventId,
+    };
+
+    await writeFulfillmentRecord(recordKey, nextRecord, dependencies);
+
+    passLockToCaller = true;
+
+    return {
+      lockKey,
+      lockToken,
+      ok: true,
+      record: nextRecord,
+      recordKey,
+    };
+  } finally {
+    // If claiming failed or discovered completed work, no caller will release it.
+    if (!passLockToCaller) {
+      await releaseFulfillmentLock(lockKey, lockToken, dependencies);
+    }
+  }
 }
 
 export async function loadCheckoutContext(
@@ -597,11 +736,14 @@ export async function loadCheckoutContext(
 
 export function validateCheckoutContext(context: CheckoutContext): void {
   const checkoutSessionId = context.checkoutSession.id;
+  const registrationsCount = context.session.registrations?.length ?? 0;
   fulfillmentLogger.info("Validating checkout context", {
+    capacity: context.session.capacity,
     checkoutSessionId,
     customerStripeId: context.customer.stripeID,
     internalCustomerId: context.internalCustomerId,
     internalSessionId: context.internalSessionId,
+    registrationsCount,
     spotsAvailable: context.session.spotsAvailable,
     stripeCustomerId: context.stripeCustomerId,
   });
@@ -630,12 +772,8 @@ export function validateCheckoutContext(context: CheckoutContext): void {
     });
   }
 
-  if (context.session.spotsAvailable <= 0) {
-    throw httpError({
-      statusCode: 409,
-      statusMessage: "Session Full",
-      message: `Session ${context.internalSessionId} has no seats remaining`,
-    });
+  if (context.session.spotsAvailable <= 0 || registrationsCount >= context.session.capacity) {
+    throw new SessionFullError(context.internalSessionId);
   }
 
   if (!context.customer.stripeID) {
@@ -819,6 +957,385 @@ export async function markFulfillmentFailed(
   );
 }
 
+async function refundCheckoutForFullSession(
+  checkoutSession: Stripe.Checkout.Session,
+  metadata: {
+    internalCustomerId: string;
+    internalSessionId: string;
+  },
+  recordKey: string,
+  record: FulfillmentRecord,
+  event: H3Event,
+  dependencies: FulfillmentDependencies,
+): Promise<void> {
+  const logger = createRequestLogger(event, {
+    defaults: {
+      checkoutSessionId: checkoutSession.id,
+      operation: "refund-full-session-checkout",
+      recordKey,
+      source: "stripe-fulfillment",
+    },
+  });
+  const paymentIntentId = getPaymentIntentId(checkoutSession.payment_intent);
+  const now = new Date().toISOString();
+
+  if (!paymentIntentId) {
+    await writeFulfillmentRecord(
+      recordKey,
+      {
+        ...record,
+        failureCode: "session_full",
+        internalCustomerId: metadata.internalCustomerId,
+        internalSessionId: metadata.internalSessionId,
+        lastError: `Checkout session ${checkoutSession.id} is missing a PaymentIntent for its required refund`,
+        status: "refund_required",
+      },
+      dependencies,
+    );
+
+    throw httpError({
+      statusCode: 500,
+      statusMessage: "Refund Required",
+      message: `Checkout session ${checkoutSession.id} is missing a PaymentIntent for its required refund`,
+    });
+  }
+
+  // Persist the refund decision before moving money. Retries must never return
+  // this paid Checkout to registration fulfillment, even if capacity changes.
+  const remediationRecord: FulfillmentRecord = {
+    ...record,
+    failureCode: "session_full",
+    internalCustomerId: metadata.internalCustomerId,
+    internalSessionId: metadata.internalSessionId,
+    lastError: undefined,
+    paymentIntentId,
+    refundRequestedAt: record.refundRequestedAt ?? now,
+    status: "refund_required",
+  };
+  await writeFulfillmentRecord(recordKey, remediationRecord, dependencies);
+
+  const stripe = await dependencies.getStripeClient(event);
+  let refund: Stripe.Refund;
+
+  try {
+    const refunds = await stripe.refunds.list({
+      limit: 100,
+      payment_intent: paymentIntentId,
+    });
+    const existingRefund = refunds.data.find(
+      (candidate) =>
+        candidate.id === remediationRecord.refundId ||
+        (candidate.metadata?.checkout_session_id === checkoutSession.id &&
+          candidate.metadata?.remediation_reason === "session_full"),
+    );
+
+    refund =
+      existingRefund ??
+      (await stripe.refunds.create(
+        {
+          metadata: {
+            checkout_session_id: checkoutSession.id,
+            internal_session_id: metadata.internalSessionId,
+            remediation_reason: "session_full",
+          },
+          payment_intent: paymentIntentId,
+        },
+        {
+          idempotencyKey: getSessionFullRefundIdempotencyKey(checkoutSession.id),
+        },
+      ));
+  } catch (error: any) {
+    await writeFulfillmentRecord(
+      recordKey,
+      {
+        ...remediationRecord,
+        lastError: error?.message ?? "Stripe refund request failed",
+      },
+      dependencies,
+    );
+    throw error;
+  }
+
+  await persistRefundOutcome(recordKey, remediationRecord, refund, dependencies);
+  const refundLogContext = {
+    refundId: refund.id,
+    refundStatus: refund.status,
+  };
+  if (isFailedRefundStatus(refund.status)) {
+    logger.warn("Session-full refund requires manual review", refundLogContext);
+  } else {
+    logger.info("Persisted session-full refund outcome", refundLogContext);
+  }
+}
+
+export async function reconcileRefund(
+  refund: Stripe.Refund,
+  stripeEventId: string,
+  event: H3Event,
+  dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
+): Promise<boolean> {
+  const checkoutSessionId = refund.metadata?.checkout_session_id?.trim();
+  const remediationReason = refund.metadata?.remediation_reason?.trim();
+
+  if (!checkoutSessionId || remediationReason !== "session_full") {
+    return false;
+  }
+
+  const recordKey = getFulfillmentRecordKey(checkoutSessionId);
+  const logger = createRequestLogger(event, {
+    defaults: {
+      checkoutSessionId,
+      operation: "reconcile-refund",
+      recordKey,
+      source: "stripe-fulfillment",
+      stripeEventId,
+    },
+  });
+  const initialRecord = await readFulfillmentRecord(recordKey, dependencies);
+  const metadataSessionId = refund.metadata?.internal_session_id?.trim();
+  const internalSessionId = initialRecord?.internalSessionId ?? metadataSessionId;
+
+  if (!internalSessionId) {
+    logger.warn("Ignoring refund event without an internal session id", {
+      refundId: refund.id,
+    });
+    return false;
+  }
+
+  if (
+    initialRecord?.internalSessionId &&
+    metadataSessionId &&
+    initialRecord.internalSessionId !== metadataSessionId
+  ) {
+    throw httpError({
+      statusCode: 409,
+      statusMessage: "Refund Conflict",
+      message: `Refund ${refund.id} does not match the stored course session`,
+    });
+  }
+
+  const redisClient = dependencies.getRedisClient();
+  const lockKey = getFulfillmentLockKey(internalSessionId);
+  const lockToken = globalThis.crypto.randomUUID();
+  const locked = await redisClient.set(lockKey, lockToken, {
+    ex: FIFTEEN_MINUTES_IN_SECONDS,
+    nx: true,
+  });
+
+  if (!locked) {
+    throw httpError({
+      statusCode: 503,
+      statusMessage: "Service Unavailable",
+      message: `Refund reconciliation for session ${internalSessionId} is already in progress`,
+    });
+  }
+
+  try {
+    const current = await readFulfillmentRecord(recordKey, dependencies);
+
+    if (current?.status === "fulfilled") {
+      logger.warn("Ignoring refund event for a fulfilled registration", {
+        refundId: refund.id,
+        registrationId: current.registrationId,
+      });
+      return false;
+    }
+
+    if (current?.internalSessionId && current.internalSessionId !== internalSessionId) {
+      throw httpError({
+        statusCode: 409,
+        statusMessage: "Refund Conflict",
+        message: `Refund ${refund.id} does not match the stored course session`,
+      });
+    }
+
+    const now = new Date().toISOString();
+    const paymentIntentId = getPaymentIntentId(refund.payment_intent);
+    const record: FulfillmentRecord = current ?? {
+      attemptCount: 1,
+      checkoutSessionId,
+      failureCode: "session_full",
+      internalSessionId,
+      lastAttemptAt: now,
+      paymentIntentId,
+      refundRequestedAt: now,
+      status: "refund_required",
+      stripeEventId,
+    };
+
+    await persistRefundOutcome(recordKey, record, refund, dependencies, stripeEventId);
+    const refundLogContext = {
+      refundId: refund.id,
+      refundStatus: refund.status,
+    };
+    if (isFailedRefundStatus(refund.status)) {
+      logger.warn("Stripe refund event requires manual review", refundLogContext);
+    } else {
+      logger.info("Reconciled Stripe refund event", refundLogContext);
+    }
+    return true;
+  } finally {
+    await releaseFulfillmentLock(lockKey, lockToken, dependencies);
+  }
+}
+
+async function persistRefundOutcome(
+  recordKey: string,
+  record: FulfillmentRecord,
+  refund: Stripe.Refund,
+  dependencies: FulfillmentDependencies,
+  refundEventId?: string,
+): Promise<void> {
+  const current = await readFulfillmentRecord(recordKey, dependencies);
+  const paymentIntentId = getPaymentIntentId(refund.payment_intent);
+  const metadataCheckoutSessionId = refund.metadata?.checkout_session_id?.trim();
+
+  if (current?.status === "fulfilled") {
+    throw httpError({
+      statusCode: 409,
+      statusMessage: "Refund Conflict",
+      message: `Checkout session ${record.checkoutSessionId} already has a fulfilled registration`,
+    });
+  }
+
+  if (metadataCheckoutSessionId && metadataCheckoutSessionId !== record.checkoutSessionId) {
+    throw httpError({
+      statusCode: 409,
+      statusMessage: "Refund Conflict",
+      message: `Refund ${refund.id} does not match checkout session ${record.checkoutSessionId}`,
+    });
+  }
+
+  if (current?.paymentIntentId && current.paymentIntentId !== paymentIntentId) {
+    throw httpError({
+      statusCode: 409,
+      statusMessage: "Refund Conflict",
+      message: `Refund ${refund.id} does not match the stored PaymentIntent`,
+    });
+  }
+
+  if (current?.refundId && current.refundId !== refund.id) {
+    const isReplacementForFailedRefund =
+      current.status === "refund_failed" && Boolean(paymentIntentId);
+
+    if (!isReplacementForFailedRefund) {
+      throw httpError({
+        statusCode: 409,
+        statusMessage: "Refund Conflict",
+        message: `Checkout session ${record.checkoutSessionId} is already linked to another refund`,
+      });
+    }
+  }
+
+  if (
+    current?.refundId === refund.id &&
+    (current.status === "refunded" || current.status === "refund_failed")
+  ) {
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const baseRecord: FulfillmentRecord = {
+    ...record,
+    ...current,
+    failureCode: "session_full",
+    paymentIntentId: paymentIntentId ?? record.paymentIntentId,
+    refundAttemptIds: Array.from(
+      new Set(
+        [
+          ...(current?.refundAttemptIds ?? record.refundAttemptIds ?? []),
+          current?.refundId,
+          refund.id,
+        ].filter((id): id is string => Boolean(id)),
+      ),
+    ),
+    refundEventId: refundEventId ?? current?.refundEventId,
+    refundId: refund.id,
+    refundRequestedAt: current?.refundRequestedAt ?? record.refundRequestedAt ?? now,
+    refundStatus: refund.status,
+  };
+
+  if (refund.status === "succeeded") {
+    await writeFulfillmentRecord(
+      recordKey,
+      {
+        ...baseRecord,
+        lastError: undefined,
+        refundFailedAt: undefined,
+        refundedAt: current?.refundedAt ?? now,
+        status: "refunded",
+      },
+      dependencies,
+    );
+    return;
+  }
+
+  if (refund.status === "pending" || refund.status === "requires_action") {
+    await writeFulfillmentRecord(
+      recordKey,
+      {
+        ...baseRecord,
+        lastError: undefined,
+        refundFailedAt: undefined,
+        status: "refund_pending",
+      },
+      dependencies,
+    );
+    return;
+  }
+
+  await writeFulfillmentRecord(
+    recordKey,
+    {
+      ...baseRecord,
+      lastError:
+        refund.failure_reason ??
+        `Stripe refund ${refund.id} requires manual review with status ${refund.status ?? "unknown"}`,
+      refundFailedAt: current?.refundFailedAt ?? now,
+      status: "refund_failed",
+    },
+    dependencies,
+  );
+}
+
+function getPaymentIntentId(
+  paymentIntent: string | Stripe.PaymentIntent | null,
+): string | undefined {
+  if (typeof paymentIntent === "string") {
+    return paymentIntent;
+  }
+
+  return paymentIntent?.id;
+}
+
+function getSessionFullRefundIdempotencyKey(checkoutSessionId: string): string {
+  return `stripe:fulfillment-refund:session-full:${checkoutSessionId}`;
+}
+
+function isFailedRefundStatus(status: string | null): boolean {
+  return status !== "succeeded" && status !== "pending" && status !== "requires_action";
+}
+
+function isRemediationStatus(status: FulfillmentStatus): boolean {
+  return (
+    status === "refund_required" ||
+    status === "refund_pending" ||
+    status === "refunded" ||
+    status === "refund_failed" ||
+    status === "manual_review"
+  );
+}
+
+function isHandledRecord(record: FulfillmentRecord): boolean {
+  return (
+    record.status === "fulfilled" ||
+    record.status === "refund_pending" ||
+    record.status === "refunded" ||
+    record.status === "refund_failed" ||
+    record.status === "manual_review"
+  );
+}
+
 export async function readFulfillmentRecord(
   recordKey: string,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
@@ -905,20 +1422,25 @@ export async function writeFulfillmentRecord(
 
 async function releaseFulfillmentLock(
   lockKey: string,
+  lockToken: string,
   dependencies: FulfillmentDependencies,
 ): Promise<void> {
-  fulfillmentLogger.info("Deleting fulfillment lock", {
+  const released = await dependencies
+    .getRedisClient()
+    .eval<[string], number>(RELEASE_LOCK_SCRIPT, [lockKey], [lockToken]);
+
+  fulfillmentLogger.info("Released fulfillment lock", {
     lockKey,
+    released: released === 1,
   });
-  await dependencies.getRedisClient().del(lockKey);
 }
 
 export function getFulfillmentRecordKey(checkoutSessionId: string): string {
   return `stripe:fulfillment:${checkoutSessionId}`;
 }
 
-export function getFulfillmentLockKey(checkoutSessionId: string): string {
-  return `stripe:fulfillment-lock:${checkoutSessionId}`;
+export function getFulfillmentLockKey(internalSessionId: string): string {
+  return `stripe:fulfillment-lock:${AIRTABLE_BASE_ID}:session:${internalSessionId}`;
 }
 
 export async function markReceiptSent(
