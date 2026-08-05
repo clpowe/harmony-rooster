@@ -4,28 +4,69 @@ import Typography from "./Typography.vue";
 const accordionItems = [
   {
     value: "question-1",
-    question: "What is hame care?",
-    answer: "Yes. It adheres to the WAI-ARIA design pattern.",
+    question: "What services does Harmony Rooster provide?",
+    answer:
+      "Harmony Rooster is a licensed foster home and home care provider serving individuals with developmental disabilities in the Riverview/Brandon area of Hillsborough County. We provide Residential Habilitation (ResHab) services through the APD iBudget Waiver program, including support with daily living, personal care, medication reminders, community integration, and skilled overnight care for consumers with complex medical needs.",
   },
   {
     value: "question-2",
-    question: "Who is eligible?",
-    answer: "Yes. It's unstyled by default, giving you freedom over the look and feel.",
+    question: "What is the APD iBudget Waiver, and do you accept it?",
+    answer:
+      "The APD iBudget Waiver is a Florida Medicaid program administered by the Agency for Persons with Disabilities that funds services for individuals with developmental disabilities. Harmony Rooster is an enrolled iBudget Waiver provider, and we currently accept new consumers whose services are funded through the waiver.",
   },
   {
     value: "question-3",
-    question: "How much does it cost?",
-    answer: "Yes! You can use the transition prop to configure the animation.",
+    question: "Who can benefit from your services?",
+    answer:
+      "Our services are designed for individuals with developmental disabilities who need support with daily living, whether in a licensed foster home setting or through in-home Residential Habilitation. This includes consumers with complex medical needs such as tracheostomy care, supplemental oxygen, or CPAP therapy.",
   },
   {
     value: "question-4",
-    question: "Is this covered by medicare?",
-    answer: "Yes! You can use the transition prop to configure the animation.",
+    question: "How do you create a care plan?",
+    answer:
+      "Every consumer’s plan starts with an assessment of their needs, routines, medical requirements, and goals, developed in coordination with the consumer’s support coordinator and APD guidelines. Plans are documented daily and adjusted as needs change, with regular progress notes and required APD compliance documentation.",
   },
   {
     value: "question-5",
-    question: "Do you take insurance?",
-    answer: "Yes! You can use the transition prop to configure the animation.",
+    question: "Are your caregivers screened and trained?",
+    answer:
+      "Yes. All direct care staff complete Level 2 background screening as required by APD and the state of Florida, along with training specific to each consumer’s care needs, including specialized training for medical equipment such as tracheostomies and oxygen support when applicable.",
+  },
+  {
+    value: "question-6",
+    question: "What is a licensed foster home, and how is it different from a group home?",
+    answer:
+      "A licensed foster home provides a family-style living environment for individuals with developmental disabilities, licensed and monitored by APD. It differs from larger group home settings in that it typically serves fewer individuals in a more home-like setting, with regular oversight from APD’s Residential Licensing and Monitoring team.",
+  },
+  {
+    value: "question-7",
+    question: "How often can a caregiver or direct care staff visit?",
+    answer:
+      "Scheduling depends on each consumer’s approved iBudget Waiver services and support plan, ranging from scheduled Residential Habilitation shifts to overnight skilled nursing support. Contact us to discuss availability based on your loved one’s specific waiver allocation.",
+  },
+  {
+    value: "question-8",
+    question: "Do you accept Medicare or private insurance?",
+    answer:
+      "No. Harmony Rooster is not a Medicare-certified home health agency and does not bill private insurance. Our services are funded through the APD iBudget Waiver and coordinated through Sunshine Health and AHCA/FLMMIS enrollment.",
+  },
+  {
+    value: "question-9",
+    question: "How much does care cost?",
+    answer:
+      "Services are funded through each consumer’s approved APD iBudget Waiver allocation rather than private hourly billing. There is no out-of-pocket cost to eligible waiver consumers for authorized services. Contact us to discuss your loved one’s waiver budget and how our services fit within it.",
+  },
+  {
+    value: "question-10",
+    question: "What areas do you serve?",
+    answer:
+      "We serve the Riverview and Brandon area of Hillsborough County, Florida. Contact our team to confirm availability for your specific location.",
+  },
+  {
+    value: "question-11",
+    question: "How do I get started with Harmony Rooster?",
+    answer:
+      "If your loved one already has an approved iBudget Waiver and a support coordinator, we can begin the enrollment process directly. If you’re new to the waiver, we can help point you toward APD’s application process and answer questions about how our services work once approved.",
   },
 ];
 </script>

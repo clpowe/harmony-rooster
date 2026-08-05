@@ -38,11 +38,18 @@ const services: Service[] = [
   <section id="our-services" class="services-section" aria-labelledby="our-services-title">
     <section-header>
       <template #title> Our <span>Services</span> </template>
-      <template #description>
-        Harmony Rooster, LLC is a locally owned and operated company based in Tampa, Florida. The
-        company was founded by Derek and Cynthia Robinson, who are passionate about providing
-        exceptional in-home care services that empower individuals to live their best lives.
-      </template>
+      <Typography tag="p" variant="body-medium">
+        Harmony Rooster provides personalized support for individuals with developmental
+        disabilities in the Tampa area. Our services include personal support, respite care, nursing
+        support, and family-style foster home care designed to promote independence, dignity,
+        safety, and meaningful participation in daily life.
+      </Typography>
+
+      <Typography tag="p" variant="body-medium">
+        Whether someone needs help with everyday routines, temporary relief for a family caregiver,
+        or more consistent residential support, our team works to understand their needs and provide
+        dependable, person-centered care.
+      </Typography>
     </section-header>
 
     <ul class="services-grid u-list-reset" aria-describedby="our-services-intro">

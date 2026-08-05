@@ -12,6 +12,7 @@ defineProps<{
     <Typography tag="p" variant="body-medium">
       <slot name="description" />
     </Typography>
+    <slot></slot>
   </div>
 </template>
 
