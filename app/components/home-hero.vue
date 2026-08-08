@@ -12,11 +12,12 @@ import Rooster from "@/assets/icons/icon-rooster.svg";
       class="hero__art"
     />
     <div class="hero__body">
-      <Typography tag="h1" variant="heading-small" uppercase class=""
+      <Typography tag="p" variant="heading-small" uppercase class=""
         >Harmony Rooster LLC</Typography
       >
-      <Typography tag="h2" uppercase variant="heading-2xl"
-        >Care you can <span>Trust</span> in <span>your Home</span>
+      <Typography tag="h2" uppercase variant="heading-2xl">
+        Home Care for <span>Individuals with</span> <span>Developmental Disabilities in</span>
+        Hillsborough County
       </Typography>
     </div>
     <div class="hero__lede">
