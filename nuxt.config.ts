@@ -11,6 +11,14 @@ const posthogServerLogEnabled =
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  app: {
+    head: {
+      title: "Harmony Rooster",
+      htmlAttrs: {
+        lang: "en",
+      },
+    },
+  },
   devtools: { enabled: true },
   alias: {
     "@": fileURLToPath(new URL("./app", import.meta.url)),
@@ -35,6 +43,7 @@ export default defineNuxtConfig({
     "nuxt-svgo",
     "@nuxt/image",
     "@nuxt/icon",
+    "@nuxtjs/seo",
     "reka-ui/nuxt",
     "@vee-validate/nuxt",
     "nuxt-security",
@@ -62,6 +71,10 @@ export default defineNuxtConfig({
     client: "hidden",
   },
   nitro: {
+    prerender: {
+      crawlLinks: true,
+      routes: ["/"],
+    },
     rollupConfig: {
       output: {
         sourcemapExcludeSources: false,
