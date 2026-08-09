@@ -12,8 +12,8 @@ import Rooster from "@/assets/icons/icon-rooster.svg";
       class="hero__art"
     />
     <div class="hero__body">
-      <Typography tag="p" variant="heading-small" uppercase class=""
-        >Harmony Rooster LLC</Typography
+      <Typography tag="h1" variant="heading-small" uppercase class=""
+        >Home Care & Residential Habilitation in Tampa, FL</Typography
       >
       <Typography tag="h2" uppercase variant="heading-2xl">
         Care you can
