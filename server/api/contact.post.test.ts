@@ -14,10 +14,10 @@ vi.mock("resend", () => ({
 vi.stubGlobal("defineEventHandler", (handler: unknown) => handler);
 vi.stubGlobal("useRuntimeConfig", () => ({
   resendApiKey: "re_test",
-  contactFromEmail: "contact@harmonyrooster.com",
+  contactFromEmail: "contact@harmonyroosters.com",
   contactToEmail: "clpowe@gmail.com",
   public: {
-    siteUrl: "https://harmonyrooster.com",
+    siteUrl: "https://harmonyroosters.com",
   },
 }));
 vi.stubGlobal("readBody", async (event: { body: unknown }) => event.body);
@@ -67,7 +67,7 @@ describe("handleContactSubmission", () => {
         startedAt: 8_000,
       },
       headers: {
-        origin: "https://harmonyrooster.com",
+        origin: "https://harmonyroosters.com",
       },
       ip: "127.0.0.1",
     };
@@ -78,7 +78,7 @@ describe("handleContactSubmission", () => {
     expect(result).toEqual({ ok: true });
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: "contact@harmonyrooster.com",
+        from: "contact@harmonyroosters.com",
         replyTo: "clpowe@gmail.com",
         subject: "New contact form submission from Chris Powe",
         to: ["clpowe@gmail.com", "harmonyrooster@gmail.com"],
@@ -120,7 +120,7 @@ describe("handleContactSubmission", () => {
         startedAt: 8_000,
       },
       headers: {
-        origin: "https://harmonyrooster.com",
+        origin: "https://harmonyroosters.com",
       },
       ip: "127.0.0.1",
     };
@@ -144,7 +144,7 @@ describe("handleContactSubmission", () => {
           company: "",
           startedAt: 8_000,
         },
-        headers: { origin: "https://harmonyrooster.com" },
+        headers: { origin: "https://harmonyroosters.com" },
         ip: "127.0.0.1",
       }),
     ).rejects.toMatchObject({ statusCode: 400 });
@@ -164,7 +164,7 @@ describe("handleContactSubmission", () => {
           company: "",
           startedAt: 9_000,
         },
-        headers: { origin: "https://harmonyrooster.com" },
+        headers: { origin: "https://harmonyroosters.com" },
         ip: "127.0.0.1",
       }),
     ).rejects.toMatchObject({
@@ -189,7 +189,7 @@ describe("handleContactSubmission", () => {
           company: "",
           startedAt: 8_000,
         },
-        headers: { origin: "https://harmonyrooster.com" },
+        headers: { origin: "https://harmonyroosters.com" },
         ip: "127.0.0.1",
       }),
     ).rejects.toMatchObject({
@@ -215,7 +215,7 @@ describe("handleContactSubmission", () => {
           company: "",
           startedAt: 8_000,
         },
-        headers: { origin: "https://harmonyrooster.com" },
+        headers: { origin: "https://harmonyroosters.com" },
         ip: "127.0.0.1",
       }),
     ).rejects.toMatchObject({

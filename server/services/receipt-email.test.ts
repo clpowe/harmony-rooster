@@ -138,7 +138,7 @@ function createDependencies(config: Record<string, unknown> = {}) {
       () =>
         ({
           airtableKey: "airtable_test_key",
-          contactFromEmail: "contact@harmonyrooster.com",
+          contactFromEmail: "contact@harmonyroosters.com",
           resendApiKey: "re_test",
           stripeWebhookSecretKey: "whsec_test",
           ...config,
@@ -173,7 +173,7 @@ describe("sendReceiptEmail", () => {
     expect(result).toEqual({ id: "email_123" });
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: "contact@harmonyrooster.com",
+        from: "contact@harmonyroosters.com",
         html: expect.stringContaining("https://pay.stripe.com/receipts/test_receipt"),
         subject: "Receipt for Harmony Course - 2026-05-01",
         text: expect.stringContaining("https://pay.stripe.com/receipts/test_receipt"),

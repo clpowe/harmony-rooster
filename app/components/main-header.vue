@@ -88,7 +88,7 @@ const closeMobileMenu = () => {
 
 <style scoped>
 .site-header {
-  width: min(100% - 2rem, 72rem);
+  width: min(100% - 2rem, 80rem);
   margin-inline: auto;
   padding-block: clamp(1rem, 2.5vw, 1.5rem);
   display: flex;

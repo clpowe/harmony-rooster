@@ -13,7 +13,7 @@ withDefaults(
 
 <template>
   <NuxtLink :to="to" class="site-brand" :aria-label="ariaLabel">
-    <SvgoIconRoosterbg class="site-brand__mark" filled :fontControlled="true" aria-hidden="true" />
+    <!-- <SvgoIconRoosterbg class="site-brand__mark" filled :fontControlled="true" aria-hidden="true" />-->
     <SvgoIconWordmark
       class="site-brand__wordmark"
       filled

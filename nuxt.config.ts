@@ -64,7 +64,7 @@ export default defineNuxtConfig({
       siteUrl: "",
       receiptFromEmail: "",
       contactFromEmail: "",
-      contactToEmail: "contact@harmonyrooster.com",
+      contactToEmail: "contact@harmonyroosters.com",
     },
   },
   sourcemap: {

@@ -34,7 +34,7 @@ vi.stubGlobal("defineEventHandler", (handler: unknown) => handler);
 vi.stubGlobal("useRuntimeConfig", (event: { config?: Record<string, unknown> }) => ({
   airtableKey: "airtable_test_key",
   public: {
-    siteUrl: "https://harmonyrooster.com/path",
+    siteUrl: "https://harmonyroosters.com/path",
   },
   ...event.config,
 }));
@@ -165,14 +165,14 @@ describe("POST /api/courses", () => {
 
     expect(checkoutParams).toEqual(
       expect.objectContaining({
-        cancel_url: "https://harmonyrooster.com/cancel",
+        cancel_url: "https://harmonyroosters.com/cancel",
         customer: "cus_new",
         metadata: expect.objectContaining({
           customerID: "cust_attempt",
           email: "customer@example.com",
           sessionID: "sess_airtable",
         }),
-        success_url: "https://harmonyrooster.com/success?session_id={CHECKOUT_SESSION_ID}",
+        success_url: "https://harmonyroosters.com/success?session_id={CHECKOUT_SESSION_ID}",
       }),
     );
 

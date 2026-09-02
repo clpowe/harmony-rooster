@@ -131,7 +131,7 @@ export async function sendReceiptEmail(
 
   const resend = deps.getResendClient(config.resendApiKey);
   const response = await resend.emails.send({
-    from: "contact@harmonyrooster.com",
+    from: "contact@harmonyroosters.com",
     to: context.customer.email,
     subject,
     html,
