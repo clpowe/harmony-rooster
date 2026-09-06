@@ -39,7 +39,7 @@ const services: Service[] = [
     <section-header>
       <template #title> Our <span>Services</span> </template>
       <Typography tag="p" variant="body-medium">
-        Harmony Rooster provides personalized support for individuals with developmental
+        Harmony Roosters provides personalized support for individuals with developmental
         disabilities in the Tampa area. Our services include personal support, respite care, nursing
         support, and family-style foster home care designed to promote independence, dignity,
         safety, and meaningful participation in daily life.

@@ -9,7 +9,7 @@ const { courses, pending, error, refreshCourses } = useCourses();
     <section-header class="courses-section__intro">
       <template #title> <span>Courses We</span> <span>Offer</span> </template>
       <template #description>
-        Harmony Rooster offers Medication Administration Provider Training for direct-care
+        Harmony Roosters offers Medication Administration Provider Training for direct-care
         professionals who need instruction related to Florida Rule 65G-7. The course is intended to
         support safe, responsible medication assistance through practical instruction and required
         training content.

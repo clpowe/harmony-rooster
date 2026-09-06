@@ -19,7 +19,7 @@ const closeMobileMenu = () => {
 
 <template>
   <header class="site-header">
-    <SiteBrand class="site-header__brand" aria-label="Harmony Rooster home" />
+    <SiteBrand class="site-header__brand" aria-label="Harmony Roosters home" />
 
     <button
       class="site-header__toggle"

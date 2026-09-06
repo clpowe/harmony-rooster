@@ -4,11 +4,11 @@ const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
   "@id": "https://www.harmonyroosters.com/#organization",
-  name: "Harmony Rooster, LLC",
+  name: "Harmony Roosters, LLC",
   url: "https://www.harmonyroosters.com/",
   description:
-    "Harmony Rooster provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities in Hillsborough County, Florida.",
-  email: "harmonyrooster@gmail.com",
+    "Harmony Roosters provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities in Hillsborough County, Florida.",
+  email: "harmonyroosters@gmail.com",
 
   founder: [
     {
@@ -57,11 +57,11 @@ const organizationSchema = {
 useSchemaOrg([
   defineLocalBusiness({
     "@id": "https://www.harmonyroosters.com/#organization",
-    name: "Harmony Rooster, LLC",
+    name: "Harmony Roosters, LLC",
     url: "https://www.harmonyroosters.com/",
     description:
-      "Harmony Rooster provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities in Hillsborough County, Florida.",
-    email: "harmonyrooster@gmail.com",
+      "Harmony Roosters provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities in Hillsborough County, Florida.",
+    email: "harmonyroosters@gmail.com",
     founder: [
       {
         "@type": "Person",

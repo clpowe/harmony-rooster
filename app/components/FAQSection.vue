@@ -4,15 +4,15 @@ import Typography from "./Typography.vue";
 const accordionItems = [
   {
     value: "question-1",
-    question: "What services does Harmony Rooster provide?",
+    question: "What services does Harmony Roosters provide?",
     answer:
-      "Harmony Rooster is a licensed foster home and home care provider serving individuals with developmental disabilities in the Riverview/Brandon area of Hillsborough County. We provide Residential Habilitation (ResHab) services through the APD iBudget Waiver program, including support with daily living, personal care, medication reminders, community integration, and skilled overnight care for consumers with complex medical needs.",
+      "Harmony Roosters is a licensed foster home and home care provider serving individuals with developmental disabilities in the Riverview/Brandon area of Hillsborough County. We provide Residential Habilitation (ResHab) services through the APD iBudget Waiver program, including support with daily living, personal care, medication reminders, community integration, and skilled overnight care for consumers with complex medical needs.",
   },
   {
     value: "question-2",
     question: "What is the APD iBudget Waiver, and do you accept it?",
     answer:
-      "The APD iBudget Waiver is a Florida Medicaid program administered by the Agency for Persons with Disabilities that funds services for individuals with developmental disabilities. Harmony Rooster is an enrolled iBudget Waiver provider, and we currently accept new consumers whose services are funded through the waiver.",
+      "The APD iBudget Waiver is a Florida Medicaid program administered by the Agency for Persons with Disabilities that funds services for individuals with developmental disabilities. Harmony Roosters is an enrolled iBudget Waiver provider, and we currently accept new consumers whose services are funded through the waiver.",
   },
   {
     value: "question-3",
@@ -48,7 +48,7 @@ const accordionItems = [
     value: "question-8",
     question: "Do you accept Medicare or private insurance?",
     answer:
-      "No. Harmony Rooster is not a Medicare-certified home health agency and does not bill private insurance. Our services are funded through the APD iBudget Waiver and coordinated through Sunshine Health and AHCA/FLMMIS enrollment.",
+      "No. Harmony Roosters is not a Medicare-certified home health agency and does not bill private insurance. Our services are funded through the APD iBudget Waiver and coordinated through Sunshine Health and AHCA/FLMMIS enrollment.",
   },
   {
     value: "question-9",
@@ -64,7 +64,7 @@ const accordionItems = [
   },
   {
     value: "question-11",
-    question: "How do I get started with Harmony Rooster?",
+    question: "How do I get started with Harmony Roosters?",
     answer:
       "If your loved one already has an approved iBudget Waiver and a support coordinator, we can begin the enrollment process directly. If you’re new to the waiver, we can help point you toward APD’s application process and answer questions about how our services work once approved.",
   },

@@ -6,7 +6,7 @@ withDefaults(
   }>(),
   {
     to: "/",
-    ariaLabel: "Harmony Rooster home",
+    ariaLabel: "Harmony Roosters home",
   },
 );
 </script>
