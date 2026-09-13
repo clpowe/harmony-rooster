@@ -26,6 +26,12 @@
           respectful relationships and consistent support, we work to create an environment where
           every individual can feel secure, valued, and included.
         </Typography>
+        <NuxtLink
+          class="button button--md button--primary"
+          to="https://apd.myflorida.com/services/apply.html"
+        >
+          Apply For Services
+        </NuxtLink>
       </section-header>
       <div class="l-flow">
         <Typography class="u-text-primary" tag="h3" variant="heading-medium"

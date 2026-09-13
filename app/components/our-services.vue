@@ -50,6 +50,13 @@ const services: Service[] = [
         or more consistent residential support, our team works to understand their needs and provide
         dependable, person-centered care.
       </Typography>
+
+      <NuxtLink
+        class="button button--md button--primary"
+        to="https://apd.myflorida.com/services/apply.html"
+      >
+        Apply For Services
+      </NuxtLink>
     </section-header>
 
     <ul class="services-grid u-list-reset" aria-describedby="our-services-intro">

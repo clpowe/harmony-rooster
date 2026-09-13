@@ -76,7 +76,7 @@ export type ReceiptEmailDependencies = FulfillmentDependencies & {
   getResendClient: (apiKey: string) => Pick<Resend, "emails">;
 };
 
-export const receiptEmailDependencies: ReceiptEmailDependencies = {
+const receiptEmailDependencies: ReceiptEmailDependencies = {
   createAirtableClient: (apiKey) => stripeFulfillmentDependencies.createAirtableClient(apiKey),
   getRedisClient: () => stripeFulfillmentDependencies.getRedisClient(),
   getRuntimeConfig: (event) => stripeFulfillmentDependencies.getRuntimeConfig(event),

@@ -27,7 +27,10 @@ import Rooster from "@/assets/icons/icon-rooster.svg";
         independence, dignity, and overall well-being.</Typography
       >
       <div class="hero__actions">
-        <NuxtLink class="button button--lg button--primary" to="/#contact"> Contact us </NuxtLink>
+        <NuxtLink class="button button--lg button--primary" to="/#contact">
+          Apply For Services
+        </NuxtLink>
+        <NuxtLink class="button button--lg button--secondary" to="/#contact"> Contact us </NuxtLink>
       </div>
     </div>
   </section>
@@ -102,6 +105,7 @@ import Rooster from "@/assets/icons/icon-rooster.svg";
 
 .hero__actions {
   display: flex;
+  gap: var(--space-sm);
 }
 
 .hero__lede p {

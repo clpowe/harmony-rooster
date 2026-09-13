@@ -678,7 +678,7 @@ export async function claimFulfillment(
   }
 }
 
-export async function loadCheckoutContext(
+async function loadCheckoutContext(
   checkoutSessionId: string,
   event: H3Event,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
@@ -734,7 +734,7 @@ export async function loadCheckoutContext(
   };
 }
 
-export function validateCheckoutContext(context: CheckoutContext): void {
+function validateCheckoutContext(context: CheckoutContext): void {
   const checkoutSessionId = context.checkoutSession.id;
   const registrationsCount = context.session.registrations?.length ?? 0;
   fulfillmentLogger.info("Validating checkout context", {
@@ -793,7 +793,7 @@ export function validateCheckoutContext(context: CheckoutContext): void {
   }
 }
 
-export async function createRegistration(
+async function createRegistration(
   context: CheckoutContext,
   event: H3Event,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
@@ -916,7 +916,7 @@ export async function createRegistration(
   return { id: registrationId };
 }
 
-export async function markFulfillmentSucceeded(
+async function markFulfillmentSucceeded(
   recordKey: string,
   record: FulfillmentRecord,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
@@ -937,7 +937,7 @@ export async function markFulfillmentSucceeded(
   );
 }
 
-export async function markFulfillmentFailed(
+async function markFulfillmentFailed(
   recordKey: string,
   record: FulfillmentRecord,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
@@ -1439,7 +1439,7 @@ export function getFulfillmentRecordKey(checkoutSessionId: string): string {
   return `stripe:fulfillment:${checkoutSessionId}`;
 }
 
-export function getFulfillmentLockKey(internalSessionId: string): string {
+function getFulfillmentLockKey(internalSessionId: string): string {
   return `stripe:fulfillment-lock:${AIRTABLE_BASE_ID}:session:${internalSessionId}`;
 }
 

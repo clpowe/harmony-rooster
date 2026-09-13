@@ -114,7 +114,7 @@ const linkStyle = {
     <EBody :style="bodyStyle">
       <EContainer :style="containerStyle">
         <ESection :style="headerStyle">
-          <EHeading as="h1" :style="brandStyle">Harmony Rooster</EHeading>
+          <EHeading as="h1" :style="brandStyle">Harmony Roosters</EHeading>
         </ESection>
 
         <ESection>
