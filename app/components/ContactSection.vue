@@ -2,7 +2,7 @@
   <section id="contact" class="contact-section">
     <section-header class="faq-section__intro">
       <template #title> Contact <span>Us</span> </template>
-      <template #description> have a question? We’re here to help! </template>
+      <template #description>Have a question? We’re here to help!</template>
     </section-header>
     <div class="contact-section__form">
       <ContactForm />

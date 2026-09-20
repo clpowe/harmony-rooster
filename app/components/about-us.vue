@@ -6,7 +6,7 @@
         width="400"
         format="avif"
         src="/asiannurse.jpg"
-        alt="Young asian caregiver nurse giving consilt to a caucasian"
+        alt='Caregiver providing in-home nursing support to a client"'
         class="about-section__photo"
       />
     </div>

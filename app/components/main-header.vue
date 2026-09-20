@@ -41,7 +41,7 @@ const closeMobileMenu = () => {
 
     <div class="site-header__actions site-header__actions--desktop">
       <NuxtLink class="button button--md button--primary" to="/#contact">Let's Chat</NuxtLink>
-      <a class="button button--md button--accent" href="tel:+18138888888">813-888-8888</a>
+      <a class="button button--md button--accent" href="tel:+18134340447">813-434-0447</a>
     </div>
   </header>
 

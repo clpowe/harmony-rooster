@@ -16,7 +16,7 @@ defineEmits<{
 <template>
   <div class="error-screen">
     <header class="error-screen__header">
-      <SiteBrand class="error-screen__brand" aria-label="Harmony Rooster home" />
+      <SiteBrand class="error-screen__brand" aria-label="Harmony Roosters home" />
     </header>
 
     <main class="error-screen__main">

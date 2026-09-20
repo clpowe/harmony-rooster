@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const airtable = vi.hoisted(() => ({
@@ -172,10 +173,19 @@ describe("POST /api/courses", () => {
           email: "customer@example.com",
           sessionID: "sess_airtable",
         }),
-        success_url: "https://harmonyroosters.com/success?session_id={CHECKOUT_SESSION_ID}",
+        success_url: expect.stringMatching(
+          /^https:\/\/harmonyroosters\.com\/success\?session_id=\{CHECKOUT_SESSION_ID\}#receipt_token=[a-f0-9]{64}$/,
+        ),
       }),
     );
 
+    const token = new URLSearchParams(new URL(checkoutParams.success_url).hash.slice(1)).get(
+      "receipt_token",
+    )!;
+    expect(checkoutParams.metadata.receipt_token_hash).toBe(
+      createHash("sha256").update(token).digest("hex"),
+    );
+    expect(JSON.stringify(checkoutParams.metadata)).not.toContain(token);
     expect(checkoutParams.customer).not.toBe("cus_victim");
     expect(checkoutParams).not.toHaveProperty("payment_method_types");
   });
@@ -234,7 +244,9 @@ describe("POST /api/courses", () => {
     expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
       expect.objectContaining({
         cancel_url: "https://preview.example.com/cancel",
-        success_url: "https://preview.example.com/success?session_id={CHECKOUT_SESSION_ID}",
+        success_url: expect.stringContaining(
+          "https://preview.example.com/success?session_id={CHECKOUT_SESSION_ID}#receipt_token=",
+        ),
       }),
     );
   });

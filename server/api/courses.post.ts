@@ -1,6 +1,7 @@
 import { useServerStripe } from "#stripe/server";
 import { AirtableTs, type Table } from "airtable-ts";
 import * as z from "zod";
+import { issueReceiptAccess } from "../services/registration-outcome";
 import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "../../shared/constants/airtable";
 
 const registrationSchema = z.object({
@@ -165,7 +166,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const baseUrl = getConfiguredSiteOrigin(config.public.siteUrl) ?? getRequestURL(event).origin;
-  const successUrl = `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
+  const receiptAccess = issueReceiptAccess();
+  const successUrl = `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}#receipt_token=${receiptAccess.token}`;
   const cancelUrl = `${baseUrl}/cancel`;
 
   const checkoutSession = await stripe.checkout.sessions.create({
@@ -182,6 +184,7 @@ export default defineEventHandler(async (event) => {
       },
     ],
     metadata: {
+      receipt_token_hash: receiptAccess.tokenHash,
       sessionID: sessionRecord.id,
       customerID: user.id,
       first_name,

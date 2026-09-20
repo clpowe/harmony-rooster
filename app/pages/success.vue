@@ -1,85 +1,73 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
-
-type CheckoutSuccessData = {
-  status: string;
-  payment: {
-    brand: string | null;
-    last4: string | null;
-  };
-  total: number | null;
-  session: {
-    id: string;
-    name: string;
-    date: string;
-    time: string;
-    location: string;
-  } | null;
-};
 
 definePageMeta({
   layout: false,
+  key: (route) => String(route.query.session_id ?? ""),
 });
 
 useHead({
-  title: "Purchase confirmed | Harmony Rooster",
+  title: "Registration receipt | Harmony Roosters",
+  titleTemplate: null,
+  meta: [
+    { name: "robots", content: "noindex, nofollow" },
+    { name: "referrer", content: "no-referrer" },
+  ],
 });
 
 const route = useRoute();
-const sessionId = computed(() => {
-  const rawSessionId = route.query.session_id;
-  return typeof rawSessionId === "string" ? rawSessionId : rawSessionId?.[0];
-});
-const hasSessionId = computed(() => Boolean(sessionId.value));
-const receiptQuery = computed(() => ({ session_id: sessionId.value }));
-
-if (!hasSessionId.value) {
-  await navigateTo("/");
-}
-
+const sessionId = typeof route.query.session_id === "string" ? route.query.session_id : "";
 const {
   data: checkoutData,
   error,
   pending,
+  initialLoading,
+  token,
   refresh: refreshCheckoutData,
-} = await useFetch<CheckoutSuccessData>("/api/stripe/success", {
-  query: receiptQuery,
-  server: true,
-  immediate: hasSessionId.value,
-});
+  autoRefreshFinished,
+} = useRegistrationReceipt(sessionId);
+const isConfirmed = computed(() => checkoutData.value?.registration.state === "confirmed");
+const copyMessage = ref("");
+async function copyReceiptLink() {
+  if (!token.value) return;
+  const url = new URL("/success", window.location.origin);
+  url.searchParams.set("session_id", sessionId);
+  url.hash = `receipt_token=${token.value}`;
+  try {
+    await navigator.clipboard.writeText(url.href);
+    copyMessage.value =
+      "Receipt link copied. Keep it private; anyone with this link can view your receipt.";
+  } catch {
+    copyMessage.value = "Could not copy the receipt link. Please try again.";
+  }
+}
 
-const isPaid = computed(() => checkoutData.value?.status === "paid");
 const className = computed(() => checkoutData.value?.session?.name ?? "Class details pending");
 const orderNumber = computed(() => {
-  if (!sessionId.value) return "Unavailable";
-  return `...${sessionId.value.slice(-8)}`;
+  if (!sessionId) return "Unavailable";
+  return `...${sessionId.slice(-8)}`;
 });
 
-const formattedTotal = computed(() => formatCurrency(checkoutData.value?.total));
+const formattedTotal = computed(() =>
+  formatCurrency(checkoutData.value?.payment.total, checkoutData.value?.payment.currency),
+);
 const formattedClassDate = computed(() => formatClassDate(checkoutData.value?.session?.date));
 const paymentMethod = computed(() => {
   const payment = checkoutData.value?.payment;
-  const brand = payment?.brand ? formatPaymentBrand(payment.brand) : "card";
-  return payment?.last4 ? `${brand} ending in ${payment.last4}` : brand;
+  const brand = payment?.brand ? formatPaymentBrand(payment.brand) : "Payment method";
+  return payment?.last4 ? `${brand} ending in ${payment.last4}` : "Payment method unavailable";
 });
 const receiptStatusMessage = computed(() => {
-  if (pending.value) return "Confirming your purchase. Payment details are loading.";
-  if (error.value) {
-    return "We could not load this receipt. Please try again or contact Harmony Rooster.";
-  }
-  if (isPaid.value)
-    return `Purchase confirmed. Your spot has been reserved for ${className.value}.`;
-
-  return "Payment pending. Your registration will be confirmed when payment completes.";
+  if (initialLoading.value) return "Loading your registration receipt.";
+  if (error.value)
+    return "We could not load this receipt. Open your complete receipt link or contact us.";
+  return checkoutData.value?.registration.message ?? "Registration status unavailable.";
 });
-
-const retryReceiptLoad = async () => {
-  await refreshCheckoutData();
-};
+const retryReceiptLoad = () => refreshCheckoutData();
 
 function formatClassDate(value?: string) {
-  if (!value) return "Date pending";
+  if (!value || Number.isNaN(Date.parse(value))) return "Date pending";
 
   return new Intl.DateTimeFormat("en-US", {
     weekday: "long",
@@ -90,12 +78,12 @@ function formatClassDate(value?: string) {
   }).format(new Date(value));
 }
 
-function formatCurrency(value?: number | null) {
+function formatCurrency(value?: number | null, currency?: string | null) {
   if (typeof value !== "number") return "total unavailable";
 
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: currency?.toUpperCase() ?? "USD",
   }).format(value / 100);
 }
 
@@ -111,9 +99,9 @@ function formatPaymentBrand(value: string) {
 <template>
   <div class="success-page">
     <header class="success-header" aria-label="Checkout confirmation">
-      <SiteBrand class="success-header__brand" aria-label="Harmony Rooster home" />
+      <SiteBrand class="success-header__brand" aria-label="Harmony Roosters home" />
 
-      <NuxtLink to="/" class="success-back" aria-label="Return to Harmony Rooster home">
+      <NuxtLink to="/" class="success-back" aria-label="Return to Harmony Roosters home">
         <Icon name="lucide:arrow-left" class="success-back__icon" aria-hidden="true" />
         Return home
       </NuxtLink>
@@ -129,7 +117,7 @@ function formatPaymentBrand(value: string) {
           {{ receiptStatusMessage }}
         </p>
 
-        <div v-if="pending" class="receipt__status">
+        <div v-if="initialLoading" class="receipt__status">
           <Icon name="lucide:loader-circle" class="receipt__spinner" aria-hidden="true" />
           <Typography
             id="receipt-title"
@@ -138,7 +126,7 @@ function formatPaymentBrand(value: string) {
             uppercase
             class="receipt__title"
           >
-            Confirming your purchase
+            Loading your receipt
           </Typography>
           <Typography tag="p" variant="body-large" class="receipt__lede">
             Payment details are loading.
@@ -157,7 +145,7 @@ function formatPaymentBrand(value: string) {
             We could not load this receipt
           </Typography>
           <Typography tag="p" variant="body-large" class="receipt__lede">
-            Please try again or contact Harmony Rooster.
+            Open your complete receipt link or contact Harmony Roosters.
           </Typography>
           <div class="receipt__actions" aria-label="Receipt recovery options">
             <button
@@ -174,11 +162,15 @@ function formatPaymentBrand(value: string) {
           </div>
         </div>
 
-        <div v-else-if="isPaid" class="receipt__ready">
+        <div v-else-if="checkoutData" class="receipt__ready">
           <div class="receipt__top-rule" aria-hidden="true"></div>
 
           <header class="receipt__intro">
-            <Icon name="lucide:badge-check" class="receipt__seal" aria-hidden="true" />
+            <Icon
+              :name="isConfirmed ? 'lucide:badge-check' : 'lucide:info'"
+              class="receipt__seal"
+              aria-hidden="true"
+            />
             <div>
               <Typography tag="p" variant="heading-small" uppercase class="receipt__eyebrow">
                 Receipt {{ orderNumber }}
@@ -190,13 +182,42 @@ function formatPaymentBrand(value: string) {
                 uppercase
                 class="receipt__title"
               >
-                Thank you for your <span>purchase</span>
+                {{ checkoutData.registration.title }}
               </Typography>
               <Typography tag="p" variant="body-large" class="receipt__lede">
-                Your spot has been reserved for {{ className }}.
+                {{ checkoutData.registration.message }}
               </Typography>
             </div>
           </header>
+
+          <section class="receipt-section" aria-label="Receipt actions">
+            <p v-if="autoRefreshFinished" role="status">
+              Confirmation is taking longer than expected. You can check again or contact us for
+              help.
+            </p>
+            <div class="receipt__actions">
+              <button
+                v-if="!isConfirmed && checkoutData.registration.state !== 'refunded'"
+                class="button button--md button--primary"
+                type="button"
+                :disabled="pending"
+                @click="retryReceiptLoad"
+              >
+                {{ pending ? "Checking…" : "Check again" }}
+              </button>
+              <button
+                class="button button--md button--secondary"
+                type="button"
+                @click="copyReceiptLink"
+              >
+                Copy receipt link
+              </button>
+              <NuxtLink class="button button--md button--secondary" to="/#contact"
+                >Contact support</NuxtLink
+              >
+            </div>
+            <p v-if="copyMessage" role="status" class="receipt__copy-message">{{ copyMessage }}</p>
+          </section>
 
           <section class="receipt-section receipt-section--class" aria-labelledby="class-title">
             <div class="receipt-section__header">
@@ -266,10 +287,6 @@ function formatPaymentBrand(value: string) {
                 <dt>Order number</dt>
                 <dd>{{ orderNumber }}</dd>
               </div>
-              <div>
-                <dt>Status</dt>
-                <dd>Paid</dd>
-              </div>
             </dl>
           </section>
         </div>
@@ -283,10 +300,10 @@ function formatPaymentBrand(value: string) {
             uppercase
             class="receipt__title"
           >
-            Payment pending
+            Registration status unavailable
           </Typography>
           <Typography tag="p" variant="body-large" class="receipt__lede">
-            Your registration will be confirmed when payment completes.
+            Please open your complete receipt link or contact us for help.
           </Typography>
         </div>
       </section>

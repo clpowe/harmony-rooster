@@ -13,7 +13,7 @@ const posthogServerLogEnabled =
 export default defineNuxtConfig({
   app: {
     head: {
-      title: "Harmony Rooster",
+      title: "Harmony Roosters",
       htmlAttrs: {
         lang: "en",
       },

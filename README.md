@@ -44,6 +44,24 @@ stripe listen --forward-to http://harmony-rooster.localhost:1355/api/stripe/webh
 
 The app also accepts the legacy path `/api/webhooks/stripe`.
 
+## Registration receipts
+
+Checkout creates a protected receipt link. The server checks its access token before
+returning payment or course details; a Checkout session ID alone cannot open a receipt.
+The token is carried in the link fragment, removed before the router and analytics
+initialize, and sent only in an Authorization header. Same-tab reloads retain access.
+Customers can use **Copy receipt link** to open the receipt on another device.
+Treat that link as private: anyone holding it can view the receipt. Removing
+`receipt_token_hash` from the Stripe Checkout Session metadata revokes its access.
+No additional signing secret or account login is required.
+
+Registration confirmation comes from the fulfillment record, not payment status.
+Pending outcomes refresh every five seconds for up to 30 seconds; customers can then
+check again or contact support. Missing records for recent payments receive
+a ten-minute confirmation window (using Checkout creation time when charge details are unavailable). Older missing records, including records expired
+from Redis, show **Registration status unavailable** while retaining payment details.
+Receipt reads never create registrations or retry payments.
+
 ## Production
 
 Build the application for production:

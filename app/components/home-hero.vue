@@ -13,7 +13,7 @@ import Rooster from "@/assets/icons/icon-rooster.svg";
     />
     <div class="hero__body">
       <Typography tag="h1" variant="heading-small" uppercase class=""
-        >Home Care & Residential Habilitation in Tampa, FL</Typography
+        >Home Care & Residential Habilitation in Hillsborough County</Typography
       >
       <Typography tag="h2" uppercase variant="heading-2xl">
         Care you can

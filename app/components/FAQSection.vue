@@ -12,7 +12,7 @@ const accordionItems = [
     value: "question-2",
     question: "What is the APD iBudget Waiver, and do you accept it?",
     answer:
-      "The APD iBudget Waiver is a Florida Medicaid program administered by the Agency for Persons with Disabilities that funds services for individuals with developmental disabilities. Harmony Roosters is an enrolled iBudget Waiver provider, and we currently accept new consumers whose services are funded through the waiver.",
+      "The APD iBudget Waiver is a APD/AHCA/FLMMIS administered by the Agency for Persons with Disabilities that funds services for individuals with developmental disabilities. Harmony Roosters is an enrolled iBudget Waiver provider, and we currently accept new consumers whose services are funded through the waiver.",
   },
   {
     value: "question-3",
