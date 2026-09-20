@@ -1,6 +1,14 @@
 import postcssNesting from "postcss-nesting";
 import { fileURLToPath } from "node:url";
 
+const siteName = "Harmony Roosters";
+const productionSiteUrl = "https://www.harmonyroosters.com";
+
+if (process.env.NODE_ENV === "production") {
+  process.env.NUXT_PUBLIC_SITE_NAME = siteName;
+  process.env.NUXT_PUBLIC_SITE_URL = productionSiteUrl;
+}
+
 const posthogHost = process.env.NUXT_POSTHOG_HOST ?? "https://us.i.posthog.com";
 const posthogProjectApiKey =
   process.env.NUXT_POSTHOG_PROJECT_API_KEY ??
@@ -11,9 +19,13 @@ const posthogServerLogEnabled =
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  site: {
+    name: siteName,
+    url: productionSiteUrl,
+  },
   app: {
     head: {
-      title: "Harmony Roosters",
+      title: siteName,
       htmlAttrs: {
         lang: "en",
       },

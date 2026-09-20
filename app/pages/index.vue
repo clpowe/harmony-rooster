@@ -1,8 +1,8 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: "Home Care for Adults with Disabilities in Riverview, FL | Harmony Roosters",
+  title: "Home Care for Adults with Disabilities in Riverview/Brandon, FL",
   description:
-    "Harmony Roosters provides compassionate in-home care, respite care, companion services, nursing support, and foster home services for individuals with developmental disabilities in Tampa and Hillsborough County, Florida.",
+    "Harmony Roosters provides compassionate in-home care, respite care, companion services, nursing support, and foster home services for individuals with developmental disabilities in the Riverview/Brandon area of Hillsborough County, Florida.",
 });
 </script>
 

@@ -7,7 +7,7 @@ const organizationSchema = {
   name: "Harmony Roosters, LLC",
   url: "https://www.harmonyroosters.com/",
   description:
-    "Harmony Roosters provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities in Hillsborough County, Florida.",
+    "Harmony Roosters provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities in the Riverview/Brandon area of Hillsborough County, Florida.",
   email: "harmonyroosters@gmail.com",
 
   founder: [
@@ -40,7 +40,7 @@ const organizationSchema = {
     "@type": "OfferCatalog",
     name: "Care and support services",
     itemListElement: [
-      "Personal Support",
+      "Personal Supports",
       "Respite Care",
       "Nursing Support",
       "Residential Habilitation",
@@ -60,7 +60,7 @@ useSchemaOrg([
     name: "Harmony Roosters, LLC",
     url: "https://www.harmonyroosters.com/",
     description:
-      "Harmony Roosters provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities in Hillsborough County, Florida.",
+      "Harmony Roosters provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities in the Riverview/Brandon area of Hillsborough County, Florida.",
     email: "harmonyroosters@gmail.com",
     founder: [
       {
@@ -79,10 +79,6 @@ useSchemaOrg([
       },
       {
         "@type": "City",
-        name: "Tampa",
-      },
-      {
-        "@type": "City",
         name: "Brandon",
       },
       {
@@ -95,7 +91,7 @@ useSchemaOrg([
       name: "Care and support services",
 
       itemListElement: [
-        "Personal Support",
+        "Personal Supports",
         "Respite Care",
         "Nursing Support",
         "Residential Habilitation",

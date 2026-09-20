@@ -13,7 +13,7 @@ type Service = {
 const services: Service[] = [
   {
     icon: Care,
-    title: "Personal Support",
+    title: "Personal Supports",
     text: "Help with daily living, companionship, and light household tasks.",
   },
   {
@@ -40,8 +40,8 @@ const services: Service[] = [
       <template #title> Our <span>Services</span> </template>
       <Typography tag="p" variant="body-medium">
         Harmony Roosters provides personalized support for individuals with developmental
-        disabilities in Hillsborough County. Our services include personal support, respite care,
-        nursing support, and family-style foster home care designed to promote independence,
+        disabilities in the Riverview/Brandon area. Our services include Personal Supports, respite
+        care, nursing support, and family-style foster home care designed to promote independence,
         dignity, safety, and meaningful participation in daily life.
       </Typography>
 

@@ -12,7 +12,7 @@ const accordionItems = [
     value: "question-2",
     question: "What is the APD iBudget Waiver, and do you accept it?",
     answer:
-      "The APD iBudget Waiver is a APD/AHCA/FLMMIS administered by the Agency for Persons with Disabilities that funds services for individuals with developmental disabilities. Harmony Roosters is an enrolled iBudget Waiver provider, and we currently accept new consumers whose services are funded through the waiver.",
+      "The APD iBudget Waiver is a Florida Medicaid home- and community-based services program administered by AHCA and APD, with provider enrollment and claims handled through FLMMIS. Harmony Roosters is an enrolled iBudget Waiver provider, and we currently accept new consumers whose services are funded through the waiver.",
   },
   {
     value: "question-3",
@@ -48,7 +48,7 @@ const accordionItems = [
     value: "question-8",
     question: "Do you accept Medicare or private insurance?",
     answer:
-      "No. Harmony Roosters is not a Medicare-certified home health agency and does not bill private insurance. Our services are funded through the APD iBudget Waiver and coordinated through Sunshine Health and AHCA/FLMMIS enrollment.",
+      "No. Harmony Roosters is not a Medicare-certified home health agency and does not bill private insurance. Authorized services are funded through Florida Medicaid’s APD iBudget Waiver, a fee-for-service program administered by AHCA and APD rather than a Medicaid managed-care health plan.",
   },
   {
     value: "question-9",
@@ -60,7 +60,7 @@ const accordionItems = [
     value: "question-10",
     question: "What areas do you serve?",
     answer:
-      "We serve the Riverview and Brandon area of Hillsborough County, Florida. Contact our team to confirm availability for your specific location.",
+      "We serve the Riverview/Brandon area of Hillsborough County, Florida. Contact our team to confirm availability for your specific location.",
   },
   {
     value: "question-11",

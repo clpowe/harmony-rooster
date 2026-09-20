@@ -6,7 +6,7 @@
         width="400"
         format="avif"
         src="/asiannurse.jpg"
-        alt='Caregiver providing in-home nursing support to a client"'
+        alt="Caregiver providing in-home nursing support to a client"
         class="about-section__photo"
       />
     </div>

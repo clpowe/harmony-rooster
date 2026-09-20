@@ -23,7 +23,7 @@ function formatCourseCost(cost: number | string) {
         <Typography tag="h3" variant="heading-medium">{{ props.course.course_name }}</Typography>
         <Typography tag="p" variant="body-medium">{{ props.course.description }}</Typography>
       </div>
-      <div class="course-group__price">
+      <div v-if="props.course.sessions?.length" class="course-group__price">
         <Typography tag="p" variant="body-large">
           Session Cost: {{ formatCourseCost(props.course.cost) }}
         </Typography>
