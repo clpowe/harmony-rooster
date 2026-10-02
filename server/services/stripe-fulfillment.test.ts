@@ -622,8 +622,10 @@ describe("fulfillCheckout", () => {
     event = {};
   });
 
-  it("creates a registration once for a paid completed session", async () => {
-    const { airtable, dependencies } = createDependencies();
+  it("creates one registration and records receipt sending once", async () => {
+    const { airtable, dependencies, redis } = createDependencies();
+    const set = vi.spyOn(redis, "set");
+    const recordKey = getFulfillmentRecordKey("cs_test_123");
 
     await fulfillCheckout("cs_test_123", "evt_1", event, dependencies);
     await fulfillCheckout("cs_test_123", "evt_2", event, dependencies);
@@ -633,10 +635,20 @@ describe("fulfillCheckout", () => {
       registrations: ["reg_1"],
     });
 
-    const record = await readFulfillmentRecord(
-      getFulfillmentRecordKey("cs_test_123"),
-      dependencies,
+    expect(sendReceiptEmail).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        to: "customer@example.com",
+        firstName: "Taylor",
+        sessionName: "Harmony Course",
+        sessionDate: "2026-05-01",
+        sessionTime: "1:00 PM",
+        sessionLocation: "Nashville",
+        registrationId: "reg_1",
+      }),
+      event,
     );
+
+    const record = await readFulfillmentRecord(recordKey, dependencies);
 
     expect(record).toMatchObject({
       attemptCount: 1,
@@ -646,7 +658,15 @@ describe("fulfillCheckout", () => {
       status: "fulfilled",
       stripeEventId: "evt_1",
     });
-    expect(sendReceiptEmail).toHaveBeenCalledOnce();
+
+    const receiptWrites = set.mock.calls.filter(([key, value]) => {
+      if (key !== recordKey) return false;
+
+      const stored = JSON.parse(value) as { receiptSentAt?: string };
+      return Boolean(stored.receiptSentAt);
+    });
+
+    expect(receiptWrites).toHaveLength(1);
   });
 
   it("serializes different paid checkouts competing for the final seat", async () => {

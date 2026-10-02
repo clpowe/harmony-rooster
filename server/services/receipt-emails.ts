@@ -1,16 +1,20 @@
 import { Resend } from "resend";
 import { render } from "@vue-email/render";
 import { defineComponent, h, type PropType } from "vue";
-import {
-  type CheckoutContext,
-  type FulfillmentDependencies,
-  getFulfillmentRecordKey,
-  readFulfillmentRecord,
-  stripeFulfillmentDependencies,
-  writeFulfillmentRecord,
-} from "./stripe-fulfillment";
+import type { H3Event } from "h3";
 
-type H3Event = any;
+export type ReceiptEmailInput = {
+  to: string;
+  firstName: string;
+  sessionName: string;
+  sessionDate: string;
+  sessionTime: string;
+  sessionLocation: string;
+  amountMinor: number | null;
+  currency: string | null;
+  receiptUrl: string | null;
+  registrationId: string;
+};
 
 const ReceiptEmail = defineComponent({
   name: "ReceiptEmail",
@@ -72,56 +76,44 @@ const ReceiptEmail = defineComponent({
   },
 });
 
-export type ReceiptEmailDependencies = FulfillmentDependencies & {
-  getResendClient: (apiKey: string) => Pick<Resend, "emails">;
+export type ReceiptEmailDependencies = {
+  getRuntimeConfig: (event: H3Event) => {
+    resendApiKey: string;
+    public: {
+      contactFromEmail: string;
+    };
+  };
+  getResendClient: (apiKey: string) => {
+    emails: Pick<Resend["emails"], "send">;
+  };
 };
 
 const receiptEmailDependencies: ReceiptEmailDependencies = {
-  createAirtableClient: (apiKey) => stripeFulfillmentDependencies.createAirtableClient(apiKey),
-  getRedisClient: () => stripeFulfillmentDependencies.getRedisClient(),
-  getRuntimeConfig: (event) => stripeFulfillmentDependencies.getRuntimeConfig(event),
-  getStripeClient: (event) => stripeFulfillmentDependencies.getStripeClient(event),
+  getRuntimeConfig: (event) => useRuntimeConfig(event),
   getResendClient: (apiKey) => new Resend(apiKey),
 };
 
 export async function sendReceiptEmail(
-  context: CheckoutContext,
-  registrationId: string,
+  receipt: ReceiptEmailInput,
   event: H3Event,
   deps: ReceiptEmailDependencies = receiptEmailDependencies,
-): Promise<{ id: string } | null> {
+): Promise<{ id: string }> {
   const config = deps.getRuntimeConfig(event);
+
   if (!config.resendApiKey) {
     throw new Error("Receipt email dependencies not configured");
   }
 
-  // Idempotency: bail if already sent
-  const recordKey = getFulfillmentRecordKey(context.checkoutSession.id);
-  const record = await readFulfillmentRecord(recordKey, deps);
-  if (record?.receiptSentAt) return null;
-
-  // Pull receipt url from expanded charge when Stripe supplied it.
-  const pi = context.checkoutSession.payment_intent;
-  const charge = pi && typeof pi !== "string" ? pi.latest_charge : null;
-  const receiptUrl = charge && typeof charge !== "string" ? charge.receipt_url : null;
-
-  const session_name = context.session.sessionName;
-  const session_date = context.session.date;
-  const subject = `Receipt for ${session_name} - ${session_date}`;
-
   const props = {
-    firstName: context.customer.first_name,
-    sessionName: session_name,
-    sessionDate: session_date,
-    sessionTime: context.session.time,
-    sessionLocation: context.session.location,
-    amountFormatted: formatAmount(
-      context.checkoutSession.amount_total,
-      context.checkoutSession.currency,
-    ),
-    receiptUrl,
-    registrationId,
-    supportEmail: config.contactFromEmail,
+    firstName: receipt.firstName,
+    sessionName: receipt.sessionName,
+    sessionDate: receipt.sessionDate,
+    sessionTime: receipt.sessionTime,
+    sessionLocation: receipt.sessionLocation,
+    amountFormatted: formatAmount(receipt.amountMinor, receipt.currency),
+    receiptUrl: receipt.receiptUrl,
+    registrationId: receipt.registrationId,
+    supportEmail: config.public.contactFromEmail || "contact@harmonyroosters.com",
   };
 
   const [html, text] = await Promise.all([
@@ -132,8 +124,8 @@ export async function sendReceiptEmail(
   const resend = deps.getResendClient(config.resendApiKey);
   const response = await resend.emails.send({
     from: "contact@harmonyroosters.com",
-    to: context.customer.email,
-    subject,
+    to: receipt.to,
+    subject: `Receipt for ${receipt.sessionName} - ${receipt.sessionDate}`,
     html,
     text,
   });
@@ -142,15 +134,11 @@ export async function sendReceiptEmail(
     throw new Error(`Resend error: ${response.error.message}`);
   }
 
-  if (record) {
-    await writeFulfillmentRecord(
-      recordKey,
-      { ...record, receiptSentAt: new Date().toISOString() },
-      deps,
-    );
+  if (!response.data?.id) {
+    throw new Error("Resend returned no email ID");
   }
 
-  return { id: response.data?.id ?? "" };
+  return { id: response.data.id };
 }
 
 function formatAmount(amountMinor: number | null, currency: string | null): string {

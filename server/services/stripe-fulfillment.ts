@@ -8,6 +8,7 @@ import type {
   StripeWebhookRegistrationEvent,
   StripeWebhookRegistrationRecord,
 } from "../../shared/types/stripe-webhooks";
+import { sendReceiptEmail } from "./receipt-emails";
 
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 const FIFTEEN_MINUTES_IN_SECONDS = 60 * 15;
@@ -495,26 +496,45 @@ export async function fulfillCheckout(
       registrationId: registration.id,
     });
 
-    console.log("Sould send email");
-    try {
-      const { sendReceiptEmail } = await import("./receipt-emails");
-      console.log("sending email");
-      const result = await sendReceiptEmail(context, registration.id, event);
-      if (result) {
-        console.log("email Sent");
+    // Send Email Receipt
+    if (!claim.record.receiptSentAt) {
+      try {
+        const payment_intent = checkoutSession.payment_intent;
+        const charge =
+          payment_intent && typeof payment_intent !== "string"
+            ? payment_intent.latest_charge
+            : null;
+
+        const receiptUrl = charge && typeof charge !== "string" ? charge.receipt_url : null;
+        await sendReceiptEmail(
+          {
+            to: context.customer.email,
+            firstName: context.customer.first_name,
+            sessionName: context.session.sessionName,
+            sessionDate: context.session.date,
+            sessionTime: context.session.time,
+            sessionLocation: context.session.location,
+            amountMinor: checkoutSession.amount_total,
+            currency: checkoutSession.currency,
+            receiptUrl,
+            registrationId: registration.id,
+          },
+          event,
+        );
+
         await markReceiptSent(checkoutSession.id, dependencies);
+      } catch (error) {
+        captureServerError(error, {
+          context: {
+            checkoutSessionId,
+            registrationId: registration.id,
+            operation: "send-receipt-email",
+            source: "stripe-fulfillment",
+          },
+          event,
+          message: "Receipt email failed",
+        });
       }
-    } catch (error) {
-      captureServerError(error, {
-        context: {
-          checkoutSessionId,
-          registrationId: registration.id,
-          operation: "send-receipt-email",
-          source: "stripe-fulfillment",
-        },
-        event,
-        message: "Receipt email failed",
-      });
     }
   } catch (error: any) {
     if (claim && !claim.ok && claim.reason === "in_progress") {
