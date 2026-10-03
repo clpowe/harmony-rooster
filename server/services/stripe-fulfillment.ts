@@ -3,6 +3,7 @@ import { AirtableTs, type Table } from "airtable-ts";
 import Stripe from "stripe";
 import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "../../shared/constants/airtable";
 import { captureServerError, createRequestLogger, createServerLogger } from "../utils/logger";
+import { createError } from "h3";
 import type {
   StripeWebhookRefundEvent,
   StripeWebhookRegistrationEvent,
@@ -29,15 +30,11 @@ const fulfillmentLogger = createServerLogger({
   },
 });
 
-function httpError(details: { message: string; statusCode: number; statusMessage?: string }) {
-  return Object.assign(new Error(details.message), details);
-}
-
-function getAirtableClient(event: H3Event, dependencies: FulfillmentDependencies): AirtableClient {
+function getAirtableClient(event: H3Event, dependencies: FulfillmentDependencies): AirtableTs {
   const config = dependencies.getRuntimeConfig(event);
 
   if (!config.airtableKey) {
-    throw httpError({
+    throw createError({
       statusCode: 500,
       statusMessage: "Server Misconfiguration",
       message: "Missing Airtable API key",
@@ -46,7 +43,7 @@ function getAirtableClient(event: H3Event, dependencies: FulfillmentDependencies
 
   const airtable = dependencies.createAirtableClient(config.airtableKey);
   if (!airtable) {
-    throw httpError({
+    throw createError({
       statusCode: 500,
       statusMessage: "Server Misconfiguration",
       message: "Airtable client was not initialized",
@@ -166,15 +163,11 @@ type SafeRuntimeConfig = {
 
 type RedisClient = Pick<Redis, "eval" | "get" | "set">;
 
-type StripeClient = Stripe;
-
-type AirtableClient = AirtableTs;
-
 export type FulfillmentDependencies = {
-  createAirtableClient: (apiKey: string) => AirtableClient;
+  createAirtableClient: (apiKey: string) => AirtableTs;
   getRedisClient: () => RedisClient;
   getRuntimeConfig: (event: H3Event) => SafeRuntimeConfig;
-  getStripeClient: (event: H3Event) => Promise<StripeClient>;
+  getStripeClient: (event: H3Event) => Promise<Stripe>;
 };
 
 const sessionsTable: Table<AirtableSessionRecord> = {
@@ -239,7 +232,7 @@ const registrationsTable: Table<StripeWebhookRegistrationRecord> = {
   },
 };
 
-let airtableClient: AirtableClient | null = null;
+let airtableClient: AirtableTs | null = null;
 
 export const stripeFulfillmentDependencies: FulfillmentDependencies = {
   createAirtableClient: (apiKey) => {
@@ -275,7 +268,7 @@ export async function verifyStripeWebhook(
   });
   const signature = getHeader(event, "stripe-signature");
   if (!signature) {
-    throw httpError({
+    throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
       message: "Missing Stripe signature",
@@ -284,7 +277,7 @@ export async function verifyStripeWebhook(
 
   const rawBody = await readRawBody(event);
   if (!rawBody) {
-    throw httpError({
+    throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
       message: "Missing request body",
@@ -315,7 +308,7 @@ export async function verifyStripeWebhook(
       event,
       message: "Stripe webhook signature verification failed",
     });
-    throw httpError({
+    throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
       message: `Webhook Error: ${error.message}`,
@@ -395,7 +388,7 @@ export async function fulfillCheckout(
         return;
       }
 
-      throw httpError({
+      throw createError({
         statusCode: 503,
         statusMessage: "Service Unavailable",
         message: `Session ${metadata.internalSessionId} fulfillment is already in progress`,
@@ -414,12 +407,7 @@ export async function fulfillCheckout(
       return;
     }
 
-    const context = await loadCheckoutContext(
-      checkoutSessionId,
-      event,
-      dependencies,
-      checkoutSession,
-    );
+    const context = await loadCheckoutContext(checkoutSession, metadata, event, dependencies);
 
     logger.info("Loaded checkout context", {
       internalCustomerId: context.internalCustomerId,
@@ -699,11 +687,16 @@ export async function claimFulfillment(
 }
 
 async function loadCheckoutContext(
-  checkoutSessionId: string,
+  checkoutSession: Stripe.Checkout.Session,
+  metadata: {
+    internalCustomerId: string;
+    internalSessionId: string;
+  },
   event: H3Event,
-  dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
-  existingCheckoutSession?: Stripe.Checkout.Session,
+  dependencies: FulfillmentDependencies,
 ): Promise<CheckoutContext> {
+  const checkoutSessionId = checkoutSession.id;
+
   const logger = createRequestLogger(event, {
     defaults: {
       checkoutSessionId,
@@ -711,19 +704,18 @@ async function loadCheckoutContext(
       source: "stripe-fulfillment",
     },
   });
-  const checkoutSession =
-    existingCheckoutSession ??
-    (await retrieveCheckoutSession(checkoutSessionId, event, dependencies));
-  const metadata = getRequiredMetadata(checkoutSession);
+
   logger.info("Loading checkout context from Airtable", {
     checkoutSessionId,
     metadata,
   });
+
   const airtable = getAirtableClient(event, dependencies);
   const [session, customer] = await Promise.all([
     airtable.get(sessionsTable, metadata.internalSessionId),
     airtable.get(customersTable, metadata.internalCustomerId),
   ]);
+
   logger.info("Loaded Airtable records for checkout context", {
     customerId: customer.id,
     customerStripeId: customer.stripeID,
@@ -733,7 +725,7 @@ async function loadCheckoutContext(
   });
 
   if (!checkoutSession.customer || typeof checkoutSession.customer === "string") {
-    throw httpError({
+    throw createError({
       statusCode: 500,
       statusMessage: "Fulfillment Error",
       message: `Checkout session ${checkoutSessionId} is missing an expanded customer`,
@@ -768,36 +760,12 @@ function validateCheckoutContext(context: CheckoutContext): void {
     stripeCustomerId: context.stripeCustomerId,
   });
 
-  if (context.checkoutSession.mode !== "payment") {
-    throw httpError({
-      statusCode: 500,
-      statusMessage: "Fulfillment Error",
-      message: `Unexpected checkout mode for ${checkoutSessionId}`,
-    });
-  }
-
-  if (context.checkoutSession.payment_status !== "paid") {
-    throw httpError({
-      statusCode: 500,
-      statusMessage: "Fulfillment Error",
-      message: `Checkout session ${checkoutSessionId} is not paid`,
-    });
-  }
-
-  if (context.checkoutSession.status !== "complete") {
-    throw httpError({
-      statusCode: 500,
-      statusMessage: "Fulfillment Error",
-      message: `Checkout session ${checkoutSessionId} is not complete`,
-    });
-  }
-
   if (context.session.spotsAvailable <= 0 || registrationsCount >= context.session.capacity) {
     throw new SessionFullError(context.internalSessionId);
   }
 
   if (!context.customer.stripeID) {
-    throw httpError({
+    throw createError({
       statusCode: 500,
       statusMessage: "Fulfillment Error",
       message: `Customer ${context.internalCustomerId} is missing a Stripe customer id`,
@@ -805,7 +773,7 @@ function validateCheckoutContext(context: CheckoutContext): void {
   }
 
   if (context.customer.stripeID !== context.stripeCustomerId) {
-    throw httpError({
+    throw createError({
       statusCode: 500,
       statusMessage: "Fulfillment Error",
       message: `Stripe customer mismatch for checkout session ${checkoutSessionId}`,
@@ -816,8 +784,8 @@ function validateCheckoutContext(context: CheckoutContext): void {
 async function createRegistration(
   context: CheckoutContext,
   event: H3Event,
-  dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
-  fulfillmentState?: {
+  dependencies: FulfillmentDependencies,
+  fulfillmentState: {
     fulfillmentRecord: FulfillmentRecord;
     recordKey: string;
   },
@@ -837,7 +805,7 @@ async function createRegistration(
     Customer: [context.internalCustomerId],
   };
 
-  let registrationId = fulfillmentState?.fulfillmentRecord.registrationId;
+  let registrationId = fulfillmentState.fulfillmentRecord.registrationId;
 
   if (!registrationId) {
     logger.info("Creating Airtable registration", {
@@ -856,23 +824,22 @@ async function createRegistration(
       sessionId: context.internalSessionId,
     });
 
-    if (fulfillmentState) {
-      await writeFulfillmentRecord(
-        fulfillmentState.recordKey,
-        {
-          ...fulfillmentState.fulfillmentRecord,
-          internalCustomerId: context.internalCustomerId,
-          internalSessionId: context.internalSessionId,
-          registrationId,
-          status: "processing",
-        },
-        dependencies,
-      );
-      logger.info("Persisted fulfillment registration id before session update", {
+    await writeFulfillmentRecord(
+      fulfillmentState.recordKey,
+      {
+        ...fulfillmentState.fulfillmentRecord,
+        internalCustomerId: context.internalCustomerId,
+        internalSessionId: context.internalSessionId,
         registrationId,
-        sessionId: context.internalSessionId,
-      });
-    }
+        status: "processing",
+      },
+      dependencies,
+    );
+
+    logger.info("Persisted fulfillment registration id before session update", {
+      registrationId,
+      sessionId: context.internalSessionId,
+    });
   } else {
     logger.info("Reusing persisted Airtable registration", {
       registrationId,
@@ -1013,7 +980,7 @@ async function refundCheckoutForFullSession(
       dependencies,
     );
 
-    throw httpError({
+    throw createError({
       statusCode: 500,
       statusMessage: "Refund Required",
       message: `Checkout session ${checkoutSession.id} is missing a PaymentIntent for its required refund`,
@@ -1127,7 +1094,7 @@ export async function reconcileRefund(
     metadataSessionId &&
     initialRecord.internalSessionId !== metadataSessionId
   ) {
-    throw httpError({
+    throw createError({
       statusCode: 409,
       statusMessage: "Refund Conflict",
       message: `Refund ${refund.id} does not match the stored course session`,
@@ -1143,7 +1110,7 @@ export async function reconcileRefund(
   });
 
   if (!locked) {
-    throw httpError({
+    throw createError({
       statusCode: 503,
       statusMessage: "Service Unavailable",
       message: `Refund reconciliation for session ${internalSessionId} is already in progress`,
@@ -1162,7 +1129,7 @@ export async function reconcileRefund(
     }
 
     if (current?.internalSessionId && current.internalSessionId !== internalSessionId) {
-      throw httpError({
+      throw createError({
         statusCode: 409,
         statusMessage: "Refund Conflict",
         message: `Refund ${refund.id} does not match the stored course session`,
@@ -1211,7 +1178,7 @@ async function persistRefundOutcome(
   const metadataCheckoutSessionId = refund.metadata?.checkout_session_id?.trim();
 
   if (current?.status === "fulfilled") {
-    throw httpError({
+    throw createError({
       statusCode: 409,
       statusMessage: "Refund Conflict",
       message: `Checkout session ${record.checkoutSessionId} already has a fulfilled registration`,
@@ -1219,7 +1186,7 @@ async function persistRefundOutcome(
   }
 
   if (metadataCheckoutSessionId && metadataCheckoutSessionId !== record.checkoutSessionId) {
-    throw httpError({
+    throw createError({
       statusCode: 409,
       statusMessage: "Refund Conflict",
       message: `Refund ${refund.id} does not match checkout session ${record.checkoutSessionId}`,
@@ -1227,7 +1194,7 @@ async function persistRefundOutcome(
   }
 
   if (current?.paymentIntentId && current.paymentIntentId !== paymentIntentId) {
-    throw httpError({
+    throw createError({
       statusCode: 409,
       statusMessage: "Refund Conflict",
       message: `Refund ${refund.id} does not match the stored PaymentIntent`,
@@ -1239,7 +1206,7 @@ async function persistRefundOutcome(
       current.status === "refund_failed" && Boolean(paymentIntentId);
 
     if (!isReplacementForFailedRefund) {
-      throw httpError({
+      throw createError({
         statusCode: 409,
         statusMessage: "Refund Conflict",
         message: `Checkout session ${record.checkoutSessionId} is already linked to another refund`,
@@ -1413,7 +1380,7 @@ function getRequiredMetadata(session: Stripe.Checkout.Session): {
   const internalCustomerId = session.metadata?.customerID?.trim();
 
   if (!internalSessionId || !internalCustomerId) {
-    throw httpError({
+    throw createError({
       statusCode: 500,
       statusMessage: "Fulfillment Error",
       message: `Checkout session ${session.id} is missing required fulfillment metadata`,
