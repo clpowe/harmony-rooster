@@ -10,6 +10,12 @@ import type {
   StripeWebhookRegistrationRecord,
 } from "../../shared/types/stripe-webhooks";
 import { sendReceiptEmail } from "./receipt-emails";
+import {
+  fulfillmentSessionsTable as sessionsTable,
+  customersTable,
+  type AirtableSessionRecord,
+  type AirtableCustomerRecord,
+} from "../data/airtable-tables";
 
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 const FIFTEEN_MINUTES_IN_SECONDS = 60 * 15;
@@ -52,26 +58,6 @@ function getAirtableClient(event: H3Event, dependencies: FulfillmentDependencies
 
   return airtable;
 }
-
-type AirtableSessionRecord = {
-  capacity: number;
-  id: string;
-  sessionName: string;
-  date: string;
-  location: string;
-  registrations: string[];
-  time: string;
-  spotsAvailable: number;
-};
-
-type AirtableCustomerRecord = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  stripeID: string | null;
-};
 
 type FulfillmentStatus =
   | "processing"
@@ -168,50 +154,6 @@ export type FulfillmentDependencies = {
   getRedisClient: () => RedisClient;
   getRuntimeConfig: (event: H3Event) => SafeRuntimeConfig;
   getStripeClient: (event: H3Event) => Promise<Stripe>;
-};
-
-const sessionsTable: Table<AirtableSessionRecord> = {
-  name: "session",
-  baseId: AIRTABLE_BASE_ID,
-  tableId: AIRTABLE_TABLE_IDS.SESSIONS,
-  schema: {
-    capacity: "number",
-    sessionName: "string",
-    date: "string",
-    location: "string",
-    registrations: "string[]",
-    time: "string",
-    spotsAvailable: "number",
-  },
-  mappings: {
-    capacity: "capacity",
-    sessionName: "session-name",
-    date: "date",
-    location: "location",
-    registrations: "Registrations",
-    time: "time",
-    spotsAvailable: "spots-available",
-  },
-};
-
-const customersTable: Table<AirtableCustomerRecord> = {
-  name: "customer",
-  baseId: AIRTABLE_BASE_ID,
-  tableId: AIRTABLE_TABLE_IDS.CUSTOMERS,
-  schema: {
-    first_name: "string",
-    last_name: "string",
-    email: "string",
-    phone: "string",
-    stripeID: "string | null",
-  },
-  mappings: {
-    first_name: "first_name",
-    last_name: "last_name",
-    email: "email",
-    phone: "phone",
-    stripeID: "stripeID",
-  },
 };
 
 const registrationsTable: Table<StripeWebhookRegistrationRecord> = {

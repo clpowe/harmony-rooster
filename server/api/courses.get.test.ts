@@ -3,11 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 const scan = vi.hoisted(() => vi.fn());
 const createAirtableClient = vi.hoisted(() => vi.fn());
 
-vi.mock("@constants/airtable", () => ({
+vi.mock("../../shared/constants/airtable", () => ({
   AIRTABLE_BASE_ID: "app_test",
   AIRTABLE_TABLE_IDS: {
     COURSES: "tbl_courses",
     SESSIONS: "tbl_sessions",
+    CUSTOMERS: "tbl_customers",
+    REGISTRATIONS: "tbl_registrations",
   },
 }));
 

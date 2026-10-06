@@ -28,7 +28,7 @@
         </Typography>
         <NuxtLink
           class="button button--md button--primary"
-          to="https://apd.myflorida.com/services/apply.html"
+          to="https://applynow.apd.myflorida.com/"
         >
           Apply For Services
         </NuxtLink>

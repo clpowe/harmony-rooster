@@ -1,12 +1,12 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { H3Event } from "h3";
-import { AirtableTs, type Table } from "airtable-ts";
+import { AirtableTs } from "airtable-ts";
 import type Stripe from "stripe";
 import type {
   RegistrationOutcome,
   RegistrationState,
 } from "../../shared/types/registration-outcome";
-import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "../../shared/constants/airtable";
+import { sessionDetailsTable } from "../data/airtable-tables";
 import {
   getFulfillmentRecordKey,
   readFulfillmentRecord,
@@ -25,14 +25,6 @@ export type RegistrationOutcomeDependencies = {
   now: () => number;
 };
 
-const sessionsTable: Table<Course> = {
-  name: "session",
-  baseId: AIRTABLE_BASE_ID,
-  tableId: AIRTABLE_TABLE_IDS.SESSIONS,
-  schema: { name: "string", date: "string", time: "string", location: "string" },
-  mappings: { name: "session-name", date: "date", time: "time", location: "location" },
-};
-
 function productionDependencies(event: H3Event): RegistrationOutcomeDependencies {
   return {
     async retrieveCheckout(id) {
@@ -44,8 +36,18 @@ function productionDependencies(event: H3Event): RegistrationOutcomeDependencies
     },
     readFulfillment: (id) => readFulfillmentRecord(getFulfillmentRecordKey(id)),
     async loadCourse(id) {
-      const config = useRuntimeConfig(event);
-      return new AirtableTs({ apiKey: config.airtableKey }).get(sessionsTable, id);
+      const consfig = useRuntimeConfig(event);
+      const session = await new AirtableTs({ apiKey: consfig.airtableKey }).get(
+        sessionDetailsTable,
+        id,
+      );
+      return {
+        id: session.id,
+        name: session.sessionName,
+        date: session.date,
+        time: session.time,
+        location: session.location,
+      };
     },
     now: Date.now,
   };

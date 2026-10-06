@@ -27,7 +27,10 @@ import Rooster from "@/assets/icons/icon-rooster.svg";
         independence, dignity, and overall well-being.</Typography
       >
       <div class="hero__actions">
-        <NuxtLink class="button button--lg button--primary" to="/#contact">
+        <NuxtLink
+          class="button button--lg button--primary"
+          to="https://applynow.apd.myflorida.com/"
+        >
           Apply For Services
         </NuxtLink>
         <NuxtLink class="button button--lg button--secondary" to="/#contact"> Contact us </NuxtLink>

@@ -1,5 +1,6 @@
 import { AirtableTs, type Table } from "airtable-ts";
-import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "@constants/airtable";
+import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "../../shared/constants/airtable";
+import { courseSessionsTable as sessionsTable } from "../data/airtable-tables";
 
 const coursesTable: Table<CourseRecord> = {
   name: "course",
@@ -18,28 +19,6 @@ const coursesTable: Table<CourseRecord> = {
     description: "description",
     duration: "duration",
     cost: "cost",
-  },
-};
-
-const sessionsTable: Table<CourseSessionRecord> = {
-  name: "session",
-  baseId: AIRTABLE_BASE_ID,
-  tableId: AIRTABLE_TABLE_IDS.SESSIONS,
-  schema: {
-    sessionName: "string",
-    date: "string",
-    time: "string",
-    capacity: "number",
-    spotsAvailable: "number",
-    location: "string",
-  },
-  mappings: {
-    sessionName: "session-name",
-    date: "date",
-    time: "time",
-    capacity: "capacity",
-    spotsAvailable: "spots-available",
-    location: "location",
   },
 };
 

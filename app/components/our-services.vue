@@ -51,10 +51,7 @@ const services: Service[] = [
         dependable, person-centered care.
       </Typography>
 
-      <NuxtLink
-        class="button button--md button--primary"
-        to="https://apd.myflorida.com/services/apply.html"
-      >
+      <NuxtLink class="button button--md button--primary" to="https://applynow.apd.myflorida.com/">
         Apply For Services
       </NuxtLink>
     </section-header>

@@ -1,8 +1,12 @@
 import { useServerStripe } from "#stripe/server";
-import { AirtableTs, type Table } from "airtable-ts";
+import { AirtableTs } from "airtable-ts";
 import * as z from "zod";
 import { issueReceiptAccess } from "../services/registration-outcome";
-import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "../../shared/constants/airtable";
+import {
+  checkoutSessionsTable,
+  customersTable,
+  type CheckoutSessionRecord,
+} from "../data/airtable-tables";
 
 const registrationSchema = z.object({
   first_name: z
@@ -19,67 +23,6 @@ const registrationSchema = z.object({
     .regex(/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/, "Invalid phone number"),
   sessionId: z.string().min(1, "Session ID is required"),
 });
-
-type SessionRecord = {
-  id: string;
-  cost: number[];
-  productID: string[];
-  sessionName: string;
-  date: string;
-  location: string;
-  time: string;
-};
-
-type CustomerRecord = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  stripeID: string | null;
-};
-
-const sessionsTable: Table<SessionRecord> = {
-  name: "session",
-  baseId: AIRTABLE_BASE_ID,
-  tableId: AIRTABLE_TABLE_IDS.SESSIONS,
-  schema: {
-    cost: "number[]",
-    productID: "string[]",
-    sessionName: "string",
-    date: "string",
-    location: "string",
-    time: "string",
-  },
-  mappings: {
-    cost: "cost",
-    productID: "productID",
-    sessionName: "session-name",
-    date: "date",
-    location: "location",
-    time: "time",
-  },
-};
-
-const customersTable: Table<CustomerRecord> = {
-  name: "customer",
-  baseId: AIRTABLE_BASE_ID,
-  tableId: AIRTABLE_TABLE_IDS.CUSTOMERS,
-  schema: {
-    first_name: "string",
-    last_name: "string",
-    email: "string",
-    phone: "string",
-    stripeID: "string | null",
-  },
-  mappings: {
-    first_name: "first_name",
-    last_name: "last_name",
-    email: "email",
-    phone: "phone",
-    stripeID: "stripeID",
-  },
-};
 
 function getConfiguredSiteOrigin(siteUrl: string | undefined): string | null {
   const trimmedSiteUrl = siteUrl?.trim();
@@ -122,9 +65,9 @@ export default defineEventHandler(async (event) => {
 
   const db = new AirtableTs({ apiKey: config.airtableKey });
 
-  let sessionRecord: SessionRecord;
+  let sessionRecord: CheckoutSessionRecord;
   try {
-    sessionRecord = await db.get(sessionsTable, sessionId);
+    sessionRecord = await db.get(checkoutSessionsTable, sessionId);
   } catch (error: any) {
     throw createError({
       statusCode: 404,
