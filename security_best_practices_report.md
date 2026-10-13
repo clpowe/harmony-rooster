@@ -397,7 +397,7 @@ The nominal request-size limit and Airtable's own validation constrain practical
 
 - Stripe webhooks verify the signature against the raw body.
 - `checkout.session.async_payment_failed` is ignored; fulfillment re-retrieves Checkout and requires `mode=payment`, `payment_status=paid`, and `status=complete`.
-- Required fulfillment metadata and Airtable-to-Stripe Customer IDs are cross-checked.
+- Fulfillment validates required Checkout Session metadata and loads the referenced Airtable customer and session records.
 - Product and price values come from Airtable rather than the request.
 - The Airtable email lookup lowercases/trims input and escapes formula backslashes and quotes.
 - Success responses exclude customer names, email addresses, full card data, and internal Customer IDs.

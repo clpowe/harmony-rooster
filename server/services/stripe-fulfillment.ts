@@ -9,7 +9,7 @@ import type {
   StripeWebhookRegistrationEvent,
   StripeWebhookRegistrationRecord,
 } from "../../shared/types/stripe-webhooks";
-import { sendReceiptEmail } from "./receipt-emails";
+import { sendReceiptEmail, type ReceiptEmailInput } from "./receipt-emails";
 import {
   fulfillmentSessionsTable as sessionsTable,
   customersTable,
@@ -19,6 +19,13 @@ import {
 
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 const FIFTEEN_MINUTES_IN_SECONDS = 60 * 15;
+const MAX_RECEIPT_ATTEMPTS = 5;
+
+const INCREMENT_ATTEMPTS_SCRIPT = `
+local n = redis.call("INCR", KEYS[1])
+redis.call("EXPIRE", KEYS[1], ARGV[1])
+return n
+`;
 
 const RELEASE_LOCK_SCRIPT = `
 if redis.call("GET", KEYS[1]) == ARGV[1] then
@@ -69,18 +76,7 @@ type FulfillmentStatus =
   | "refund_failed"
   | "manual_review";
 
-type FulfillmentFailureCode = "session_full";
-
-class SessionFullError extends Error {
-  readonly code = "SESSION_FULL";
-  readonly statusCode = 409;
-  readonly statusMessage = "Session Full";
-
-  constructor(readonly internalSessionId: string) {
-    super(`Session ${internalSessionId} has no seats remaining`);
-    this.name = "SessionFullError";
-  }
-}
+type FulfillmentFailureCode = "session_full" | "registration_missing" | "registration_unlinked";
 
 export type FulfillmentRecord = {
   attemptCount: number;
@@ -105,6 +101,7 @@ export type FulfillmentRecord = {
   refundStatus?: string | null;
   status: FulfillmentStatus;
   stripeEventId: string;
+  // Legacy read-only: the sent marker now lives in its own Redis key.
   receiptSentAt?: string;
 };
 
@@ -118,7 +115,7 @@ export type ClaimResult =
     }
   | {
       ok: false;
-      reason: "already_handled" | "in_progress";
+      reason: "already_handled" | "in_progress" | "receipt_pending";
       record?: FulfillmentRecord | null;
     };
 
@@ -129,7 +126,6 @@ export type CheckoutContext = {
   internalSessionId: string;
   registrationName: string;
   session: AirtableSessionRecord;
-  stripeCustomerId: string;
 };
 
 export type RegistrationResult = {
@@ -138,13 +134,7 @@ export type RegistrationResult = {
 
 type SafeRuntimeConfig = {
   airtableKey: string;
-  posthogHost?: string;
-  posthogLogEndpoint?: string;
-  posthogProjectApiKey?: string;
-  posthogServerLogEnabled?: boolean | string;
   stripeWebhookSecretKey: string;
-  resendApiKey?: string;
-  contactFromEmail?: string;
 };
 
 type RedisClient = Pick<Redis, "eval" | "get" | "set">;
@@ -154,6 +144,7 @@ export type FulfillmentDependencies = {
   getRedisClient: () => RedisClient;
   getRuntimeConfig: (event: H3Event) => SafeRuntimeConfig;
   getStripeClient: (event: H3Event) => Promise<Stripe>;
+  sendReceiptEmail: (input: ReceiptEmailInput, event: H3Event) => Promise<{ id: string }>;
 };
 
 const registrationsTable: Table<StripeWebhookRegistrationRecord> = {
@@ -196,6 +187,7 @@ export const stripeFulfillmentDependencies: FulfillmentDependencies = {
     const { useServerStripe } = await import("#stripe/server");
     return useServerStripe(event);
   },
+  sendReceiptEmail,
 };
 
 export async function verifyStripeWebhook(
@@ -228,14 +220,29 @@ export async function verifyStripeWebhook(
 
   const stripe = await dependencies.getStripeClient(event);
   const config = dependencies.getRuntimeConfig(event);
-  logger.info("Verifying Stripe webhook signature");
+
+  // An empty HMAC key still produces a valid signature, so fail closed.
+  const secret =
+    typeof config.stripeWebhookSecretKey === "string" ? config.stripeWebhookSecretKey.trim() : "";
+  if (!/^whsec_[A-Za-z0-9+/=]{24,}$/.test(secret)) {
+    const misconfigurationError = new Error("Stripe webhook secret is not configured");
+    captureServerError(misconfigurationError, {
+      context: {
+        operation: "verify-stripe-webhook",
+        source: "stripe-webhook",
+      },
+      event,
+      message: "Stripe webhook secret is not configured",
+    });
+    throw createError({
+      statusCode: 500,
+      statusMessage: "Server Misconfiguration",
+      message: "Stripe webhook secret is not configured",
+    });
+  }
 
   try {
-    const stripeEvent = stripe.webhooks.constructEvent(
-      rawBody,
-      signature,
-      config.stripeWebhookSecretKey,
-    );
+    const stripeEvent = stripe.webhooks.constructEvent(rawBody, signature, secret);
     logger.info("Verified Stripe webhook signature", {
       eventId: stripeEvent.id,
       eventType: stripeEvent.type,
@@ -277,12 +284,41 @@ export function isRefundCandidate(
   );
 }
 
+type PendingReceipt = {
+  checkoutSession: Stripe.Checkout.Session;
+  context?: CheckoutContext;
+  metadata: {
+    internalCustomerId: string;
+    internalSessionId: string;
+  };
+  registrationId: string;
+};
+
 export async function fulfillCheckout(
   checkoutSessionId: string,
   stripeEventId: string,
   event: H3Event,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
 ): Promise<void> {
+  const pendingReceipt = await fulfillUnderLock(
+    checkoutSessionId,
+    stripeEventId,
+    event,
+    dependencies,
+  );
+
+  // Email goes out after the course-session lock is released.
+  if (pendingReceipt) {
+    await deliverReceipt(pendingReceipt, event, dependencies);
+  }
+}
+
+async function fulfillUnderLock(
+  checkoutSessionId: string,
+  stripeEventId: string,
+  event: H3Event,
+  dependencies: FulfillmentDependencies,
+): Promise<PendingReceipt | null> {
   const recordKey = getFulfillmentRecordKey(checkoutSessionId);
   const logger = createRequestLogger(event, {
     defaults: {
@@ -296,15 +332,10 @@ export async function fulfillCheckout(
   let claim: ClaimResult | null = null;
   logger.info("Starting checkout fulfillment");
 
-  let registration: RegistrationResult;
-
   try {
-    const checkoutSession = await retrieveCheckoutSession(checkoutSessionId, event, dependencies);
-    logger.info("Retrieved Stripe checkout session", {
-      customerType: typeof checkoutSession.customer,
-      mode: checkoutSession.mode,
-      paymentStatus: checkoutSession.payment_status,
-      status: checkoutSession.status,
+    const stripe = await dependencies.getStripeClient(event);
+    const checkoutSession = await stripe.checkout.sessions.retrieve(checkoutSessionId, {
+      expand: ["payment_intent", "payment_intent.latest_charge"],
     });
 
     if (!isPaidCheckoutSession(checkoutSession)) {
@@ -313,7 +344,7 @@ export async function fulfillCheckout(
         paymentStatus: checkoutSession.payment_status,
         status: checkoutSession.status,
       });
-      return;
+      return null;
     }
 
     const metadata = getRequiredMetadata(checkoutSession);
@@ -327,7 +358,21 @@ export async function fulfillCheckout(
 
     if (!claim.ok) {
       if (claim.reason === "already_handled") {
-        return;
+        return null;
+      }
+
+      if (claim.reason === "receipt_pending") {
+        const registrationId = claim.record?.registrationId;
+        if (!registrationId) {
+          logger.error("Fulfilled record has no registration id; skipping receipt");
+          return null;
+        }
+
+        return {
+          checkoutSession,
+          metadata,
+          registrationId,
+        };
       }
 
       throw createError({
@@ -346,26 +391,75 @@ export async function fulfillCheckout(
         event,
         dependencies,
       );
-      return;
+      return null;
     }
 
     const context = await loadCheckoutContext(checkoutSession, metadata, event, dependencies);
 
-    logger.info("Loaded checkout context", {
-      internalCustomerId: context.internalCustomerId,
-      internalSessionId: context.internalSessionId,
-      registrationName: context.registrationName,
-      spotsAvailable: context.session.spotsAvailable,
-      stripeCustomerId: context.stripeCustomerId,
-    });
+    // A registration inserted by an earlier attempt already counts against capacity.
+    const registrations = context.session.registrations ?? [];
+    const persistedRegistrationId = claim.record.registrationId;
+    let ownsSeat =
+      Boolean(persistedRegistrationId) && registrations.includes(persistedRegistrationId!);
 
-    try {
-      validateCheckoutContext(context);
-    } catch (error) {
-      if (!(error instanceof SessionFullError)) {
-        throw error;
+    // Links are reciprocal and synchronous, so a registration missing from the session snapshot was edited or deleted by an admin.
+    if (persistedRegistrationId && !ownsSeat) {
+      const airtable = getAirtableClient(event, dependencies);
+      let registration: StripeWebhookRegistrationRecord | null = null;
+      try {
+        registration = await airtable.get(registrationsTable, persistedRegistrationId);
+      } catch (error: unknown) {
+        if (!isAirtableNotFoundError(error)) {
+          throw error;
+        }
       }
 
+      if (!registration) {
+        await writeFulfillmentRecord(
+          recordKey,
+          {
+            ...claim.record,
+            failureCode: "registration_missing",
+            lastError: `Registration ${persistedRegistrationId} for checkout session ${checkoutSessionId} no longer exists in Airtable`,
+            manualReviewAt: new Date().toISOString(),
+            status: "manual_review",
+          },
+          dependencies,
+        );
+        logger.error("Persisted registration is missing; manual review required", {
+          registrationId: persistedRegistrationId,
+        });
+        return null;
+      }
+
+      if (!registration.Session?.includes(metadata.internalSessionId)) {
+        await writeFulfillmentRecord(
+          recordKey,
+          {
+            ...claim.record,
+            failureCode: "registration_unlinked",
+            lastError: `Registration ${persistedRegistrationId} for checkout session ${checkoutSessionId} is not linked to course session ${metadata.internalSessionId}`,
+            manualReviewAt: new Date().toISOString(),
+            status: "manual_review",
+          },
+          dependencies,
+        );
+        logger.error(
+          "Persisted registration is not linked to this session; manual review required",
+          {
+            registrationId: persistedRegistrationId,
+          },
+        );
+        return null;
+      }
+
+      ownsSeat = true;
+    }
+    const sessionIsFull =
+      !ownsSeat &&
+      (context.session.spotsAvailable <= 0 || registrations.length >= context.session.capacity);
+
+    if (sessionIsFull) {
       if (claim.record.registrationId || claim.record.attemptCount > 1) {
         const reason = claim.record.registrationId
           ? `Checkout session ${checkoutSessionId} has a persisted registration and cannot be automatically refunded`
@@ -381,11 +475,11 @@ export async function fulfillCheckout(
           },
           dependencies,
         );
-        logger.warn("Checkout requires manual capacity review", {
+        logger.error("Checkout requires manual capacity review", {
           attemptCount: claim.record.attemptCount,
           registrationId: claim.record.registrationId,
         });
-        return;
+        return null;
       }
 
       await refundCheckoutForFullSession(
@@ -396,20 +490,12 @@ export async function fulfillCheckout(
         event,
         dependencies,
       );
-      return;
+      return null;
     }
-    logger.info("Validated checkout context", {
-      internalCustomerId: context.internalCustomerId,
-      internalSessionId: context.internalSessionId,
-    });
 
-    registration = await createRegistration(context, event, dependencies, {
+    const registration = await createRegistration(context, event, dependencies, {
       fulfillmentRecord: claim.record,
       recordKey,
-    });
-
-    logger.info("Created registration for checkout fulfillment", {
-      registrationId: registration.id,
     });
 
     await markFulfillmentSucceeded(
@@ -426,56 +512,20 @@ export async function fulfillCheckout(
       registrationId: registration.id,
     });
 
-    // Send Email Receipt
-    if (!claim.record.receiptSentAt) {
-      try {
-        const payment_intent = checkoutSession.payment_intent;
-        const charge =
-          payment_intent && typeof payment_intent !== "string"
-            ? payment_intent.latest_charge
-            : null;
-
-        const receiptUrl = charge && typeof charge !== "string" ? charge.receipt_url : null;
-        await sendReceiptEmail(
-          {
-            to: context.customer.email,
-            firstName: context.customer.first_name,
-            sessionName: context.session.sessionName,
-            sessionDate: context.session.date,
-            sessionTime: context.session.time,
-            sessionLocation: context.session.location,
-            amountMinor: checkoutSession.amount_total,
-            currency: checkoutSession.currency,
-            receiptUrl,
-            registrationId: registration.id,
-          },
-          event,
-        );
-
-        await markReceiptSent(checkoutSession.id, dependencies);
-      } catch (error) {
-        captureServerError(error, {
-          context: {
-            checkoutSessionId,
-            registrationId: registration.id,
-            operation: "send-receipt-email",
-            source: "stripe-fulfillment",
-          },
-          event,
-          message: "Receipt email failed",
-        });
-      }
-    }
+    return {
+      checkoutSession,
+      context,
+      metadata,
+      registrationId: registration.id,
+    };
   } catch (error: any) {
     if (claim && !claim.ok && claim.reason === "in_progress") {
       throw error;
     }
 
-    const existingRecord = await readFulfillmentRecord(recordKey, dependencies);
     captureServerError(error, {
       context: {
         checkoutSessionId,
-        existingRecord,
         operation: "fulfill-checkout",
         recordKey,
         source: "stripe-fulfillment",
@@ -484,6 +534,30 @@ export async function fulfillCheckout(
       event,
       message: "Checkout fulfillment failed",
     });
+
+    // Without a claim this worker does not hold the lock, so it must not write the record.
+    if (!claim?.ok) {
+      throw error;
+    }
+
+    let existingRecord: FulfillmentRecord | null;
+    try {
+      existingRecord = await readFulfillmentRecord(recordKey, dependencies);
+    } catch (readError: any) {
+      captureServerError(readError, {
+        context: {
+          checkoutSessionId,
+          operation: "fulfill-checkout.read-record",
+          recordKey,
+          source: "stripe-fulfillment",
+          stripeEventId,
+        },
+        event,
+        message: "Failed to read fulfillment record after checkout failure",
+      });
+      throw error;
+    }
+
     if (existingRecord && isRemediationStatus(existingRecord.status)) {
       throw error;
     }
@@ -492,25 +566,11 @@ export async function fulfillCheckout(
       throw error;
     }
 
-    const failureRecord: FulfillmentRecord =
-      claim && claim.ok
-        ? {
-            ...claim.record,
-            ...existingRecord,
-            lastError: error?.message ?? "Unknown error",
-          }
-        : {
-            attemptCount: (existingRecord?.attemptCount ?? 0) + 1,
-            checkoutSessionId,
-            claimedAt: existingRecord?.claimedAt,
-            internalCustomerId: existingRecord?.internalCustomerId,
-            internalSessionId: existingRecord?.internalSessionId,
-            lastAttemptAt: new Date().toISOString(),
-            registrationId: existingRecord?.registrationId,
-            status: "failed",
-            stripeEventId,
-            lastError: error?.message ?? "Unknown error",
-          };
+    const failureRecord: FulfillmentRecord = {
+      ...claim.record,
+      ...existingRecord,
+      lastError: error?.message ?? "Unknown error",
+    };
 
     await markFulfillmentFailed(recordKey, failureRecord, dependencies);
     logger.warn("Marked fulfillment failed", {
@@ -522,9 +582,6 @@ export async function fulfillCheckout(
   } finally {
     if (claim?.ok) {
       await releaseFulfillmentLock(claim.lockKey, claim.lockToken, dependencies);
-      logger.info("Released fulfillment lock", {
-        lockKey: claim.lockKey,
-      });
     }
   }
 }
@@ -549,7 +606,9 @@ export async function claimFulfillment(
   if (existingRecord && isHandledRecord(existingRecord)) {
     return {
       ok: false,
-      reason: "already_handled",
+      reason: (await isReceiptPending(existingRecord, dependencies))
+        ? "receipt_pending"
+        : "already_handled",
       record: existingRecord,
     };
   }
@@ -567,7 +626,9 @@ export async function claimFulfillment(
     if (latestRecord && isHandledRecord(latestRecord)) {
       return {
         ok: false,
-        reason: "already_handled",
+        reason: (await isReceiptPending(latestRecord, dependencies))
+          ? "receipt_pending"
+          : "already_handled",
         record: latestRecord,
       };
     }
@@ -588,7 +649,9 @@ export async function claimFulfillment(
     if (existingRecord && isHandledRecord(existingRecord)) {
       return {
         ok: false,
-        reason: "already_handled",
+        reason: (await isReceiptPending(existingRecord, dependencies))
+          ? "receipt_pending"
+          : "already_handled",
         record: existingRecord,
       };
     }
@@ -647,11 +710,6 @@ async function loadCheckoutContext(
     },
   });
 
-  logger.info("Loading checkout context from Airtable", {
-    checkoutSessionId,
-    metadata,
-  });
-
   const airtable = getAirtableClient(event, dependencies);
   const [session, customer] = await Promise.all([
     airtable.get(sessionsTable, metadata.internalSessionId),
@@ -660,19 +718,10 @@ async function loadCheckoutContext(
 
   logger.info("Loaded Airtable records for checkout context", {
     customerId: customer.id,
-    customerStripeId: customer.stripeID,
     sessionId: session.id,
     sessionRegistrationsCount: session.registrations?.length ?? 0,
     spotsAvailable: session.spotsAvailable,
   });
-
-  if (!checkoutSession.customer || typeof checkoutSession.customer === "string") {
-    throw createError({
-      statusCode: 500,
-      statusMessage: "Fulfillment Error",
-      message: `Checkout session ${checkoutSessionId} is missing an expanded customer`,
-    });
-  }
 
   const registrationFirstName = checkoutSession.metadata?.first_name?.trim() || customer.first_name;
   const registrationLastName = checkoutSession.metadata?.last_name?.trim() || customer.last_name;
@@ -684,43 +733,7 @@ async function loadCheckoutContext(
     registrationName:
       `${registrationFirstName} ${registrationLastName} - ${metadata.internalSessionId}`.trim(),
     session,
-    stripeCustomerId: checkoutSession.customer.id,
   };
-}
-
-function validateCheckoutContext(context: CheckoutContext): void {
-  const checkoutSessionId = context.checkoutSession.id;
-  const registrationsCount = context.session.registrations?.length ?? 0;
-  fulfillmentLogger.info("Validating checkout context", {
-    capacity: context.session.capacity,
-    checkoutSessionId,
-    customerStripeId: context.customer.stripeID,
-    internalCustomerId: context.internalCustomerId,
-    internalSessionId: context.internalSessionId,
-    registrationsCount,
-    spotsAvailable: context.session.spotsAvailable,
-    stripeCustomerId: context.stripeCustomerId,
-  });
-
-  if (context.session.spotsAvailable <= 0 || registrationsCount >= context.session.capacity) {
-    throw new SessionFullError(context.internalSessionId);
-  }
-
-  if (!context.customer.stripeID) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: "Fulfillment Error",
-      message: `Customer ${context.internalCustomerId} is missing a Stripe customer id`,
-    });
-  }
-
-  if (context.customer.stripeID !== context.stripeCustomerId) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: "Fulfillment Error",
-      message: `Stripe customer mismatch for checkout session ${checkoutSessionId}`,
-    });
-  }
 }
 
 async function createRegistration(
@@ -750,14 +763,6 @@ async function createRegistration(
   let registrationId = fulfillmentState.fulfillmentRecord.registrationId;
 
   if (!registrationId) {
-    logger.info("Creating Airtable registration", {
-      customerId: context.internalCustomerId,
-      customerStripeId: context.stripeCustomerId,
-      existingSessionRegistrationsCount: context.session.registrations?.length ?? 0,
-      registrationName: context.registrationName,
-      sessionId: context.internalSessionId,
-    });
-
     const registration = await airtable.insert(registrationsTable, registrationPayload);
     registrationId = registration.id;
 
@@ -778,7 +783,7 @@ async function createRegistration(
       dependencies,
     );
 
-    logger.info("Persisted fulfillment registration id before session update", {
+    logger.info("Persisted fulfillment registration id", {
       registrationId,
       sessionId: context.internalSessionId,
     });
@@ -789,59 +794,6 @@ async function createRegistration(
     });
   }
 
-  const nextRegistrations = Array.from(
-    new Set([...(context.session.registrations ?? []), registrationId]),
-  );
-
-  logger.info("Updating Airtable session registrations", {
-    currentRegistrationsCount: context.session.registrations?.length ?? 0,
-    nextRegistrationsCount: nextRegistrations.length,
-    registrationId,
-    sessionId: context.internalSessionId,
-  });
-
-  try {
-    const updatedSession = await airtable.update(sessionsTable, {
-      id: context.internalSessionId,
-      registrations: nextRegistrations,
-    });
-    logger.info("Updated Airtable session registrations", {
-      registrationId,
-      sessionId: context.internalSessionId,
-      totalRegistrations: updatedSession.registrations?.length ?? 0,
-    });
-  } catch (error: any) {
-    let sessionFieldNames: string[] | undefined;
-
-    try {
-      const airtableSessionTable = await airtable.table(sessionsTable);
-      sessionFieldNames = airtableSessionTable.fields.map((field) => field.name);
-    } catch (schemaError: any) {
-      captureServerError(schemaError, {
-        context: {
-          operation: "create-registration.schema-introspection",
-          sessionId: context.internalSessionId,
-          source: "stripe-fulfillment",
-        },
-        event,
-        message: "Failed to introspect Airtable session table schema",
-      });
-    }
-
-    captureServerError(error, {
-      context: {
-        nextRegistrationsCount: nextRegistrations.length,
-        registrationId,
-        sessionFieldNames,
-        sessionId: context.internalSessionId,
-        source: "stripe-fulfillment",
-      },
-      event,
-      message: "Failed to update Airtable session registrations",
-    });
-    throw error;
-  }
-
   return { id: registrationId };
 }
 
@@ -850,10 +802,6 @@ async function markFulfillmentSucceeded(
   record: FulfillmentRecord,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
 ): Promise<void> {
-  fulfillmentLogger.info("Writing fulfilled record", {
-    record,
-    recordKey,
-  });
   await writeFulfillmentRecord(
     recordKey,
     {
@@ -866,15 +814,141 @@ async function markFulfillmentSucceeded(
   );
 }
 
+async function deliverReceipt(
+  pendingReceipt: PendingReceipt,
+  event: H3Event,
+  dependencies: FulfillmentDependencies,
+): Promise<void> {
+  const { checkoutSession, metadata, registrationId } = pendingReceipt;
+  const checkoutSessionId = checkoutSession.id;
+  const recordKey = getFulfillmentRecordKey(checkoutSessionId);
+  const logger = createRequestLogger(event, {
+    defaults: {
+      checkoutSessionId,
+      operation: "deliver-receipt",
+      recordKey,
+      source: "stripe-fulfillment",
+    },
+  });
+
+  const paymentIntent = checkoutSession.payment_intent;
+  const latestCharge =
+    paymentIntent && typeof paymentIntent !== "string" ? paymentIntent.latest_charge : null;
+  const charge = latestCharge && typeof latestCharge !== "string" ? latestCharge : null;
+
+  if (charge && (charge.refunded === true || charge.amount_refunded > 0)) {
+    logger.error("Skipping receipt for refunded charge", {
+      chargeId: charge.id,
+      registrationId,
+    });
+    return;
+  }
+
+  let sent = false;
+  try {
+    const context =
+      pendingReceipt.context ??
+      (await loadCheckoutContext(checkoutSession, metadata, event, dependencies));
+
+    await dependencies.sendReceiptEmail(
+      {
+        to: context.customer.email,
+        firstName: context.customer.first_name,
+        sessionName: context.session.sessionName,
+        sessionDate: context.session.date,
+        sessionTime: context.session.time,
+        sessionLocation: context.session.location,
+        amountMinor: checkoutSession.amount_total,
+        currency: checkoutSession.currency,
+        receiptUrl: charge?.receipt_url ?? null,
+        registrationId,
+        idempotencyKey: `receipt:${checkoutSessionId}`,
+      },
+      event,
+    );
+    sent = true;
+  } catch (error) {
+    captureServerError(error, {
+      context: {
+        checkoutSessionId,
+        registrationId,
+        operation: "send-receipt-email",
+        source: "stripe-fulfillment",
+      },
+      event,
+      message: "Receipt email failed",
+    });
+  }
+
+  if (sent) {
+    try {
+      await markReceiptSent(checkoutSessionId, dependencies);
+    } catch (error) {
+      captureServerError(error, {
+        context: {
+          checkoutSessionId,
+          registrationId,
+          operation: "mark-receipt-sent",
+          source: "stripe-fulfillment",
+        },
+        event,
+        message: "Receipt sent but delivery not recorded",
+      });
+      throw createError({
+        statusCode: 500,
+        statusMessage: "Receipt Not Recorded",
+        message: "Receipt sent but delivery could not be recorded",
+      });
+    }
+    return;
+  }
+
+  const current = await readFulfillmentRecord(recordKey, dependencies);
+  if (!current) {
+    logger.error("Receipt delivery failed and fulfillment record is missing", {
+      registrationId,
+    });
+    return;
+  }
+
+  if (current.status !== "fulfilled") {
+    logger.error("Receipt delivery failed and fulfillment record is not fulfilled", {
+      status: current.status,
+      registrationId,
+    });
+    return;
+  }
+
+  const redisClient = dependencies.getRedisClient();
+  const attemptsKey = getReceiptAttemptsKey(checkoutSessionId);
+  const receiptAttemptCount = Number(
+    await redisClient.eval<[string], number>(
+      INCREMENT_ATTEMPTS_SCRIPT,
+      [attemptsKey],
+      [String(THIRTY_DAYS_IN_SECONDS)],
+    ),
+  );
+
+  if (receiptAttemptCount >= MAX_RECEIPT_ATTEMPTS) {
+    logger.error("Receipt delivery exhausted; manual follow-up required", {
+      receiptAttemptCount,
+      registrationId,
+    });
+    return;
+  }
+
+  throw createError({
+    statusCode: 503,
+    statusMessage: "Receipt Pending",
+    message: "Receipt delivery failed; retry scheduled",
+  });
+}
+
 async function markFulfillmentFailed(
   recordKey: string,
   record: FulfillmentRecord,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
 ): Promise<void> {
-  fulfillmentLogger.warn("Writing failed record", {
-    record,
-    recordKey,
-  });
   await writeFulfillmentRecord(
     recordKey,
     {
@@ -991,7 +1065,7 @@ async function refundCheckoutForFullSession(
     refundStatus: refund.status,
   };
   if (isFailedRefundStatus(refund.status)) {
-    logger.warn("Session-full refund requires manual review", refundLogContext);
+    logger.error("Session-full refund requires manual review", refundLogContext);
   } else {
     logger.info("Persisted session-full refund outcome", refundLogContext);
   }
@@ -1098,7 +1172,7 @@ export async function reconcileRefund(
       refundStatus: refund.status,
     };
     if (isFailedRefundStatus(refund.status)) {
-      logger.warn("Stripe refund event requires manual review", refundLogContext);
+      logger.error("Stripe refund event requires manual review", refundLogContext);
     } else {
       logger.info("Reconciled Stripe refund event", refundLogContext);
     }
@@ -1245,6 +1319,15 @@ function isFailedRefundStatus(status: string | null): boolean {
   return status !== "succeeded" && status !== "pending" && status !== "requires_action";
 }
 
+function isAirtableNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  // airtable.js rejects a missing record with a 404 that airtable-ts wraps and keeps as statusCode.
+  return (error as { statusCode?: unknown }).statusCode === 404;
+}
+
 function isRemediationStatus(status: FulfillmentStatus): boolean {
   return (
     status === "refund_required" ||
@@ -1265,16 +1348,42 @@ function isHandledRecord(record: FulfillmentRecord): boolean {
   );
 }
 
+async function isReceiptPending(
+  record: FulfillmentRecord,
+  dependencies: FulfillmentDependencies,
+): Promise<boolean> {
+  if (record.status !== "fulfilled") {
+    return false;
+  }
+
+  const { attempts, sent } = await readReceiptState(record.checkoutSessionId, record, dependencies);
+  return !sent && attempts < MAX_RECEIPT_ATTEMPTS;
+}
+
+// Records written before the sent marker moved to its own key still carry receiptSentAt.
+async function readReceiptState(
+  checkoutSessionId: string,
+  record: FulfillmentRecord,
+  dependencies: FulfillmentDependencies,
+): Promise<{ attempts: number; sent: boolean }> {
+  const redisClient = dependencies.getRedisClient();
+  const [sentValue, attemptsValue] = await Promise.all([
+    redisClient.get(getReceiptSentKey(checkoutSessionId)),
+    redisClient.get(getReceiptAttemptsKey(checkoutSessionId)),
+  ]);
+
+  return {
+    attempts: Number(attemptsValue ?? 0) || 0,
+    sent: (sentValue !== null && sentValue !== undefined) || Boolean(record.receiptSentAt),
+  };
+}
+
 export async function readFulfillmentRecord(
   recordKey: string,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
 ): Promise<FulfillmentRecord | null> {
   const redisClient = dependencies.getRedisClient();
   const stored = await redisClient.get<string | FulfillmentRecord | null>(recordKey);
-  fulfillmentLogger.debug("Read fulfillment record", {
-    recordKey,
-    stored,
-  });
 
   if (!stored) {
     return null;
@@ -1285,27 +1394,6 @@ export async function readFulfillmentRecord(
   }
 
   return stored;
-}
-
-async function retrieveCheckoutSession(
-  checkoutSessionId: string,
-  event: H3Event,
-  dependencies: FulfillmentDependencies,
-): Promise<Stripe.Checkout.Session> {
-  const stripe = await dependencies.getStripeClient(event);
-  createRequestLogger(event, {
-    defaults: {
-      checkoutSessionId,
-      operation: "retrieve-checkout-session",
-      source: "stripe-fulfillment",
-    },
-  }).info("Retrieving Stripe checkout session", {
-    checkoutSessionId,
-  });
-
-  return stripe.checkout.sessions.retrieve(checkoutSessionId, {
-    expand: ["customer", "payment_intent", "payment_intent.latest_charge"],
-  });
 }
 
 function isPaidCheckoutSession(session: Stripe.Checkout.Session): boolean {
@@ -1340,10 +1428,6 @@ export async function writeFulfillmentRecord(
   record: FulfillmentRecord,
   dependencies: FulfillmentDependencies,
 ): Promise<void> {
-  fulfillmentLogger.info("Persisting fulfillment record", {
-    record,
-    recordKey,
-  });
   await dependencies
     .getRedisClient()
     .set(recordKey, JSON.stringify(record), { ex: THIRTY_DAYS_IN_SECONDS });
@@ -1368,6 +1452,14 @@ export function getFulfillmentRecordKey(checkoutSessionId: string): string {
   return `stripe:fulfillment:${checkoutSessionId}`;
 }
 
+export function getReceiptSentKey(checkoutSessionId: string): string {
+  return `stripe:fulfillment-receipt-sent:${checkoutSessionId}`;
+}
+
+export function getReceiptAttemptsKey(checkoutSessionId: string): string {
+  return `stripe:fulfillment-receipt-attempts:${checkoutSessionId}`;
+}
+
 function getFulfillmentLockKey(internalSessionId: string): string {
   return `stripe:fulfillment-lock:${AIRTABLE_BASE_ID}:session:${internalSessionId}`;
 }
@@ -1378,10 +1470,11 @@ export async function markReceiptSent(
 ): Promise<void> {
   const recordKey = getFulfillmentRecordKey(checkoutSessionId);
   const current = await readFulfillmentRecord(recordKey, dependencies);
-  if (!current) return;
-  await writeFulfillmentRecord(
-    recordKey,
-    { ...current, receiptSentAt: new Date().toISOString() },
-    dependencies,
-  );
+  if (current?.status !== "fulfilled") return;
+  await dependencies
+    .getRedisClient()
+    .set(getReceiptSentKey(checkoutSessionId), new Date().toISOString(), {
+      ex: THIRTY_DAYS_IN_SECONDS,
+      nx: true,
+    });
 }

@@ -41,9 +41,15 @@ const receipt: ReceiptEmailInput = {
   currency: "usd",
   receiptUrl: "https://pay.stripe.com/receipts/test_receipt",
   registrationId: "reg_123",
+  idempotencyKey: "receipt:cs_test_123",
 };
 
-function createDependencies(resendApiKey = "re_test") {
+function createDependencies(
+  resendApiKey = "re_test",
+  publicConfig: { contactFromEmail: string; receiptFromEmail?: string } = {
+    contactFromEmail: "contact@harmonyroosters.com",
+  },
+) {
   const send = vi.fn().mockResolvedValue({
     data: { id: "email_123" },
     error: null,
@@ -52,9 +58,7 @@ function createDependencies(resendApiKey = "re_test") {
   const dependencies: ReceiptEmailDependencies = {
     getRuntimeConfig: () => ({
       resendApiKey,
-      public: {
-        contactFromEmail: "contact@harmonyroosters.com",
-      },
+      public: publicConfig,
     }),
     getResendClient: () => ({
       emails: { send },
@@ -85,13 +89,16 @@ describe("sendReceiptEmail", () => {
         supportEmail: "contact@harmonyroosters.com",
       }),
     );
-    expect(send).toHaveBeenCalledExactlyOnceWith({
-      from: "contact@harmonyroosters.com",
-      to: "customer@example.com",
-      subject: "Receipt for Harmony Course - 2026-05-01",
-      html: expect.stringContaining(receipt.receiptUrl!),
-      text: expect.stringContaining(receipt.receiptUrl!),
-    });
+    expect(send).toHaveBeenCalledExactlyOnceWith(
+      {
+        from: "contact@harmonyroosters.com",
+        to: "customer@example.com",
+        subject: "Receipt for Harmony Course - 2026-05-01",
+        html: expect.stringContaining(receipt.receiptUrl!),
+        text: expect.stringContaining(receipt.receiptUrl!),
+      },
+      { idempotencyKey: "receipt:cs_test_123" },
+    );
   });
 
   it("throws when Resend returns an error", async () => {
@@ -128,7 +135,64 @@ describe("sendReceiptEmail", () => {
         html: "<p>Receipt email</p>",
         text: "Receipt email",
       }),
+      expect.anything(),
     );
+  });
+
+  it("forwards the idempotency key to Resend", async () => {
+    const { dependencies, send } = createDependencies();
+
+    await sendReceiptEmail({ ...receipt, idempotencyKey: "receipt:cs_other" }, event, dependencies);
+
+    expect(send).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ to: receipt.to }), {
+      idempotencyKey: "receipt:cs_other",
+    });
+  });
+
+  it("prefers receiptFromEmail over contactFromEmail for the sender", async () => {
+    const { dependencies, send } = createDependencies("re_test", {
+      contactFromEmail: "contact@example.com",
+      receiptFromEmail: "receipts@example.com",
+    });
+
+    await sendReceiptEmail(receipt, event, dependencies);
+
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({ from: "receipts@example.com" }),
+      expect.anything(),
+    );
+  });
+
+  it("falls back to contactFromEmail, then the default sender", async () => {
+    const withContact = createDependencies("re_test", {
+      contactFromEmail: "contact@example.com",
+    });
+    await sendReceiptEmail(receipt, event, withContact.dependencies);
+    expect(withContact.send).toHaveBeenCalledWith(
+      expect.objectContaining({ from: "contact@example.com" }),
+      expect.anything(),
+    );
+
+    const withDefault = createDependencies("re_test", { contactFromEmail: "" });
+    await sendReceiptEmail(receipt, event, withDefault.dependencies);
+    expect(withDefault.send).toHaveBeenCalledWith(
+      expect.objectContaining({ from: "contact@harmonyroosters.com" }),
+      expect.anything(),
+    );
+  });
+
+  it("collapses CR/LF in the subject", async () => {
+    const { dependencies, send } = createDependencies();
+
+    await sendReceiptEmail(
+      { ...receipt, sessionName: "Harmony\r\nBcc: evil@example.com" },
+      event,
+      dependencies,
+    );
+
+    const payload = send.mock.calls[0]![0] as { subject: string };
+    expect(payload.subject).toBe("Receipt for Harmony Bcc: evil@example.com - 2026-05-01");
+    expect(payload.subject).not.toMatch(/[\r\n]/);
   });
 
   it("throws before sending when the API key is missing", async () => {
