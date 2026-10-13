@@ -20,6 +20,8 @@ import {
   verifyStripeWebhook,
 } from "./stripe-fulfillment";
 
+const WEBHOOK_SECRET = `whsec_${"a".repeat(32)}`;
+
 const sendReceiptEmail = vi.fn<FulfillmentDependencies["sendReceiptEmail"]>(async () => ({
   id: "email_123",
 }));
@@ -305,7 +307,7 @@ function createDependencies(options?: {
     getRuntimeConfig: () =>
       ({
         airtableKey: "airtable_test_key",
-        stripeWebhookSecretKey: "whsec_test",
+        stripeWebhookSecretKey: WEBHOOK_SECRET,
       }) as never,
     getStripeClient: vi.fn(
       async () =>
@@ -403,13 +405,16 @@ describe("verifyStripeWebhook", () => {
     );
 
     expect(result).toBe(stripeEvent);
-    expect(constructEvent).toHaveBeenCalledWith("raw=request-body", "sig_test", "whsec_test");
+    expect(constructEvent).toHaveBeenCalledWith("raw=request-body", "sig_test", WEBHOOK_SECRET);
   });
 
   it.each([
     { label: "empty", secret: "" },
     { label: "missing the whsec_ prefix", secret: "test_secret" },
     { label: "undefined", secret: undefined },
+    { label: "only the whsec_ prefix", secret: "whsec_" },
+    { label: "the whsec_ prefix and whitespace", secret: "whsec_ " },
+    { label: "a placeholder", secret: "whsec_changeme" },
   ])("fails closed with a 500 when the webhook secret is $label", async ({ secret }) => {
     const { dependencies, constructEvent } = createDependencies();
     dependencies.getRuntimeConfig = () =>
@@ -431,6 +436,28 @@ describe("verifyStripeWebhook", () => {
       statusCode: 500,
     });
     expect(constructEvent).not.toHaveBeenCalled();
+  });
+
+  it("trims the configured secret before constructing the event", async () => {
+    const stripeEvent = { id: "evt_123", type: "checkout.session.completed" } as Stripe.Event;
+    const constructEvent = vi.fn().mockReturnValue(stripeEvent);
+    const { dependencies } = createDependencies({ constructEvent });
+    dependencies.getRuntimeConfig = () =>
+      ({
+        airtableKey: "airtable_test_key",
+        stripeWebhookSecretKey: `${WEBHOOK_SECRET}\n`,
+      }) as never;
+
+    const result = await verifyStripeWebhook(
+      {
+        headers: { "stripe-signature": "sig_test" },
+        rawBody: "raw=request-body",
+      },
+      dependencies,
+    );
+
+    expect(result).toBe(stripeEvent);
+    expect(constructEvent).toHaveBeenCalledWith("raw=request-body", "sig_test", WEBHOOK_SECRET);
   });
 
   it("returns a safe 400 error when signature verification fails", async () => {
@@ -583,6 +610,67 @@ describe("claimFulfillment", () => {
 
     expect(result).toMatchObject({ ok: false, reason: "receipt_pending" });
     expect(set).not.toHaveBeenCalled();
+  });
+
+  it("returns receipt_pending when the record is fulfilled by the time a busy lock is detected", async () => {
+    const { dependencies, redis } = createDependencies();
+    await seedRecord(dependencies);
+    const recordKey = getFulfillmentRecordKey("cs_test_123");
+    const originalGet = redis.get.bind(redis);
+    let recordReads = 0;
+    vi.spyOn(redis, "get").mockImplementation(async <T>(key: string) => {
+      if (key === recordKey && recordReads++ === 0) {
+        return { attemptCount: 1, checkoutSessionId: "cs_test_123", status: "processing" } as T;
+      }
+      return originalGet<T>(key);
+    });
+    const holder = await claimFulfillment(
+      "cs_other",
+      "evt_other",
+      { internalSessionId: "sess_airtable" },
+      dependencies,
+    );
+    expect(holder.ok).toBe(true);
+
+    const result = await claimFulfillment(
+      "cs_test_123",
+      "evt_2",
+      { internalSessionId: "sess_airtable" },
+      dependencies,
+    );
+
+    expect(result).toMatchObject({ ok: false, reason: "receipt_pending" });
+  });
+
+  it("returns receipt_pending when the post-lock recheck finds a fulfilled record", async () => {
+    const { dependencies, redis } = createDependencies();
+    await seedRecord(dependencies);
+    const recordKey = getFulfillmentRecordKey("cs_test_123");
+    const originalGet = redis.get.bind(redis);
+    let recordReads = 0;
+    vi.spyOn(redis, "get").mockImplementation(async <T>(key: string) => {
+      if (key === recordKey && recordReads++ === 0) {
+        return { attemptCount: 1, checkoutSessionId: "cs_test_123", status: "processing" } as T;
+      }
+      return originalGet<T>(key);
+    });
+
+    const result = await claimFulfillment(
+      "cs_test_123",
+      "evt_2",
+      { internalSessionId: "sess_airtable" },
+      dependencies,
+    );
+
+    expect(result).toMatchObject({ ok: false, reason: "receipt_pending" });
+    await expect(
+      claimFulfillment(
+        "cs_other",
+        "evt_other",
+        { internalSessionId: "sess_airtable" },
+        dependencies,
+      ),
+    ).resolves.toMatchObject({ ok: true });
   });
 
   it.each([{ receiptSentAt: "2026-03-27T12:01:00.000Z" }, { receiptAttemptCount: 5 }])(
@@ -984,6 +1072,106 @@ describe("fulfillCheckout", () => {
     });
   });
 
+  it("sends a pending receipt when the record is fulfilled while the lock is busy", async () => {
+    const { dependencies, redis } = createDependencies();
+    await seedRecord(dependencies);
+    const recordKey = getFulfillmentRecordKey("cs_test_123");
+    const originalGet = redis.get.bind(redis);
+    let recordReads = 0;
+    vi.spyOn(redis, "get").mockImplementation(async <T>(key: string) => {
+      if (key === recordKey && recordReads++ === 0) {
+        return { attemptCount: 1, checkoutSessionId: "cs_test_123", status: "processing" } as T;
+      }
+      return originalGet<T>(key);
+    });
+    await claimFulfillment(
+      "cs_other",
+      "evt_other",
+      { internalSessionId: "sess_airtable" },
+      dependencies,
+    );
+
+    await fulfillCheckout("cs_test_123", "evt_2", event, dependencies);
+
+    expect(sendReceiptEmail).toHaveBeenCalledOnce();
+    expect(await readFulfillmentRecord(recordKey, dependencies)).toMatchObject({
+      receiptSentAt: expect.any(String),
+      status: "fulfilled",
+    });
+  });
+
+  it("counts a failed context load as a receipt attempt", async () => {
+    const { airtable, dependencies } = createDependencies();
+    await seedRecord(dependencies);
+    airtable.customers.delete("cust_airtable");
+
+    await expect(
+      fulfillCheckout("cs_test_123", "evt_2", event, dependencies),
+    ).rejects.toMatchObject({ statusCode: 503 });
+
+    expect(sendReceiptEmail).not.toHaveBeenCalled();
+    expect(
+      await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
+    ).toMatchObject({ receiptAttemptCount: 1, status: "fulfilled" });
+  });
+
+  it("does not count an attempt when the receipt was sent but could not be recorded", async () => {
+    const { dependencies, redis } = createDependencies();
+    const recordKey = getFulfillmentRecordKey("cs_test_123");
+    const originalSet = redis.set.bind(redis);
+    let failedOnce = false;
+    vi.spyOn(redis, "set").mockImplementation(async (key, value, options) => {
+      if (!failedOnce && key === recordKey && value.includes("receiptSentAt")) {
+        failedOnce = true;
+        throw new Error("Redis write failed for receiptSentAt");
+      }
+      return originalSet(key, value, options);
+    });
+
+    await expect(
+      fulfillCheckout("cs_test_123", "evt_1", event, dependencies),
+    ).rejects.toMatchObject({ statusCode: 500, statusMessage: "Receipt Not Recorded" });
+
+    const afterFailure = await readFulfillmentRecord(recordKey, dependencies);
+    expect(afterFailure).toMatchObject({ status: "fulfilled" });
+    expect(afterFailure?.receiptAttemptCount).toBeUndefined();
+    expect(afterFailure).not.toHaveProperty("receiptSentAt");
+
+    await fulfillCheckout("cs_test_123", "evt_2", event, dependencies);
+
+    expect(sendReceiptEmail).toHaveBeenCalledTimes(2);
+    expect(sendReceiptEmail.mock.calls[1]![0].idempotencyKey).toBe(
+      sendReceiptEmail.mock.calls[0]![0].idempotencyKey,
+    );
+    expect(await readFulfillmentRecord(recordKey, dependencies)).toMatchObject({
+      receiptSentAt: expect.any(String),
+    });
+  });
+
+  it("skips the receipt for a refunded charge without changing the record", async () => {
+    const checkoutSession = createCheckoutSession({
+      payment_intent: {
+        id: "pi_123",
+        latest_charge: { amount_refunded: 500, id: "ch_123", refunded: false },
+      } as unknown as Stripe.PaymentIntent,
+    });
+    const { dependencies } = createDependencies({ checkoutSession });
+    await seedRecord(dependencies);
+    const before = await readFulfillmentRecord(
+      getFulfillmentRecordKey("cs_test_123"),
+      dependencies,
+    );
+
+    await expect(
+      fulfillCheckout("cs_test_123", "evt_2", event, dependencies),
+    ).resolves.toBeUndefined();
+
+    expect(sendReceiptEmail).not.toHaveBeenCalled();
+    expect(
+      await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
+    ).toEqual(before);
+  });
+
   it("releases the fulfillment lock before sending the receipt", async () => {
     const { dependencies, redis } = createDependencies();
     const evalSpy = vi.spyOn(redis, "eval");
@@ -1049,7 +1237,7 @@ describe("fulfillCheckout", () => {
     ).toBeNull();
   });
 
-  it("records failed state when required metadata is missing", async () => {
+  it("does not write a failure record when required metadata is missing", async () => {
     const { dependencies } = createDependencies({
       checkoutSession: createCheckoutSession({
         metadata: {},
@@ -1062,11 +1250,7 @@ describe("fulfillCheckout", () => {
 
     expect(
       await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
-    ).toMatchObject({
-      attemptCount: 1,
-      status: "failed",
-      stripeEventId: "evt_1",
-    });
+    ).toBeNull();
   });
 
   it("records failed state when the Airtable session is missing", async () => {
@@ -1631,18 +1815,39 @@ describe("fulfillCheckout", () => {
     expect(record?.status).not.toBe("manual_review");
   });
 
-  it("rethrows the original error when the failure-path Redis read also fails", async () => {
+  it("rethrows the original error without touching Redis when Stripe retrieve fails", async () => {
     const { dependencies, redis, retrieve } = createDependencies();
     const stripeError = new Error("Stripe retrieve failed");
-
     retrieve.mockRejectedValueOnce(stripeError);
-    vi.spyOn(redis, "get").mockRejectedValueOnce(new Error("Redis read failed"));
+    const get = vi.spyOn(redis, "get");
+    const set = vi.spyOn(redis, "set");
 
     await expect(fulfillCheckout("cs_test_123", "evt_1", event, dependencies)).rejects.toBe(
       stripeError,
     );
+
+    expect(get).not.toHaveBeenCalled();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("rethrows the original error when the failure-path Redis read also fails", async () => {
+    const { airtable, dependencies, redis } = createDependencies();
+    airtable.sessions.delete("sess_airtable");
+    const originalGet = redis.get.bind(redis);
+    let reads = 0;
+    // Reads 1 and 2 are the claim's pre-lock and post-lock reads; read 3 is the failure path.
+    vi.spyOn(redis, "get").mockImplementation(async <T>(key: string) => {
+      if (++reads === 3) {
+        throw new Error("Redis read failed");
+      }
+      return originalGet<T>(key);
+    });
+
+    await expect(fulfillCheckout("cs_test_123", "evt_1", event, dependencies)).rejects.toThrow(
+      /Missing Airtable record sess_airtable/,
+    );
     expect(
       await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
-    ).toBeNull();
+    ).toMatchObject({ status: "processing" });
   });
 });

@@ -216,10 +216,9 @@ export async function verifyStripeWebhook(
   const config = dependencies.getRuntimeConfig(event);
 
   // An empty HMAC key still produces a valid signature, so fail closed.
-  if (
-    typeof config.stripeWebhookSecretKey !== "string" ||
-    !config.stripeWebhookSecretKey.startsWith("whsec_")
-  ) {
+  const secret =
+    typeof config.stripeWebhookSecretKey === "string" ? config.stripeWebhookSecretKey.trim() : "";
+  if (!/^whsec_[A-Za-z0-9+/=]{24,}$/.test(secret)) {
     const misconfigurationError = new Error("Stripe webhook secret is not configured");
     captureServerError(misconfigurationError, {
       context: {
@@ -237,11 +236,7 @@ export async function verifyStripeWebhook(
   }
 
   try {
-    const stripeEvent = stripe.webhooks.constructEvent(
-      rawBody,
-      signature,
-      config.stripeWebhookSecretKey,
-    );
+    const stripeEvent = stripe.webhooks.constructEvent(rawBody, signature, secret);
     logger.info("Verified Stripe webhook signature", {
       eventId: stripeEvent.id,
       eventType: stripeEvent.type,
@@ -285,7 +280,11 @@ export function isRefundCandidate(
 
 type PendingReceipt = {
   checkoutSession: Stripe.Checkout.Session;
-  context: CheckoutContext;
+  context?: CheckoutContext;
+  metadata: {
+    internalCustomerId: string;
+    internalSessionId: string;
+  };
   registrationId: string;
 };
 
@@ -359,13 +358,13 @@ async function fulfillUnderLock(
       if (claim.reason === "receipt_pending") {
         const registrationId = claim.record?.registrationId;
         if (!registrationId) {
-          logger.warn("Fulfilled record has no registration id; skipping receipt");
+          logger.error("Fulfilled record has no registration id; skipping receipt");
           return null;
         }
 
         return {
           checkoutSession,
-          context: await loadCheckoutContext(checkoutSession, metadata, event, dependencies),
+          metadata,
           registrationId,
         };
       }
@@ -455,6 +454,7 @@ async function fulfillUnderLock(
     return {
       checkoutSession,
       context,
+      metadata,
       registrationId: registration.id,
     };
   } catch (error: any) {
@@ -473,6 +473,11 @@ async function fulfillUnderLock(
       event,
       message: "Checkout fulfillment failed",
     });
+
+    // Without a claim this worker does not hold the lock, so it must not write the record.
+    if (!claim?.ok) {
+      throw error;
+    }
 
     let existingRecord: FulfillmentRecord | null;
     try {
@@ -500,25 +505,11 @@ async function fulfillUnderLock(
       throw error;
     }
 
-    const failureRecord: FulfillmentRecord =
-      claim && claim.ok
-        ? {
-            ...claim.record,
-            ...existingRecord,
-            lastError: error?.message ?? "Unknown error",
-          }
-        : {
-            attemptCount: (existingRecord?.attemptCount ?? 0) + 1,
-            checkoutSessionId,
-            claimedAt: existingRecord?.claimedAt,
-            internalCustomerId: existingRecord?.internalCustomerId,
-            internalSessionId: existingRecord?.internalSessionId,
-            lastAttemptAt: new Date().toISOString(),
-            registrationId: existingRecord?.registrationId,
-            status: "failed",
-            stripeEventId,
-            lastError: error?.message ?? "Unknown error",
-          };
+    const failureRecord: FulfillmentRecord = {
+      ...claim.record,
+      ...existingRecord,
+      lastError: error?.message ?? "Unknown error",
+    };
 
     await markFulfillmentFailed(recordKey, failureRecord, dependencies);
     logger.warn("Marked fulfillment failed", {
@@ -572,7 +563,7 @@ export async function claimFulfillment(
     if (latestRecord && isHandledRecord(latestRecord)) {
       return {
         ok: false,
-        reason: "already_handled",
+        reason: isReceiptPending(latestRecord) ? "receipt_pending" : "already_handled",
         record: latestRecord,
       };
     }
@@ -593,7 +584,7 @@ export async function claimFulfillment(
     if (existingRecord && isHandledRecord(existingRecord)) {
       return {
         ok: false,
-        reason: "already_handled",
+        reason: isReceiptPending(existingRecord) ? "receipt_pending" : "already_handled",
         record: existingRecord,
       };
     }
@@ -761,7 +752,7 @@ async function deliverReceipt(
   event: H3Event,
   dependencies: FulfillmentDependencies,
 ): Promise<void> {
-  const { checkoutSession, context, registrationId } = pendingReceipt;
+  const { checkoutSession, metadata, registrationId } = pendingReceipt;
   const checkoutSessionId = checkoutSession.id;
   const recordKey = getFulfillmentRecordKey(checkoutSessionId);
   const logger = createRequestLogger(event, {
@@ -773,10 +764,24 @@ async function deliverReceipt(
     },
   });
 
+  const paymentIntent = checkoutSession.payment_intent;
+  const latestCharge =
+    paymentIntent && typeof paymentIntent !== "string" ? paymentIntent.latest_charge : null;
+  const charge = latestCharge && typeof latestCharge !== "string" ? latestCharge : null;
+
+  if (charge && (charge.refunded === true || charge.amount_refunded > 0)) {
+    logger.warn("Skipping receipt for refunded charge", {
+      chargeId: charge.id,
+      registrationId,
+    });
+    return;
+  }
+
+  let sent = false;
   try {
-    const paymentIntent = checkoutSession.payment_intent;
-    const charge =
-      paymentIntent && typeof paymentIntent !== "string" ? paymentIntent.latest_charge : null;
+    const context =
+      pendingReceipt.context ??
+      (await loadCheckoutContext(checkoutSession, metadata, event, dependencies));
 
     await dependencies.sendReceiptEmail(
       {
@@ -788,15 +793,13 @@ async function deliverReceipt(
         sessionLocation: context.session.location,
         amountMinor: checkoutSession.amount_total,
         currency: checkoutSession.currency,
-        receiptUrl: charge && typeof charge !== "string" ? charge.receipt_url : null,
+        receiptUrl: charge?.receipt_url ?? null,
         registrationId,
         idempotencyKey: `receipt:${checkoutSessionId}`,
       },
       event,
     );
-
-    await markReceiptSent(checkoutSessionId, dependencies);
-    return;
+    sent = true;
   } catch (error) {
     captureServerError(error, {
       context: {
@@ -810,8 +813,38 @@ async function deliverReceipt(
     });
   }
 
+  if (sent) {
+    try {
+      await markReceiptSent(checkoutSessionId, dependencies);
+    } catch (error) {
+      captureServerError(error, {
+        context: {
+          checkoutSessionId,
+          registrationId,
+          operation: "mark-receipt-sent",
+          source: "stripe-fulfillment",
+        },
+        event,
+        message: "Receipt sent but delivery not recorded",
+      });
+      throw createError({
+        statusCode: 500,
+        statusMessage: "Receipt Not Recorded",
+        message: "Receipt sent but delivery could not be recorded",
+      });
+    }
+    return;
+  }
+
   const current = await readFulfillmentRecord(recordKey, dependencies);
-  if (current?.status !== "fulfilled") {
+  if (!current) {
+    logger.error("Receipt delivery failed and fulfillment record is missing", {
+      registrationId,
+    });
+    return;
+  }
+
+  if (current.status !== "fulfilled") {
     return;
   }
 
