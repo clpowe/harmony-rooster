@@ -109,14 +109,8 @@ export default defineNuxtConfig({
     },
   },
   stripe: {
-    // Server
     server: {
       key: process.env.STRIPE_SECRET_KEY,
-      options: {},
-    },
-    // Client
-    client: {
-      key: process.env.STRIPE_PUBLIC_KEY,
       options: {},
     },
   },

@@ -34,13 +34,19 @@ bun run dev
 
 ## Stripe Webhooks
 
-For local Stripe webhook testing, set `NUXT_STRIPE_WEBHOOK_SECRET_KEY` in `.env` to
-the signing secret printed by `stripe listen`, then restart `pnpm dev` so Nuxt
-loads the new value.
+Start Nuxt and the Stripe CLI webhook forwarder together (Ctrl+C stops both; if
+either exits, the other is stopped too):
 
 ```bash
-stripe listen --forward-to http://harmony-rooster.localhost:1355/api/stripe/webhook
+pnpm dev:all
 ```
+
+`pnpm stripe:listen` runs the forwarder alone. It forwards all snapshot events to
+`http://harmony-rooster.localhost:1355/api/stripe/webhook`.
+
+Set `NUXT_STRIPE_WEBHOOK_SECRET_KEY` in `.env` to the signing secret printed by
+`stripe listen`, then restart the dev server so Nuxt loads the new value. If the
+Stripe CLI fails with `api_key_expired`, run `stripe login` again.
 
 The app also accepts the legacy path `/api/webhooks/stripe`.
 

@@ -185,10 +185,7 @@ function createCheckoutSession(
       submit: null,
       terms_of_service_acceptance: null,
     },
-    customer: {
-      id: "cus_123",
-      object: "customer",
-    } as Stripe.Customer,
+    customer: "cus_123",
     customer_creation: null,
     customer_details: null,
     customer_email: "customer@example.com",
@@ -1309,23 +1306,61 @@ describe("fulfillCheckout", () => {
     });
   });
 
-  it("fails when the Stripe customer does not match Airtable", async () => {
-    const { airtable, dependencies, refundCreate } = createDependencies();
+  it.each([
+    {
+      label: "a guest without an Airtable Stripe ID",
+      customer: null,
+      stripeID: null,
+    },
+    {
+      label: "an existing Stripe customer",
+      customer: "cus_123",
+      stripeID: "cus_123",
+    },
+    {
+      label: "a Stripe customer that differs from Airtable",
+      customer: "cus_other",
+      stripeID: "cus_123",
+    },
+  ])("fulfills using Airtable metadata for $label", async ({ customer, stripeID }) => {
+    const { airtable, dependencies, refundCreate, retrieve } = createDependencies({
+      checkoutSession: createCheckoutSession({ customer }),
+    });
 
     airtable.customers.set("cust_airtable", {
       ...airtable.customers.get("cust_airtable")!,
-      stripeID: "cus_other",
+      stripeID,
     });
 
-    await expect(fulfillCheckout("cs_test_123", "evt_1", event, dependencies)).rejects.toThrow(
-      /Stripe customer mismatch/i,
-    );
+    await fulfillCheckout("cs_test_123", "evt_1", event, dependencies);
+
+    expect(retrieve).toHaveBeenCalledWith("cs_test_123", {
+      expand: ["payment_intent", "payment_intent.latest_charge"],
+    });
+
+    expect(airtable.registrations).toHaveLength(1);
+    expect(airtable.registrations[0]).toMatchObject({
+      Customer: ["cust_airtable"],
+      Session: ["sess_airtable"],
+      Status: "Paid",
+    });
 
     expect(
       await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
     ).toMatchObject({
-      status: "failed",
+      registrationId: "reg_1",
+      status: "fulfilled",
+      receiptSentAt: expect.any(String),
     });
+
+    expect(sendReceiptEmail).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        to: "customer@example.com",
+        registrationId: "reg_1",
+      }),
+      event,
+    );
+
     expect(refundCreate).not.toHaveBeenCalled();
   });
 
