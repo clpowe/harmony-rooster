@@ -837,7 +837,7 @@ async function deliverReceipt(
   const charge = latestCharge && typeof latestCharge !== "string" ? latestCharge : null;
 
   if (charge && (charge.refunded === true || charge.amount_refunded > 0)) {
-    logger.warn("Skipping receipt for refunded charge", {
+    logger.error("Skipping receipt for refunded charge", {
       chargeId: charge.id,
       registrationId,
     });
@@ -1065,7 +1065,7 @@ async function refundCheckoutForFullSession(
     refundStatus: refund.status,
   };
   if (isFailedRefundStatus(refund.status)) {
-    logger.warn("Session-full refund requires manual review", refundLogContext);
+    logger.error("Session-full refund requires manual review", refundLogContext);
   } else {
     logger.info("Persisted session-full refund outcome", refundLogContext);
   }
@@ -1172,7 +1172,7 @@ export async function reconcileRefund(
       refundStatus: refund.status,
     };
     if (isFailedRefundStatus(refund.status)) {
-      logger.warn("Stripe refund event requires manual review", refundLogContext);
+      logger.error("Stripe refund event requires manual review", refundLogContext);
     } else {
       logger.info("Reconciled Stripe refund event", refundLogContext);
     }
