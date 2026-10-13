@@ -5,5 +5,4 @@ allowBuilds:
   sharp: true
   vue-demi: true
 overrides:
-  vite: npm:@voidzero-dev/vite-plus-core@0.1.14
-  vitest: npm:@voidzero-dev/vite-plus-test@0.1.14
+  vite: npm:@voidzero-dev/vite-plus-core@1.1.0

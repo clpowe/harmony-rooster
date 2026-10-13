@@ -27,7 +27,6 @@
     "h3": "^1.15.11",
     "reka-ui": "^2.8.2",
     "resend": "^6.9.4",
-    "rolldown": "1.0.0-rc.12",
     "stripe": "^19.3.0",
     "ufo": "^1.6.3",
     "vue": "^3.5.28",
@@ -42,21 +41,16 @@
     "@nuxt/kit": "^4.3.1",
     "@nuxt/schema": "^4.3.1",
     "@unlok-co/nuxt-stripe": "5.0.0",
-    "@vitest/coverage-v8": "^4.1.1",
+    "@vitest/coverage-v8": "5.0.3",
     "concurrently": "^10.0.6",
     "nuxt": "^4.3.1",
     "nuxt-security": "2.4.0",
     "nuxt-svgo": "^4.2.6",
     "postcss-nesting": "^13.0.2",
+    "rolldown": "^1.2.13",
     "typescript": "^5.9.3",
-    "vite-plus": "0.1.14",
-    "vitest": "npm:@voidzero-dev/vite-plus-test@0.1.14"
+    "vite-plus": "1.1.0",
+    "vitest": "5.0.3"
   },
-  "packageManager": "pnpm@10.33.0",
-  "pnpm": {
-    "overrides": {
-      "vite": "npm:@voidzero-dev/vite-plus-core@0.1.14",
-      "vitest": "npm:@voidzero-dev/vite-plus-test@0.1.14"
-    }
-  }
+  "packageManager": "pnpm@10.33.0"
 }

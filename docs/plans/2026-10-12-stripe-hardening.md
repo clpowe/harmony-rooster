@@ -399,7 +399,7 @@ Add `.envrc` on its own line after `.env.*`.
 
 ### Step 1 (finding 3): Separate keys
 
-- Add the key helpers `getReceiptSentKey(cs) = \`stripe:fulfillment-receipt-sent:${cs}\`` and `getReceiptAttemptsKey(cs) = \`stripe:fulfillment-receipt-attempts:${cs}\``.
+- Add the key helpers ``getReceiptSentKey(cs) = `stripe:fulfillment-receipt-sent:${cs}` `` and ``getReceiptAttemptsKey(cs) = `stripe:fulfillment-receipt-attempts:${cs}` ``.
 - Extend `RedisClient` to `Pick<Redis, "eval" | "get" | "set" | "incr" | "expire">`.
 - **`markReceiptSent(cs, deps)`:**
   - Read the record. If it is not `fulfilled`, return.
