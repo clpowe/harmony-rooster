@@ -14,6 +14,29 @@ pnpm install
 
 ```
 
+## Formatting and linting (Neovim)
+
+Vite+ runs Oxfmt for formatting and Oxlint for linting. Both read `vite.config.ts`;
+keep formatting options in its `fmt` block and lint rules in its `lint` block.
+`.editorconfig` keeps indentation and line endings consistent while typing.
+
+```bash
+pnpm format        # Format files
+pnpm format:check  # Check formatting without editing
+pnpm lint          # Report lint and TypeScript diagnostics
+pnpm lint:fix      # Apply safe lint fixes
+```
+
+In Neovim, use Conform as the formatting provider, running the project's
+`node_modules/.bin/vp fmt --stdin-filepath <filename>`. Use the project's
+`node_modules/.bin/oxlint --lsp` for lint diagnostics; its root must include
+`package.json` or `vite.config.ts`, rather than requiring `.oxlintrc.json`.
+Keep Vue and TypeScript language servers enabled for completion and type information.
+Avoid running Prettier, Biome, or LSP formatting alongside Oxfmt on the same file.
+Use `:ConformInfo` to inspect the formatter and `:LspInfo` to confirm Oxlint is attached.
+If the editor reports missing `.nuxt/tsconfig` files, run `pnpm exec nuxt prepare`
+to regenerate Nuxt's types, then restart the language servers.
+
 ## Development Server
 
 Start the development server on `http://localhost:3000`:
