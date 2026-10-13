@@ -36,8 +36,8 @@ function productionDependencies(event: H3Event): RegistrationOutcomeDependencies
     },
     readFulfillment: (id) => readFulfillmentRecord(getFulfillmentRecordKey(id)),
     async loadCourse(id) {
-      const consfig = useRuntimeConfig(event);
-      const session = await new AirtableTs({ apiKey: consfig.airtableKey }).get(
+      const config = useRuntimeConfig(event);
+      const session = await new AirtableTs({ apiKey: config.airtableKey }).get(
         sessionDetailsTable,
         id,
       );
