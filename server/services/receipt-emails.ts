@@ -14,7 +14,7 @@ export type ReceiptEmailInput = {
   currency: string | null;
   receiptUrl: string | null;
   registrationId: string;
-  idempotencyKey?: string; // T5 makes this required
+  idempotencyKey: string;
 };
 
 const ReceiptEmail = defineComponent({
@@ -134,9 +134,9 @@ export async function sendReceiptEmail(
     html,
     text,
   };
-  const response = receipt.idempotencyKey
-    ? await resend.emails.send(payload, { idempotencyKey: receipt.idempotencyKey })
-    : await resend.emails.send(payload);
+  const response = await resend.emails.send(payload, {
+    idempotencyKey: receipt.idempotencyKey,
+  });
 
   if (response.error) {
     throw new Error(`Resend error: ${response.error.message}`);

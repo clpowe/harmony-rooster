@@ -9,7 +9,7 @@ import type {
   StripeWebhookRegistrationEvent,
   StripeWebhookRegistrationRecord,
 } from "../../shared/types/stripe-webhooks";
-import { sendReceiptEmail } from "./receipt-emails";
+import { sendReceiptEmail, type ReceiptEmailInput } from "./receipt-emails";
 import {
   fulfillmentSessionsTable as sessionsTable,
   customersTable,
@@ -19,6 +19,7 @@ import {
 
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 const FIFTEEN_MINUTES_IN_SECONDS = 60 * 15;
+const MAX_RECEIPT_ATTEMPTS = 5;
 
 const RELEASE_LOCK_SCRIPT = `
 if redis.call("GET", KEYS[1]) == ARGV[1] then
@@ -94,6 +95,7 @@ export type FulfillmentRecord = {
   refundStatus?: string | null;
   status: FulfillmentStatus;
   stripeEventId: string;
+  receiptAttemptCount?: number;
   receiptSentAt?: string;
 };
 
@@ -107,7 +109,7 @@ export type ClaimResult =
     }
   | {
       ok: false;
-      reason: "already_handled" | "in_progress";
+      reason: "already_handled" | "in_progress" | "receipt_pending";
       record?: FulfillmentRecord | null;
     };
 
@@ -136,6 +138,7 @@ export type FulfillmentDependencies = {
   getRedisClient: () => RedisClient;
   getRuntimeConfig: (event: H3Event) => SafeRuntimeConfig;
   getStripeClient: (event: H3Event) => Promise<Stripe>;
+  sendReceiptEmail: (input: ReceiptEmailInput, event: H3Event) => Promise<{ id: string }>;
 };
 
 const registrationsTable: Table<StripeWebhookRegistrationRecord> = {
@@ -178,6 +181,7 @@ export const stripeFulfillmentDependencies: FulfillmentDependencies = {
     const { useServerStripe } = await import("#stripe/server");
     return useServerStripe(event);
   },
+  sendReceiptEmail,
 };
 
 export async function verifyStripeWebhook(
@@ -279,12 +283,37 @@ export function isRefundCandidate(
   );
 }
 
+type PendingReceipt = {
+  checkoutSession: Stripe.Checkout.Session;
+  context: CheckoutContext;
+  registrationId: string;
+};
+
 export async function fulfillCheckout(
   checkoutSessionId: string,
   stripeEventId: string,
   event: H3Event,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
 ): Promise<void> {
+  const pendingReceipt = await fulfillUnderLock(
+    checkoutSessionId,
+    stripeEventId,
+    event,
+    dependencies,
+  );
+
+  // Email goes out after the course-session lock is released.
+  if (pendingReceipt) {
+    await deliverReceipt(pendingReceipt, event, dependencies);
+  }
+}
+
+async function fulfillUnderLock(
+  checkoutSessionId: string,
+  stripeEventId: string,
+  event: H3Event,
+  dependencies: FulfillmentDependencies,
+): Promise<PendingReceipt | null> {
   const recordKey = getFulfillmentRecordKey(checkoutSessionId);
   const logger = createRequestLogger(event, {
     defaults: {
@@ -298,8 +327,6 @@ export async function fulfillCheckout(
   let claim: ClaimResult | null = null;
   logger.info("Starting checkout fulfillment");
 
-  let registration: RegistrationResult;
-
   try {
     const stripe = await dependencies.getStripeClient(event);
     const checkoutSession = await stripe.checkout.sessions.retrieve(checkoutSessionId, {
@@ -312,7 +339,7 @@ export async function fulfillCheckout(
         paymentStatus: checkoutSession.payment_status,
         status: checkoutSession.status,
       });
-      return;
+      return null;
     }
 
     const metadata = getRequiredMetadata(checkoutSession);
@@ -326,7 +353,21 @@ export async function fulfillCheckout(
 
     if (!claim.ok) {
       if (claim.reason === "already_handled") {
-        return;
+        return null;
+      }
+
+      if (claim.reason === "receipt_pending") {
+        const registrationId = claim.record?.registrationId;
+        if (!registrationId) {
+          logger.warn("Fulfilled record has no registration id; skipping receipt");
+          return null;
+        }
+
+        return {
+          checkoutSession,
+          context: await loadCheckoutContext(checkoutSession, metadata, event, dependencies),
+          registrationId,
+        };
       }
 
       throw createError({
@@ -345,7 +386,7 @@ export async function fulfillCheckout(
         event,
         dependencies,
       );
-      return;
+      return null;
     }
 
     const context = await loadCheckoutContext(checkoutSession, metadata, event, dependencies);
@@ -378,7 +419,7 @@ export async function fulfillCheckout(
           attemptCount: claim.record.attemptCount,
           registrationId: claim.record.registrationId,
         });
-        return;
+        return null;
       }
 
       await refundCheckoutForFullSession(
@@ -389,10 +430,10 @@ export async function fulfillCheckout(
         event,
         dependencies,
       );
-      return;
+      return null;
     }
 
-    registration = await createRegistration(context, event, dependencies, {
+    const registration = await createRegistration(context, event, dependencies, {
       fulfillmentRecord: claim.record,
       recordKey,
     });
@@ -411,46 +452,11 @@ export async function fulfillCheckout(
       registrationId: registration.id,
     });
 
-    // Send Email Receipt
-    if (!claim.record.receiptSentAt) {
-      try {
-        const payment_intent = checkoutSession.payment_intent;
-        const charge =
-          payment_intent && typeof payment_intent !== "string"
-            ? payment_intent.latest_charge
-            : null;
-
-        const receiptUrl = charge && typeof charge !== "string" ? charge.receipt_url : null;
-        await sendReceiptEmail(
-          {
-            to: context.customer.email,
-            firstName: context.customer.first_name,
-            sessionName: context.session.sessionName,
-            sessionDate: context.session.date,
-            sessionTime: context.session.time,
-            sessionLocation: context.session.location,
-            amountMinor: checkoutSession.amount_total,
-            currency: checkoutSession.currency,
-            receiptUrl,
-            registrationId: registration.id,
-          },
-          event,
-        );
-
-        await markReceiptSent(checkoutSession.id, dependencies);
-      } catch (error) {
-        captureServerError(error, {
-          context: {
-            checkoutSessionId,
-            registrationId: registration.id,
-            operation: "send-receipt-email",
-            source: "stripe-fulfillment",
-          },
-          event,
-          message: "Receipt email failed",
-        });
-      }
-    }
+    return {
+      checkoutSession,
+      context,
+      registrationId: registration.id,
+    };
   } catch (error: any) {
     if (claim && !claim.ok && claim.reason === "in_progress") {
       throw error;
@@ -548,7 +554,7 @@ export async function claimFulfillment(
   if (existingRecord && isHandledRecord(existingRecord)) {
     return {
       ok: false,
-      reason: "already_handled",
+      reason: isReceiptPending(existingRecord) ? "receipt_pending" : "already_handled",
       record: existingRecord,
     };
   }
@@ -748,6 +754,83 @@ async function markFulfillmentSucceeded(
     },
     dependencies,
   );
+}
+
+async function deliverReceipt(
+  pendingReceipt: PendingReceipt,
+  event: H3Event,
+  dependencies: FulfillmentDependencies,
+): Promise<void> {
+  const { checkoutSession, context, registrationId } = pendingReceipt;
+  const checkoutSessionId = checkoutSession.id;
+  const recordKey = getFulfillmentRecordKey(checkoutSessionId);
+  const logger = createRequestLogger(event, {
+    defaults: {
+      checkoutSessionId,
+      operation: "deliver-receipt",
+      recordKey,
+      source: "stripe-fulfillment",
+    },
+  });
+
+  try {
+    const paymentIntent = checkoutSession.payment_intent;
+    const charge =
+      paymentIntent && typeof paymentIntent !== "string" ? paymentIntent.latest_charge : null;
+
+    await dependencies.sendReceiptEmail(
+      {
+        to: context.customer.email,
+        firstName: context.customer.first_name,
+        sessionName: context.session.sessionName,
+        sessionDate: context.session.date,
+        sessionTime: context.session.time,
+        sessionLocation: context.session.location,
+        amountMinor: checkoutSession.amount_total,
+        currency: checkoutSession.currency,
+        receiptUrl: charge && typeof charge !== "string" ? charge.receipt_url : null,
+        registrationId,
+        idempotencyKey: `receipt:${checkoutSessionId}`,
+      },
+      event,
+    );
+
+    await markReceiptSent(checkoutSessionId, dependencies);
+    return;
+  } catch (error) {
+    captureServerError(error, {
+      context: {
+        checkoutSessionId,
+        registrationId,
+        operation: "send-receipt-email",
+        source: "stripe-fulfillment",
+      },
+      event,
+      message: "Receipt email failed",
+    });
+  }
+
+  const current = await readFulfillmentRecord(recordKey, dependencies);
+  if (current?.status !== "fulfilled") {
+    return;
+  }
+
+  const receiptAttemptCount = (current.receiptAttemptCount ?? 0) + 1;
+  await writeFulfillmentRecord(recordKey, { ...current, receiptAttemptCount }, dependencies);
+
+  if (receiptAttemptCount >= MAX_RECEIPT_ATTEMPTS) {
+    logger.error("Receipt delivery exhausted; manual follow-up required", {
+      receiptAttemptCount,
+      registrationId,
+    });
+    return;
+  }
+
+  throw createError({
+    statusCode: 503,
+    statusMessage: "Receipt Pending",
+    message: "Receipt delivery failed; retry scheduled",
+  });
 }
 
 async function markFulfillmentFailed(
@@ -1145,6 +1228,14 @@ function isHandledRecord(record: FulfillmentRecord): boolean {
   );
 }
 
+function isReceiptPending(record: FulfillmentRecord): boolean {
+  return (
+    record.status === "fulfilled" &&
+    !record.receiptSentAt &&
+    (record.receiptAttemptCount ?? 0) < MAX_RECEIPT_ATTEMPTS
+  );
+}
+
 export async function readFulfillmentRecord(
   recordKey: string,
   dependencies: FulfillmentDependencies = stripeFulfillmentDependencies,
@@ -1229,7 +1320,7 @@ export async function markReceiptSent(
 ): Promise<void> {
   const recordKey = getFulfillmentRecordKey(checkoutSessionId);
   const current = await readFulfillmentRecord(recordKey, dependencies);
-  if (!current) return;
+  if (current?.status !== "fulfilled") return;
   await writeFulfillmentRecord(
     recordKey,
     { ...current, receiptSentAt: new Date().toISOString() },
