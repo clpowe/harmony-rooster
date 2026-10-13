@@ -62,6 +62,7 @@ export default defineNuxtConfig({
     "@nuxt/fonts",
     "@unlok-co/nuxt-stripe",
     "@posthog/nuxt",
+    "@vercel/speed-insights/nuxt",
   ],
   compatibilityDate: "2024-11-16",
   runtimeConfig: {
