@@ -70,7 +70,7 @@ type FulfillmentStatus =
   | "refund_failed"
   | "manual_review";
 
-type FulfillmentFailureCode = "session_full";
+type FulfillmentFailureCode = "session_full" | "registration_missing";
 
 export type FulfillmentRecord = {
   attemptCount: number;
@@ -95,7 +95,7 @@ export type FulfillmentRecord = {
   refundStatus?: string | null;
   status: FulfillmentStatus;
   stripeEventId: string;
-  receiptAttemptCount?: number;
+  // Legacy read-only: the sent marker now lives in its own Redis key.
   receiptSentAt?: string;
 };
 
@@ -131,7 +131,7 @@ type SafeRuntimeConfig = {
   stripeWebhookSecretKey: string;
 };
 
-type RedisClient = Pick<Redis, "eval" | "get" | "set">;
+type RedisClient = Pick<Redis, "eval" | "get" | "set" | "incr" | "expire">;
 
 export type FulfillmentDependencies = {
   createAirtableClient: (apiKey: string) => AirtableTs;
@@ -392,8 +392,38 @@ async function fulfillUnderLock(
 
     // A registration inserted by an earlier attempt already counts against capacity.
     const registrations = context.session.registrations ?? [];
-    const ownsSeat =
-      Boolean(claim.record.registrationId) && registrations.includes(claim.record.registrationId!);
+    const persistedRegistrationId = claim.record.registrationId;
+    let ownsSeat =
+      Boolean(persistedRegistrationId) && registrations.includes(persistedRegistrationId!);
+
+    // The session link can lag behind the registration, but a deleted registration must not be recreated silently.
+    if (persistedRegistrationId && !ownsSeat) {
+      const airtable = getAirtableClient(event, dependencies);
+      try {
+        await airtable.get(registrationsTable, persistedRegistrationId);
+        ownsSeat = true;
+      } catch (error: unknown) {
+        if (!isAirtableNotFoundError(error)) {
+          throw error;
+        }
+
+        await writeFulfillmentRecord(
+          recordKey,
+          {
+            ...claim.record,
+            failureCode: "registration_missing",
+            lastError: `Registration ${persistedRegistrationId} for checkout session ${checkoutSessionId} no longer exists in Airtable`,
+            manualReviewAt: new Date().toISOString(),
+            status: "manual_review",
+          },
+          dependencies,
+        );
+        logger.warn("Persisted registration is missing; manual review required", {
+          registrationId: persistedRegistrationId,
+        });
+        return null;
+      }
+    }
     const sessionIsFull =
       !ownsSeat &&
       (context.session.spotsAvailable <= 0 || registrations.length >= context.session.capacity);
@@ -545,7 +575,9 @@ export async function claimFulfillment(
   if (existingRecord && isHandledRecord(existingRecord)) {
     return {
       ok: false,
-      reason: isReceiptPending(existingRecord) ? "receipt_pending" : "already_handled",
+      reason: (await isReceiptPending(existingRecord, dependencies))
+        ? "receipt_pending"
+        : "already_handled",
       record: existingRecord,
     };
   }
@@ -563,7 +595,9 @@ export async function claimFulfillment(
     if (latestRecord && isHandledRecord(latestRecord)) {
       return {
         ok: false,
-        reason: isReceiptPending(latestRecord) ? "receipt_pending" : "already_handled",
+        reason: (await isReceiptPending(latestRecord, dependencies))
+          ? "receipt_pending"
+          : "already_handled",
         record: latestRecord,
       };
     }
@@ -584,7 +618,9 @@ export async function claimFulfillment(
     if (existingRecord && isHandledRecord(existingRecord)) {
       return {
         ok: false,
-        reason: isReceiptPending(existingRecord) ? "receipt_pending" : "already_handled",
+        reason: (await isReceiptPending(existingRecord, dependencies))
+          ? "receipt_pending"
+          : "already_handled",
         record: existingRecord,
       };
     }
@@ -848,8 +884,10 @@ async function deliverReceipt(
     return;
   }
 
-  const receiptAttemptCount = (current.receiptAttemptCount ?? 0) + 1;
-  await writeFulfillmentRecord(recordKey, { ...current, receiptAttemptCount }, dependencies);
+  const redisClient = dependencies.getRedisClient();
+  const attemptsKey = getReceiptAttemptsKey(checkoutSessionId);
+  const receiptAttemptCount = Number(await redisClient.incr(attemptsKey));
+  await redisClient.expire(attemptsKey, THIRTY_DAYS_IN_SECONDS);
 
   if (receiptAttemptCount >= MAX_RECEIPT_ATTEMPTS) {
     logger.error("Receipt delivery exhausted; manual follow-up required", {
@@ -1241,6 +1279,15 @@ function isFailedRefundStatus(status: string | null): boolean {
   return status !== "succeeded" && status !== "pending" && status !== "requires_action";
 }
 
+function isAirtableNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  // airtable.js rejects a missing record with a 404 that airtable-ts wraps and keeps as statusCode.
+  return (error as { statusCode?: unknown }).statusCode === 404;
+}
+
 function isRemediationStatus(status: FulfillmentStatus): boolean {
   return (
     status === "refund_required" ||
@@ -1261,12 +1308,34 @@ function isHandledRecord(record: FulfillmentRecord): boolean {
   );
 }
 
-function isReceiptPending(record: FulfillmentRecord): boolean {
-  return (
-    record.status === "fulfilled" &&
-    !record.receiptSentAt &&
-    (record.receiptAttemptCount ?? 0) < MAX_RECEIPT_ATTEMPTS
-  );
+async function isReceiptPending(
+  record: FulfillmentRecord,
+  dependencies: FulfillmentDependencies,
+): Promise<boolean> {
+  if (record.status !== "fulfilled") {
+    return false;
+  }
+
+  const { attempts, sent } = await readReceiptState(record.checkoutSessionId, record, dependencies);
+  return !sent && attempts < MAX_RECEIPT_ATTEMPTS;
+}
+
+// Records written before the sent marker moved to its own key still carry receiptSentAt.
+async function readReceiptState(
+  checkoutSessionId: string,
+  record: FulfillmentRecord,
+  dependencies: FulfillmentDependencies,
+): Promise<{ attempts: number; sent: boolean }> {
+  const redisClient = dependencies.getRedisClient();
+  const [sentValue, attemptsValue] = await Promise.all([
+    redisClient.get(getReceiptSentKey(checkoutSessionId)),
+    redisClient.get(getReceiptAttemptsKey(checkoutSessionId)),
+  ]);
+
+  return {
+    attempts: Number(attemptsValue ?? 0) || 0,
+    sent: (sentValue !== null && sentValue !== undefined) || Boolean(record.receiptSentAt),
+  };
 }
 
 export async function readFulfillmentRecord(
@@ -1343,6 +1412,14 @@ export function getFulfillmentRecordKey(checkoutSessionId: string): string {
   return `stripe:fulfillment:${checkoutSessionId}`;
 }
 
+export function getReceiptSentKey(checkoutSessionId: string): string {
+  return `stripe:fulfillment-receipt-sent:${checkoutSessionId}`;
+}
+
+export function getReceiptAttemptsKey(checkoutSessionId: string): string {
+  return `stripe:fulfillment-receipt-attempts:${checkoutSessionId}`;
+}
+
 function getFulfillmentLockKey(internalSessionId: string): string {
   return `stripe:fulfillment-lock:${AIRTABLE_BASE_ID}:session:${internalSessionId}`;
 }
@@ -1354,9 +1431,10 @@ export async function markReceiptSent(
   const recordKey = getFulfillmentRecordKey(checkoutSessionId);
   const current = await readFulfillmentRecord(recordKey, dependencies);
   if (current?.status !== "fulfilled") return;
-  await writeFulfillmentRecord(
-    recordKey,
-    { ...current, receiptSentAt: new Date().toISOString() },
-    dependencies,
-  );
+  await dependencies
+    .getRedisClient()
+    .set(getReceiptSentKey(checkoutSessionId), new Date().toISOString(), {
+      ex: THIRTY_DAYS_IN_SECONDS,
+      nx: true,
+    });
 }
