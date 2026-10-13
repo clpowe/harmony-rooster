@@ -126,13 +126,7 @@ export type RegistrationResult = {
 
 type SafeRuntimeConfig = {
   airtableKey: string;
-  posthogHost?: string;
-  posthogLogEndpoint?: string;
-  posthogProjectApiKey?: string;
-  posthogServerLogEnabled?: boolean | string;
   stripeWebhookSecretKey: string;
-  resendApiKey?: string;
-  contactFromEmail?: string;
 };
 
 type RedisClient = Pick<Redis, "eval" | "get" | "set">;
@@ -216,6 +210,27 @@ export async function verifyStripeWebhook(
 
   const stripe = await dependencies.getStripeClient(event);
   const config = dependencies.getRuntimeConfig(event);
+
+  // An empty HMAC key still produces a valid signature, so fail closed.
+  if (
+    typeof config.stripeWebhookSecretKey !== "string" ||
+    !config.stripeWebhookSecretKey.startsWith("whsec_")
+  ) {
+    const misconfigurationError = new Error("Stripe webhook secret is not configured");
+    captureServerError(misconfigurationError, {
+      context: {
+        operation: "verify-stripe-webhook",
+        source: "stripe-webhook",
+      },
+      event,
+      message: "Stripe webhook secret is not configured",
+    });
+    throw createError({
+      statusCode: 500,
+      statusMessage: "Server Misconfiguration",
+      message: "Stripe webhook secret is not configured",
+    });
+  }
 
   try {
     const stripeEvent = stripe.webhooks.constructEvent(
@@ -335,9 +350,13 @@ export async function fulfillCheckout(
 
     const context = await loadCheckoutContext(checkoutSession, metadata, event, dependencies);
 
-    const registrationsCount = context.session.registrations?.length ?? 0;
+    // A registration inserted by an earlier attempt already counts against capacity.
+    const registrations = context.session.registrations ?? [];
+    const ownsSeat =
+      Boolean(claim.record.registrationId) && registrations.includes(claim.record.registrationId!);
     const sessionIsFull =
-      context.session.spotsAvailable <= 0 || registrationsCount >= context.session.capacity;
+      !ownsSeat &&
+      (context.session.spotsAvailable <= 0 || registrations.length >= context.session.capacity);
 
     if (sessionIsFull) {
       if (claim.record.registrationId || claim.record.attemptCount > 1) {
@@ -437,11 +456,9 @@ export async function fulfillCheckout(
       throw error;
     }
 
-    const existingRecord = await readFulfillmentRecord(recordKey, dependencies);
     captureServerError(error, {
       context: {
         checkoutSessionId,
-        existingRecord,
         operation: "fulfill-checkout",
         recordKey,
         source: "stripe-fulfillment",
@@ -450,6 +467,25 @@ export async function fulfillCheckout(
       event,
       message: "Checkout fulfillment failed",
     });
+
+    let existingRecord: FulfillmentRecord | null;
+    try {
+      existingRecord = await readFulfillmentRecord(recordKey, dependencies);
+    } catch (readError: any) {
+      captureServerError(readError, {
+        context: {
+          checkoutSessionId,
+          operation: "fulfill-checkout.read-record",
+          recordKey,
+          source: "stripe-fulfillment",
+          stripeEventId,
+        },
+        event,
+        message: "Failed to read fulfillment record after checkout failure",
+      });
+      throw error;
+    }
+
     if (existingRecord && isRemediationStatus(existingRecord.status)) {
       throw error;
     }
@@ -683,7 +719,7 @@ async function createRegistration(
       dependencies,
     );
 
-    logger.info("Persisted fulfillment registration id before session update", {
+    logger.info("Persisted fulfillment registration id", {
       registrationId,
       sessionId: context.internalSessionId,
     });
@@ -692,47 +728,6 @@ async function createRegistration(
       registrationId,
       sessionId: context.internalSessionId,
     });
-  }
-
-  const nextRegistrations = Array.from(
-    new Set([...(context.session.registrations ?? []), registrationId]),
-  );
-
-  try {
-    await airtable.update(sessionsTable, {
-      id: context.internalSessionId,
-      registrations: nextRegistrations,
-    });
-  } catch (error: any) {
-    let sessionFieldNames: string[] | undefined;
-
-    try {
-      const airtableSessionTable = await airtable.table(sessionsTable);
-      sessionFieldNames = airtableSessionTable.fields.map((field) => field.name);
-    } catch (schemaError: any) {
-      captureServerError(schemaError, {
-        context: {
-          operation: "create-registration.schema-introspection",
-          sessionId: context.internalSessionId,
-          source: "stripe-fulfillment",
-        },
-        event,
-        message: "Failed to introspect Airtable session table schema",
-      });
-    }
-
-    captureServerError(error, {
-      context: {
-        nextRegistrationsCount: nextRegistrations.length,
-        registrationId,
-        sessionFieldNames,
-        sessionId: context.internalSessionId,
-        source: "stripe-fulfillment",
-      },
-      event,
-      message: "Failed to update Airtable session registrations",
-    });
-    throw error;
   }
 
   return { id: registrationId };

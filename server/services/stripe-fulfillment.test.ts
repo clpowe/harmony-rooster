@@ -87,7 +87,6 @@ class FakeRedis {
 
 class FakeAirtable {
   failInsert = false;
-  failSessionUpdateOnce = false;
   registrations: Array<Record<string, unknown>> = [];
   sessions = new Map<string, Record<string, unknown>>();
   customers = new Map<string, Record<string, unknown>>();
@@ -114,6 +113,21 @@ class FakeAirtable {
     };
 
     this.registrations.push(record);
+
+    // Airtable links are reciprocal: the Session link updates the session's registrations.
+    const sessionIds = Array.isArray(payload.Session) ? (payload.Session as string[]) : [];
+    for (const sessionId of sessionIds) {
+      const session = this.sessions.get(sessionId);
+      if (!session) continue;
+
+      const registrations = [...((session.registrations as string[] | undefined) ?? []), record.id];
+      this.sessions.set(sessionId, {
+        ...session,
+        registrations,
+        spotsAvailable: (session.capacity as number) - registrations.length,
+      });
+    }
+
     return record;
   }
 
@@ -123,11 +137,6 @@ class FakeAirtable {
 
     if (!existing) {
       throw new Error(`Missing Airtable record ${payload.id}`);
-    }
-
-    if (table.tableId === "tbl1Ro2mdLntedaBm" && this.failSessionUpdateOnce) {
-      this.failSessionUpdateOnce = false;
-      throw new Error("Airtable session update failed");
     }
 
     const next = {
@@ -375,6 +384,33 @@ describe("verifyStripeWebhook", () => {
 
     expect(result).toBe(stripeEvent);
     expect(constructEvent).toHaveBeenCalledWith("raw=request-body", "sig_test", "whsec_test");
+  });
+
+  it.each([
+    { label: "empty", secret: "" },
+    { label: "missing the whsec_ prefix", secret: "test_secret" },
+    { label: "undefined", secret: undefined },
+  ])("fails closed with a 500 when the webhook secret is $label", async ({ secret }) => {
+    const { dependencies, constructEvent } = createDependencies();
+    dependencies.getRuntimeConfig = () =>
+      ({
+        airtableKey: "airtable_test_key",
+        stripeWebhookSecretKey: secret,
+      }) as never;
+
+    await expect(
+      verifyStripeWebhook(
+        {
+          headers: { "stripe-signature": "sig_test" },
+          rawBody: "{}",
+        },
+        dependencies,
+      ),
+    ).rejects.toMatchObject({
+      message: "Stripe webhook secret is not configured",
+      statusCode: 500,
+    });
+    expect(constructEvent).not.toHaveBeenCalled();
   });
 
   it("returns a safe 400 error when signature verification fails", async () => {
@@ -1381,16 +1417,39 @@ describe("fulfillCheckout", () => {
     expect(refundCreate).not.toHaveBeenCalled();
   });
 
-  it("reuses the persisted registration when session update fails then retries", async () => {
-    const airtable = new FakeAirtable();
-    airtable.failSessionUpdateOnce = true;
-    const { dependencies } = createDependencies({ airtable });
+  it("never updates the sessions table during fulfillment", async () => {
+    const { airtable, dependencies } = createDependencies();
+    const update = vi.spyOn(airtable, "update");
+
+    await fulfillCheckout("cs_test_123", "evt_1", event, dependencies);
+
+    expect(update).not.toHaveBeenCalled();
+    expect(airtable.sessions.get("sess_airtable")).toMatchObject({
+      registrations: ["reg_1"],
+      spotsAvailable: 2,
+    });
+  });
+
+  it("completes the last seat on retry without counting its own registration against capacity", async () => {
+    const { airtable, dependencies, redis, refundCreate } = createDependencies();
+
+    airtable.sessions.set("sess_airtable", {
+      ...airtable.sessions.get("sess_airtable")!,
+      capacity: 1,
+      registrations: [],
+      spotsAvailable: 1,
+    });
+    redis.failStatusOnce = "fulfilled";
 
     await expect(fulfillCheckout("cs_test_123", "evt_1", event, dependencies)).rejects.toThrow(
-      /Airtable session update failed/,
+      /Redis write failed for fulfilled/,
     );
 
     expect(airtable.registrations).toHaveLength(1);
+    expect(airtable.sessions.get("sess_airtable")).toMatchObject({
+      registrations: ["reg_1"],
+      spotsAvailable: 0,
+    });
     expect(
       await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
     ).toMatchObject({
@@ -1398,18 +1457,35 @@ describe("fulfillCheckout", () => {
       status: "failed",
     });
 
-    await fulfillCheckout("cs_test_123", "evt_2", event, dependencies);
+    await expect(
+      fulfillCheckout("cs_test_123", "evt_2", event, dependencies),
+    ).resolves.toBeUndefined();
 
     expect(airtable.registrations).toHaveLength(1);
-    expect(airtable.sessions.get("sess_airtable")).toMatchObject({
-      registrations: ["reg_1"],
-    });
-    expect(
-      await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
-    ).toMatchObject({
+    expect(refundCreate).not.toHaveBeenCalled();
+    const record = await readFulfillmentRecord(
+      getFulfillmentRecordKey("cs_test_123"),
+      dependencies,
+    );
+    expect(record).toMatchObject({
       registrationId: "reg_1",
       status: "fulfilled",
-      stripeEventId: "evt_2",
     });
+    expect(record?.status).not.toBe("manual_review");
+  });
+
+  it("rethrows the original error when the failure-path Redis read also fails", async () => {
+    const { dependencies, redis, retrieve } = createDependencies();
+    const stripeError = new Error("Stripe retrieve failed");
+
+    retrieve.mockRejectedValueOnce(stripeError);
+    vi.spyOn(redis, "get").mockRejectedValueOnce(new Error("Redis read failed"));
+
+    await expect(fulfillCheckout("cs_test_123", "evt_1", event, dependencies)).rejects.toBe(
+      stripeError,
+    );
+    expect(
+      await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
+    ).toBeNull();
   });
 });
