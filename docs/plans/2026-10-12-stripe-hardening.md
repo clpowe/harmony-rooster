@@ -457,3 +457,78 @@ Run `pnpm test` and `pnpm build`, then re-run the T6 Part B questions against `g
 - Does the strict secret regex accept real Stripe CLI and Dashboard secrets?
 
 Report only; do not fix.
+
+---
+
+# Wave 8 (from the T10 review)
+
+**Accepted risk (owner decision, 2026-10-12):** a charge refunded in the Dashboard _before_ its webhook is fulfilled still creates a registration. Only the receipt is skipped. The owner considers this operationally impossible, so it is not handled.
+
+**Deferred (pre-existing):**
+
+- The course-session lock has no renewal or fencing.
+- `processing` maps to "confirming" indefinitely on the success page.
+- Resend returns a 409 when the payload changes under the same idempotency key.
+
+| Wave | Task              | Model  |
+| ---- | ----------------- | ------ |
+| 8    | T11               | Sonnet |
+| 8b   | T12 (diff review) | Opus   |
+
+## Task T11: Unlinked registration, atomic attempts, error-level manual review
+
+**Files:**
+
+- Modify: `server/services/stripe-fulfillment.ts`
+- Modify: `server/services/stripe-fulfillment.test.ts`
+
+### Step 1: An existing registration must belong to this session
+
+In the dangling-registration check in `fulfillUnderLock`:
+
+- Keep the result of `airtable.get(registrationsTable, persistedRegistrationId)`.
+- Set `ownsSeat = true` only if `registration.Session?.includes(metadata.internalSessionId)`.
+- Otherwise, write `manual_review` with `failureCode: "registration_unlinked"` (add it to `FulfillmentFailureCode`), plus `manualReviewAt` and `lastError` naming the registration and checkout ids. Return `null`.
+- Fix the comment above the check: links are reciprocal and synchronous, so the case being handled is an admin edit, not lag.
+
+`FakeAirtable` registrations must carry `Session`.
+
+Tests:
+
+- A registration linked to another session ends in `manual_review` with `registration_unlinked`, no insert, and no email.
+- A registration linked to this session but missing from the session snapshot ends `fulfilled` with no insert.
+
+### Step 2: Atomic attempt counter
+
+Replace the separate `incr`/`expire` calls with one `eval` of:
+
+```lua
+local n = redis.call("INCR", KEYS[1])
+redis.call("EXPIRE", KEYS[1], ARGV[1])
+return n
+```
+
+- Store the script in a module constant named like `RELEASE_LOCK_SCRIPT`.
+- Pass `[attemptsKey]` and `[String(THIRTY_DAYS_IN_SECONDS)]`.
+- Coerce the result with `Number()`.
+- Remove `incr` and `expire` from `RedisClient` if nothing else uses them.
+- `FakeRedis.eval` must dispatch on the script (release-lock vs. increment-attempts).
+- Existing attempt tests must still pass. Add one that asserts the attempts key has a TTL set (or that `eval` was called with the increment script and TTL argument).
+
+### Step 3: Error-level logging for paid customers without a seat or a receipt
+
+Change these `logger.warn` calls to `logger.error`:
+
+- The capacity `manual_review` branch ("Checkout requires manual capacity review").
+- The `registration_missing` branch.
+- The new `registration_unlinked` branch.
+
+In `deliverReceipt`, the failed-send branch that returns when the record exists but is not `fulfilled` must call `logger.error("Receipt delivery failed and fulfillment record is not fulfilled", { status: current.status, registrationId })` before returning.
+
+**Verify:** `pnpm test server/services/stripe-fulfillment.test.ts`, then `pnpm test`, then `pnpm exec vp check`.
+
+**Commit (orchestrator):** `fix(stripe): require session link for reused registrations, atomic receipt attempts, error-level manual review`
+
+## Task T12: Diff review (Opus)
+
+Review `git diff 010e302...HEAD` against T11 and the T10 report. Check for regressions in the receipt paths and in claim/lock behavior. Run `pnpm test` and `pnpm build`. Report only.
