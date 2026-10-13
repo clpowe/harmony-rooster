@@ -21,6 +21,12 @@ const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 const FIFTEEN_MINUTES_IN_SECONDS = 60 * 15;
 const MAX_RECEIPT_ATTEMPTS = 5;
 
+const INCREMENT_ATTEMPTS_SCRIPT = `
+local n = redis.call("INCR", KEYS[1])
+redis.call("EXPIRE", KEYS[1], ARGV[1])
+return n
+`;
+
 const RELEASE_LOCK_SCRIPT = `
 if redis.call("GET", KEYS[1]) == ARGV[1] then
   return redis.call("DEL", KEYS[1])
@@ -70,7 +76,7 @@ type FulfillmentStatus =
   | "refund_failed"
   | "manual_review";
 
-type FulfillmentFailureCode = "session_full" | "registration_missing";
+type FulfillmentFailureCode = "session_full" | "registration_missing" | "registration_unlinked";
 
 export type FulfillmentRecord = {
   attemptCount: number;
@@ -131,7 +137,7 @@ type SafeRuntimeConfig = {
   stripeWebhookSecretKey: string;
 };
 
-type RedisClient = Pick<Redis, "eval" | "get" | "set" | "incr" | "expire">;
+type RedisClient = Pick<Redis, "eval" | "get" | "set">;
 
 export type FulfillmentDependencies = {
   createAirtableClient: (apiKey: string) => AirtableTs;
@@ -396,17 +402,19 @@ async function fulfillUnderLock(
     let ownsSeat =
       Boolean(persistedRegistrationId) && registrations.includes(persistedRegistrationId!);
 
-    // The session link can lag behind the registration, but a deleted registration must not be recreated silently.
+    // Links are reciprocal and synchronous, so a registration missing from the session snapshot was edited or deleted by an admin.
     if (persistedRegistrationId && !ownsSeat) {
       const airtable = getAirtableClient(event, dependencies);
+      let registration: StripeWebhookRegistrationRecord | null = null;
       try {
-        await airtable.get(registrationsTable, persistedRegistrationId);
-        ownsSeat = true;
+        registration = await airtable.get(registrationsTable, persistedRegistrationId);
       } catch (error: unknown) {
         if (!isAirtableNotFoundError(error)) {
           throw error;
         }
+      }
 
+      if (!registration) {
         await writeFulfillmentRecord(
           recordKey,
           {
@@ -418,11 +426,34 @@ async function fulfillUnderLock(
           },
           dependencies,
         );
-        logger.warn("Persisted registration is missing; manual review required", {
+        logger.error("Persisted registration is missing; manual review required", {
           registrationId: persistedRegistrationId,
         });
         return null;
       }
+
+      if (!registration.Session?.includes(metadata.internalSessionId)) {
+        await writeFulfillmentRecord(
+          recordKey,
+          {
+            ...claim.record,
+            failureCode: "registration_unlinked",
+            lastError: `Registration ${persistedRegistrationId} for checkout session ${checkoutSessionId} is not linked to course session ${metadata.internalSessionId}`,
+            manualReviewAt: new Date().toISOString(),
+            status: "manual_review",
+          },
+          dependencies,
+        );
+        logger.error(
+          "Persisted registration is not linked to this session; manual review required",
+          {
+            registrationId: persistedRegistrationId,
+          },
+        );
+        return null;
+      }
+
+      ownsSeat = true;
     }
     const sessionIsFull =
       !ownsSeat &&
@@ -444,7 +475,7 @@ async function fulfillUnderLock(
           },
           dependencies,
         );
-        logger.warn("Checkout requires manual capacity review", {
+        logger.error("Checkout requires manual capacity review", {
           attemptCount: claim.record.attemptCount,
           registrationId: claim.record.registrationId,
         });
@@ -881,13 +912,22 @@ async function deliverReceipt(
   }
 
   if (current.status !== "fulfilled") {
+    logger.error("Receipt delivery failed and fulfillment record is not fulfilled", {
+      status: current.status,
+      registrationId,
+    });
     return;
   }
 
   const redisClient = dependencies.getRedisClient();
   const attemptsKey = getReceiptAttemptsKey(checkoutSessionId);
-  const receiptAttemptCount = Number(await redisClient.incr(attemptsKey));
-  await redisClient.expire(attemptsKey, THIRTY_DAYS_IN_SECONDS);
+  const receiptAttemptCount = Number(
+    await redisClient.eval<[string], number>(
+      INCREMENT_ATTEMPTS_SCRIPT,
+      [attemptsKey],
+      [String(THIRTY_DAYS_IN_SECONDS)],
+    ),
+  );
 
   if (receiptAttemptCount >= MAX_RECEIPT_ATTEMPTS) {
     logger.error("Receipt delivery exhausted; manual follow-up required", {

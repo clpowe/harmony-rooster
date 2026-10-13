@@ -30,15 +30,23 @@ const sendReceiptEmail = vi.fn<FulfillmentDependencies["sendReceiptEmail"]>(asyn
 
 class FakeRedis {
   private readonly store = new Map<string, string>();
+  readonly ttls = new Map<string, number>();
   failStatusOnce: string | null = null;
 
   async del(key: string) {
     return this.store.delete(key) ? 1 : 0;
   }
 
-  async eval<TResult>(_script: string, keys: string[], args: unknown[]): Promise<TResult> {
+  async eval<TResult>(script: string, keys: string[], args: unknown[]): Promise<TResult> {
     const [key] = keys;
     const [owner] = args;
+
+    if (script.includes("INCR") && key !== undefined) {
+      const next = Number(this.store.get(key) ?? 0) + 1;
+      this.store.set(key, String(next));
+      this.ttls.set(key, Number(owner));
+      return next as TResult;
+    }
 
     const deleted =
       key !== undefined &&
@@ -62,17 +70,6 @@ class FakeRedis {
     } catch {
       return value as T;
     }
-  }
-
-  async incr(key: string) {
-    const next = Number(this.store.get(key) ?? 0) + 1;
-    this.store.set(key, String(next));
-    return next;
-  }
-
-  async expire(key: string, seconds: number) {
-    void seconds;
-    return this.store.has(key) ? 1 : 0;
   }
 
   async set(
@@ -1267,6 +1264,17 @@ describe("fulfillCheckout", () => {
     },
   );
 
+  it("sets a TTL on the receipt attempts key atomically with the increment", async () => {
+    sendReceiptEmail.mockRejectedValueOnce(new Error("Resend unavailable"));
+    const { dependencies, redis } = createDependencies();
+
+    await expect(
+      fulfillCheckout("cs_test_123", "evt_1", event, dependencies),
+    ).rejects.toMatchObject({ statusCode: 503 });
+
+    expect(redis.ttls.get(getReceiptAttemptsKey("cs_test_123"))).toBe(60 * 60 * 24 * 30);
+  });
+
   it("counts every concurrent receipt failure", async () => {
     sendReceiptEmail.mockRejectedValue(new Error("Resend unavailable"));
     const { dependencies, redis } = createDependencies();
@@ -1990,9 +1998,32 @@ describe("fulfillCheckout", () => {
       });
     });
 
-    it("fulfills without a new insert when the registration exists but is not linked yet", async () => {
+    it("requires manual review when the registration is linked to another session", async () => {
       const { airtable, dependencies } = createDependencies();
-      airtable.registrations.push({ id: "reg_existing" });
+      airtable.registrations.push({ id: "reg_other", Session: ["sess_other"] });
+      await seedRecord(dependencies, { registrationId: "reg_other", status: "processing" });
+      const insert = vi.spyOn(airtable, "insert");
+
+      await expect(
+        fulfillCheckout("cs_test_123", "evt_2", event, dependencies),
+      ).resolves.toBeUndefined();
+
+      expect(insert).not.toHaveBeenCalled();
+      expect(sendReceiptEmail).not.toHaveBeenCalled();
+      expect(
+        await readFulfillmentRecord(getFulfillmentRecordKey("cs_test_123"), dependencies),
+      ).toMatchObject({
+        failureCode: "registration_unlinked",
+        lastError: expect.stringMatching(/reg_other.*cs_test_123/),
+        manualReviewAt: expect.any(String),
+        registrationId: "reg_other",
+        status: "manual_review",
+      });
+    });
+
+    it("fulfills without a new insert when the registration is linked but missing from the session snapshot", async () => {
+      const { airtable, dependencies } = createDependencies();
+      airtable.registrations.push({ id: "reg_existing", Session: ["sess_airtable"] });
       await seedRecord(dependencies, { registrationId: "reg_existing", status: "processing" });
       const insert = vi.spyOn(airtable, "insert");
 
