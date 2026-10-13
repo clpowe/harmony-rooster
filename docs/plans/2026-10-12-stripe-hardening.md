@@ -306,3 +306,154 @@ Read the "Verified facts" section and your task section in full before editing.
 Edit only the files listed under your task. Do not commit, do not run pnpm install (unless you are T6), do not modify other tasks' files.
 When done, report: files changed, behavior changes (bullets), and the full output tail of your Verify command. If a step's precondition is false (e.g. an API option does not exist), stop and report rather than improvising.
 ```
+
+---
+
+# Follow-up waves (from the T6 adversarial review)
+
+| Wave | Tasks                                                                                                        | Model  | Precondition |
+| ---- | ------------------------------------------------------------------------------------------------------------ | ------ | ------------ |
+| 5    | T7 (stripe-fulfillment.ts findings 1, 2, 4, 5, 6, 8, 10); T8 (`.gitignore`, done inline by the orchestrator) | Sonnet | `fd84777`    |
+| 6    | T9 (separate Redis keys for receipt state; dangling registration check)                                      | Sonnet | T7 committed |
+| 7    | T10 (full verification + adversarial re-review)                                                              | Opus   | T9 committed |
+
+## Task T7: Fulfillment follow-ups
+
+**Files:**
+
+- Modify: `server/services/stripe-fulfillment.ts`
+- Modify: `server/services/stripe-fulfillment.test.ts`
+- Modify: `server/api/stripe/webhook.post.test.ts` (only if it uses the `whsec_test` secret fixture)
+
+### Step 1 (finding 1): Strict webhook secret format
+
+In `verifyStripeWebhook`:
+
+```ts
+const secret =
+  typeof config.stripeWebhookSecretKey === "string" ? config.stripeWebhookSecretKey.trim() : "";
+if (!/^whsec_[A-Za-z0-9+/=]{24,}$/.test(secret)) {
+  /* existing fail-closed block */
+}
+```
+
+- Pass the trimmed `secret` to `constructEvent`.
+- Replace the `whsec_test` fixtures with a realistic value, for example `` `whsec_${"a".repeat(32)}` ``. Define it once as a constant in each test file.
+- Tests: `"whsec_"`, `"whsec_ "` and `"whsec_changeme"` are each rejected with no `constructEvent` call. A valid secret with a trailing `\n` is accepted, and the trimmed value is what reaches `constructEvent`.
+
+### Step 2 (finding 2): Receipt-pending at every `already_handled` site in `claimFulfillment`
+
+In both the lock-busy branch and the post-lock recheck, return `reason: isReceiptPending(record) ? "receipt_pending" : "already_handled"`. In the post-lock branch, `finally` already releases the lock because `passLockToCaller` is false.
+
+Test: the pre-lock read sees `processing`. The lock is held by another token, and the record is `fulfilled` without `receiptSentAt` at the second read. The result is `receipt_pending`, and `fulfillCheckout` sends the receipt.
+
+### Step 3 (finding 5): Context loading counts toward receipt attempts
+
+- Change `PendingReceipt` to `{ checkoutSession; metadata: { internalCustomerId; internalSessionId }; registrationId; context?: CheckoutContext }`.
+- The `receipt_pending` branch in `fulfillUnderLock` no longer calls `loadCheckoutContext`; it returns without `context`.
+- In `deliverReceipt`, `const context = pending.context ?? (await loadCheckoutContext(...))` runs inside the same try whose failure goes through attempt accounting.
+
+Test: in the `receipt_pending` path, a failing Airtable `get` increments `receiptAttemptCount` and throws 503.
+
+### Step 4 (finding 4): Send success vs. record failure
+
+In `deliverReceipt`, split the single try:
+
+- **Send fails:** capture `"Receipt email failed"`, then run the existing attempt accounting.
+- **Send succeeds but `markReceiptSent` throws:** capture `"Receipt sent but delivery not recorded"` with `operation: "mark-receipt-sent"`. Throw `createError({ statusCode: 500, statusMessage: "Receipt Not Recorded", message: "Receipt sent but delivery could not be recorded" })`. Do **not** increment attempts.
+
+Test: `markReceiptSent`'s Redis write fails once. The call rejects with 500, `receiptAttemptCount` is unchanged, and on redelivery the send reuses the same idempotency key.
+
+### Step 5 (finding 6): No silent 200s
+
+- After a failed send, if the record is missing, `logger.error("Receipt delivery failed and fulfillment record is missing", …)` before returning.
+- If a `receipt_pending` record has no `registrationId`, change the existing `logger.warn` to `logger.error`.
+
+### Step 6 (finding 8): Do not send receipts for refunded charges
+
+In `deliverReceipt`, before sending: if the expanded charge has `refunded === true` or `amount_refunded > 0`, call `logger.warn("Skipping receipt for refunded charge", …)` and return. Do not count an attempt, do not throw, and do not mark the receipt sent.
+
+Test: the charge has `amount_refunded: 500`. The email is not sent, the call resolves, and the record is unchanged.
+
+### Step 7 (finding 10): No unlocked failure writes
+
+In the `fulfillUnderLock` catch block, write the failure record only when `claim?.ok` is true. When `claim` is null or not ok, keep the existing `captureServerError` and rethrow without reading or writing the record.
+
+- Delete the now-unused `: { attemptCount: …, status: "failed", … }` construction branch.
+- Update or remove tests that asserted a `failed` record is written when Stripe retrieve or metadata parsing fails before a claim. In your report, list every test you changed in this step, with one line on why.
+
+**Verify:** `pnpm test server/services/stripe-fulfillment.test.ts server/api/stripe/webhook.post.test.ts`, then `pnpm test`.
+
+**Commit (orchestrator):** `fix(stripe): strict webhook secret, receipt-pending at every claim site, no unlocked failure writes`
+
+## Task T8: `.gitignore`
+
+Add `.envrc` on its own line after `.env.*`.
+
+## Task T9: Receipt state in separate Redis keys; dangling registration check
+
+**Files:**
+
+- Modify: `server/services/stripe-fulfillment.ts`
+- Modify: `server/services/stripe-fulfillment.test.ts`
+
+### Step 1 (finding 3): Separate keys
+
+- Add the key helpers `getReceiptSentKey(cs) = \`stripe:fulfillment-receipt-sent:${cs}\`` and `getReceiptAttemptsKey(cs) = \`stripe:fulfillment-receipt-attempts:${cs}\``.
+- Extend `RedisClient` to `Pick<Redis, "eval" | "get" | "set" | "incr" | "expire">`.
+- **`markReceiptSent(cs, deps)`:**
+  - Read the record. If it is not `fulfilled`, return.
+  - Otherwise run `set(sentKey, nowIso, { nx: true, ex: THIRTY_DAYS_IN_SECONDS })`.
+  - It no longer writes the fulfillment record.
+- **Failed-send accounting:**
+  - `const attempts = await redis.incr(attemptsKey); await redis.expire(attemptsKey, THIRTY_DAYS_IN_SECONDS);`
+  - Use `attempts` for the cap.
+  - Do not write the fulfillment record.
+  - Keep the "record missing / not fulfilled" checks from T7, which are read-only.
+- **New helper `readReceiptState(cs, record, deps)`, returning `{ sent: boolean; attempts: number }`:**
+  - `sent` = sent key exists, **or** legacy `record.receiptSentAt` is set. Existing production records carry `receiptSentAt`.
+  - `attempts` = `Number(attemptsKey value ?? 0)`, **or** legacy `record.receiptAttemptCount`, whichever is larger.
+- `isReceiptPending` becomes async, taking `(record, deps)`, and uses `readReceiptState`. Update all three call sites in `claimFulfillment`.
+- Keep `receiptSentAt` and `receiptAttemptCount` on the `FulfillmentRecord` type as legacy read-only fields, with a one-line comment saying so. Nothing writes them any more.
+- **`FakeRedis`:**
+  - Add `incr` and `expire`.
+  - Make sure `set` honors `nx` for any key.
+- **Tests:**
+  - Concurrent success and failure: one `deliverReceipt` succeeds while another fails. Simulate this by calling `markReceiptSent` and then the failed-send accounting, in either order. The sent key survives, and `receipt_pending` is never returned afterwards.
+  - Two concurrent failures produce `attempts === 2`.
+  - A legacy record with `receiptSentAt` is `already_handled`.
+  - A legacy record with `receiptAttemptCount: 5` and no keys is `already_handled`.
+
+### Step 2 (finding 7): Dangling `registrationId`
+
+In `fulfillUnderLock`, when `claim.record.registrationId` is set but not in `session.registrations`:
+
+1. Call `airtable.get(registrationsTable, registrationId)`.
+2. If it rejects with a not-found error, write the record with `status: "manual_review"`, `failureCode: "registration_missing"` (add this to `FulfillmentFailureCode`), `manualReviewAt`, and `lastError`. Return `null`.
+   - A not-found error is an `AirtableTsError` with `type === "RESOURCE_NOT_FOUND"`, **or** an error with `statusCode === 404` (airtable.js `find` rejects on 404). Confirm both shapes in `node_modules/airtable-ts/dist` and `node_modules/.pnpm/airtable@0.12.2/node_modules/airtable/lib`.
+3. If it resolves, treat it as `ownsSeat = true`, which allows for Airtable link lag, and continue.
+4. Any other error propagates, so the delivery is retried.
+
+`FakeAirtable.get` must look up registrations by id when the table is `tbltA95wT9qJKfsz6`. It currently falls through to `customers`.
+
+Tests:
+
+- A dangling id on a session that isn't full leads to `manual_review` with `registration_missing`, no insert, and no email.
+- An existing but unlinked id leads to `fulfilled` with no new insert.
+- A 500 from `get` rethrows and the record is not marked `manual_review`.
+
+`registration-outcome.ts` already maps `manual_review` to `needs_attention`. Do not edit it.
+
+**Verify:** `pnpm test server/services/stripe-fulfillment.test.ts`, then `pnpm test`.
+
+**Commit (orchestrator):** `fix(stripe): store receipt state in atomic Redis keys and flag dangling registrations`
+
+## Task T10: Verification and adversarial re-review (Opus)
+
+Run `pnpm test` and `pnpm build`, then re-run the T6 Part B questions against `git diff fd84777...HEAD` and the full current files. Add these checks:
+
+- Separate-key atomicity, and the fallback for legacy records.
+- Is there any path that sends a receipt for a refunded charge?
+- Does the strict secret regex accept real Stripe CLI and Dashboard secrets?
+
+Report only; do not fix.
