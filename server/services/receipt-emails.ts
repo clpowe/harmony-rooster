@@ -14,6 +14,7 @@ export type ReceiptEmailInput = {
   currency: string | null;
   receiptUrl: string | null;
   registrationId: string;
+  idempotencyKey?: string; // T5 makes this required
 };
 
 const ReceiptEmail = defineComponent({
@@ -81,6 +82,7 @@ export type ReceiptEmailDependencies = {
     resendApiKey: string;
     public: {
       contactFromEmail: string;
+      receiptFromEmail?: string;
     };
   };
   getResendClient: (apiKey: string) => {
@@ -122,13 +124,19 @@ export async function sendReceiptEmail(
   ]);
 
   const resend = deps.getResendClient(config.resendApiKey);
-  const response = await resend.emails.send({
-    from: "contact@harmonyroosters.com",
+  const payload = {
+    from:
+      config.public.receiptFromEmail ||
+      config.public.contactFromEmail ||
+      "contact@harmonyroosters.com",
     to: receipt.to,
-    subject: `Receipt for ${receipt.sessionName} - ${receipt.sessionDate}`,
+    subject: `Receipt for ${receipt.sessionName} - ${receipt.sessionDate}`.replace(/[\r\n]+/g, " "),
     html,
     text,
-  });
+  };
+  const response = receipt.idempotencyKey
+    ? await resend.emails.send(payload, { idempotencyKey: receipt.idempotencyKey })
+    : await resend.emails.send(payload);
 
   if (response.error) {
     throw new Error(`Resend error: ${response.error.message}`);
