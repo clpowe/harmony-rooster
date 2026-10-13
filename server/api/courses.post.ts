@@ -21,7 +21,7 @@ const registrationSchema = z.object({
   phonenumber: z
     .string({ required_error: "Phone number is required" })
     .regex(/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/, "Invalid phone number"),
-  sessionId: z.string().min(1, "Session ID is required"),
+  sessionId: z.string().regex(/^rec[A-Za-z0-9]{14}$/, "Invalid session ID"),
 });
 
 function getConfiguredSiteOrigin(siteUrl: string | undefined): string | null {
@@ -61,18 +61,18 @@ export default defineEventHandler(async (event) => {
   }
 
   const { first_name, last_name, email, phonenumber, sessionId } = parsed.data;
-  const normalizedEmail = email.toLocaleLowerCase().trim();
+  const normalizedEmail = email.toLowerCase().trim();
 
   const db = new AirtableTs({ apiKey: config.airtableKey });
 
   let sessionRecord: CheckoutSessionRecord;
   try {
     sessionRecord = await db.get(checkoutSessionsTable, sessionId);
-  } catch (error: any) {
+  } catch {
     throw createError({
       statusCode: 404,
       statusMessage: "Session Not Found",
-      message: error?.message ?? "Session not found",
+      message: "Session not found",
     });
   }
 
@@ -88,7 +88,7 @@ export default defineEventHandler(async (event) => {
     name: `${first_name} ${last_name}`,
     phone: phonenumber,
     metadata: {
-      sessionId: user.id,
+      airtableCustomerId: user.id,
     },
   });
 
@@ -132,7 +132,6 @@ export default defineEventHandler(async (event) => {
       customerID: user.id,
       first_name,
       last_name,
-      email: normalizedEmail,
     },
     success_url: successUrl,
     cancel_url: cancelUrl,

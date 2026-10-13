@@ -63,13 +63,13 @@ const validBody = {
   first_name: "Taylor",
   last_name: "Swift",
   phonenumber: "615-555-1234",
-  sessionId: "sess_airtable",
+  sessionId: "recABCDEFGHIJKLMN",
 };
 
 const sessionRecord = {
   cost: [120.5],
   date: "2026-05-01",
-  id: "sess_airtable",
+  id: "recABCDEFGHIJKLMN",
   location: "Nashville",
   productID: ["prod_123"],
   sessionName: "Harmony Course",
@@ -150,7 +150,7 @@ describe("POST /api/courses", () => {
       name: "Taylor Swift",
       phone: "615-555-1234",
       metadata: {
-        sessionId: "cust_attempt",
+        airtableCustomerId: "cust_attempt",
       },
     });
 
@@ -170,8 +170,7 @@ describe("POST /api/courses", () => {
         customer: "cus_new",
         metadata: expect.objectContaining({
           customerID: "cust_attempt",
-          email: "customer@example.com",
-          sessionID: "sess_airtable",
+          sessionID: "recABCDEFGHIJKLMN",
         }),
         success_url: expect.stringMatching(
           /^https:\/\/harmonyroosters\.com\/success\?session_id=\{CHECKOUT_SESSION_ID\}#receipt_token=[a-f0-9]{64}$/,
@@ -186,6 +185,7 @@ describe("POST /api/courses", () => {
       createHash("sha256").update(token).digest("hex"),
     );
     expect(JSON.stringify(checkoutParams.metadata)).not.toContain(token);
+    expect(checkoutParams.metadata).not.toHaveProperty("email");
     expect(checkoutParams.customer).not.toBe("cus_victim");
     expect(checkoutParams).not.toHaveProperty("payment_method_types");
   });
@@ -209,12 +209,32 @@ describe("POST /api/courses", () => {
     airtable.get.mockRejectedValue(new Error("record missing"));
     const handler = await getHandler();
 
-    await expect(handler({ body: validBody })).rejects.toMatchObject({
-      message: "record missing",
+    const error = await handler({ body: validBody }).catch((e: unknown) => e as Error);
+
+    expect(error).toMatchObject({
+      message: "Session not found",
       statusCode: 404,
     });
+    expect((error as Error).message).not.toContain("record missing");
+    expect(airtable.insert).not.toHaveBeenCalled();
     expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
   });
+
+  it.each(["../tblX/recY", "rec123", "recABCDEFGHIJKLM!", "recABCDEFGHIJKLMNO"])(
+    "rejects malformed session ID %s without calling Airtable",
+    async (sessionId) => {
+      const handler = await getHandler();
+
+      await expect(handler({ body: { ...validBody, sessionId } })).rejects.toMatchObject({
+        statusCode: 400,
+      });
+      expect(airtable.get).not.toHaveBeenCalled();
+      expect(airtable.insert).not.toHaveBeenCalled();
+      expect(airtable.update).not.toHaveBeenCalled();
+      expect(stripe.customers.create).not.toHaveBeenCalled();
+      expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
+    },
+  );
 
   it("rejects sessions without complete Stripe price configuration", async () => {
     airtable.get.mockResolvedValue({
