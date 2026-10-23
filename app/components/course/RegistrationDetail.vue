@@ -8,34 +8,40 @@ defineProps<{
 
 <template>
   <div class="registration-detail">
-    <Icon :name="icon" class="icon" aria-hidden="true" />
-    <div class="content">
-      <Typography tag="p" variant="heading-small" class="title">{{ label }}</Typography>
-      <Typography tag="p" variant="body-small">{{ value }}</Typography>
+    <Icon :name="icon" class="registration-detail__icon" aria-hidden="true" />
+    <div class="registration-detail__content flow">
+      <Typography tag="p" variant="heading-small" class="registration-detail__label">{{
+        label
+      }}</Typography>
+      <Typography tag="p" variant="body-medium">{{ value }}</Typography>
     </div>
   </div>
 </template>
 
 <style scoped>
-.registration-detail {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-xs);
-  align-items: start;
-}
+@layer blocks {
+  .registration-detail {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-200);
+    align-items: start;
+  }
 
-.icon {
-  margin-top: 0.15rem;
-  font-size: 1.5rem;
-  color: var(--text-1);
-}
+  .registration-detail__icon {
+    margin-block-start: var(--space-100);
+    font-size: var(--text-heading-4);
+    color: var(--clr-primary-500);
+  }
 
-.title {
-  font-weight: bold;
-}
+  .registration-detail__label {
+    --type-size: var(--text-caption);
+    --type-weight: var(--fw-regular);
+    --type-leading: 1.4;
+    color: var(--clr-text-muted);
+  }
 
-.content {
-  display: grid;
-  gap: var(--space-xxs);
+  .registration-detail__content {
+    --flow-space: var(--space-100);
+  }
 }
 </style>

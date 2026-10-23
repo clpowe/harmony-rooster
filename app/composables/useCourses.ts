@@ -1,24 +1,6 @@
 import type { Ref } from "vue";
 import { computed } from "vue";
-
-type Session = {
-  id: string;
-  session_name: string;
-  date: string;
-  time: string;
-  capacity: number;
-  spots_available: number;
-  location: string;
-};
-
-type Course = {
-  id: string;
-  course_name: string;
-  description: string;
-  duration: number;
-  cost: number;
-  sessions?: Session[];
-};
+import type { Course, Session } from "../../shared/types/courses";
 
 type SessionWithCourse = Session & {
   course_id: string;

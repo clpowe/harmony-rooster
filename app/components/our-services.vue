@@ -1,144 +1,108 @@
 <script setup lang="ts">
-import Care from "@/assets/icons/icon-care.svg";
-import Cook from "@/assets/icons/icon-cook.svg";
-import Medication from "@/assets/icons/icon-medication.svg";
-import Companion from "@/assets/icons/icon-companion.svg";
-
 type Service = {
-  icon: typeof Care;
   title: string;
   text: string;
+  href: string;
+  featured?: boolean;
 };
 
 const services: Service[] = [
   {
-    icon: Care,
-    title: "Personal Supports",
+    title: "Personal Support",
     text: "Help with daily living, companionship, and light household tasks.",
+    href: "#contact",
   },
   {
-    icon: Cook,
     title: "Respite",
     text: "Short-term relief care to give primary caregivers a break.",
+    href: "#contact",
   },
   {
-    icon: Medication,
     title: "Nursing",
     text: "Skilled medical care and health management at home.",
+    href: "#contact",
   },
   {
-    icon: Companion,
     title: "Foster Home",
     text: "24/7 family-style living with personalized support.",
+    href: "#contact",
+    featured: true,
   },
 ];
 </script>
 
 <template>
-  <section id="our-services" class="services-section" aria-labelledby="our-services-title">
-    <section-header>
-      <template #title> Our <span>Services</span> </template>
-      <Typography tag="p" variant="body-medium">
-        Harmony Roosters provides personalized support for individuals with developmental
-        disabilities in the Riverview/Brandon area. Our services include Personal Supports, respite
-        care, nursing support, and family-style foster home care designed to promote independence,
-        dignity, safety, and meaningful participation in daily life.
-      </Typography>
+  <AppPanel id="our-services" class="split wrapper region" aria-labelledby="our-services-title">
+    <SectionHeader id="our-services-title">
+      <template #title>Our Services</template>
+      <template #description>
+        Harmony Roosters provides support for individuals with developmental disabilities in the
+        Riverview/Brandon area, designed to promote independence, dignity, safety, and meaningful
+        participation in daily life.
+      </template>
+      <AppButton href="https://applynow.apd.myflorida.com/" variant="secondary" size="small">
+        Apply for services
+        <template #icon-end><AppIcon name="lucide:arrow-right" /></template>
+      </AppButton>
+    </SectionHeader>
 
-      <Typography tag="p" variant="body-medium">
-        Whether someone needs help with everyday routines, temporary relief for a family caregiver,
-        or more consistent residential support, our team works to understand their needs and provide
-        dependable, person-centered care.
-      </Typography>
-
-      <NuxtLink class="button button--md button--primary" to="https://applynow.apd.myflorida.com/">
-        Apply For Services
-      </NuxtLink>
-    </section-header>
-
-    <ul class="services-grid u-list-reset" aria-describedby="our-services-intro">
-      <li v-for="(item, idx) in services" :key="item.title" class="service-card">
-        <component
-          :is="item.icon"
-          class="service-card__icon"
-          aria-hidden="true"
-          focusable="false"
-        />
-        <div class="service-card__header">
-          <Typography
-            tag="h3"
-            variant="heading-small"
-            :id="`service-title-${idx}`"
-            class="service-card__title"
-            >{{ item.title }}</Typography
-          >
-          <Typography tag="p" variant="text" :id="`service-desc-${idx}`">{{
-            item.text
-          }}</Typography>
-        </div>
+    <ul class="services-grid auto-grid" role="list">
+      <li
+        v-for="item in services"
+        :key="item.title"
+        class="service flow"
+        :data-featured="item.featured ? 'true' : undefined"
+      >
+        <h3 class="service-title">{{ item.title }}</h3>
+        <p class="service-text">{{ item.text }}</p>
+        <a class="service-link" :href="item.href">
+          Learn More<span class="visually-hidden"> about {{ item.title }}</span>
+        </a>
       </li>
     </ul>
-  </section>
+  </AppPanel>
 </template>
 
 <style scoped>
-.services-section {
-  display: grid;
-  gap: var(--space-xl);
-  grid-template-columns: 1fr;
-
-  display: grid;
-  gap: var(--space-xl);
-  padding: var(--space-md) var(--space-sm);
-  border-radius: var(--radius-md);
-  background: var(--background-1-light);
-
-  @media (min-width: 1000px) {
-    gap: var(--space-xl);
-    grid-template-columns: 1fr 1fr;
+@layer blocks {
+  .services-grid {
+    --auto-grid-min: 13rem;
+    --auto-grid-gap: var(--space-450);
   }
-}
 
-.services-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-md);
-  container-type: inline-size;
-
-  @container (inline-size > calc(25ch * 2 + 1rem)) {
-    grid-template-columns: 1fr 1fr;
+  .service {
+    --flow-space: var(--space-300);
+    padding: var(--space-500);
+    background-color: var(--clr-surface-muted);
+    border-radius: var(--radius-inner);
   }
-}
 
-.service-card {
-  display: grid;
-  background: var(--background-2-light);
-  grid-template-columns: auto 1fr;
-  padding: var(--space-sm);
-  border-radius: var(--radius-md);
-  gap: var(--space-sm);
-  align-content: flex-start;
-  grid-column: span 1;
-
-  @container (inline-size < calc(25ch * 2 + 1rem)) {
-    grid-column: span 2;
+  .service-title {
+    font-size: var(--text-heading-3);
+    font-weight: var(--fw-regular);
+    color: var(--clr-primary-500);
   }
-}
 
-.service-card__header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-}
+  .service-link {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--touch-target);
+    color: inherit;
+    font-size: var(--text-small);
+    text-underline-offset: 0.2em;
+  }
 
-.service-card__title {
-  color: var(--primary-500);
-}
+  .service-text {
+    color: var(--clr-text-muted);
+  }
 
-.service-card__icon {
-  width: var(--text-2xl);
-  height: var(--text-2xl);
-  color: var(--primary-500);
-  margin: 0;
+  .service[data-featured="true"] {
+    background-color: var(--clr-primary-500);
+    color: var(--clr-neutral-100);
+  }
+
+  .service[data-featured="true"] :is(.service-title, .service-text) {
+    color: inherit;
+  }
 }
 </style>

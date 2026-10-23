@@ -1,5 +1,6 @@
 import postcssNesting from "postcss-nesting";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
 const siteName = "Harmony Roosters";
 const productionSiteUrl = "https://www.harmonyroosters.com";
@@ -26,6 +27,14 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: siteName,
+      // Keep layer order ahead of route CSS during SSR, hydration and Vite HMR.
+      style: [
+        {
+          key: "style-layer-order",
+          tagPriority: "critical",
+          innerHTML: readFileSync(new URL("./app/assets/css/layers.css", import.meta.url), "utf8"),
+        },
+      ],
       htmlAttrs: {
         lang: "en",
       },
@@ -40,6 +49,15 @@ export default defineNuxtConfig({
     "~": fileURLToPath(new URL("./", import.meta.url)),
   },
   css: ["@/assets/css/main.css"],
+  sitemap: {
+    exclude: ["/design-system"],
+  },
+  routeRules: {
+    "/design-system": {
+      robots: false,
+      headers: { "X-Robots-Tag": "noindex, nofollow" },
+    },
+  },
   future: {
     compatibilityVersion: 4,
   },

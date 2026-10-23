@@ -2,19 +2,41 @@
 import { useCourses } from "@/composables/useCourses";
 
 const { courses, pending, error, refreshCourses } = useCourses();
+
+const featuredSessions = computed(() =>
+  (courses.value ?? [])
+    .flatMap((course) =>
+      (course.sessions ?? []).map((session) => ({
+        session,
+        courseId: course.id,
+        courseName: course.course_name,
+        coursePrice: course.cost,
+      })),
+    )
+    .slice(0, 2),
+);
 </script>
 
 <template>
-  <section id="courses" class="courses-section">
-    <section-header class="courses-section__intro">
-      <template #title> <span>Courses We</span> <span>Offer</span> </template>
-      <template #description>
-        Harmony Roosters offers Medication Administration Provider Training for direct-care
-        professionals who need instruction related to Florida Rule 65G-7. The course is intended to
-        support safe, responsible medication assistance through practical instruction and required
-        training content.
-      </template>
-    </section-header>
+  <section id="courses" class="courses-section wrapper" aria-labelledby="courses-title">
+    <header class="courses-section__header flow">
+      <h2 id="courses-title" class="courses-section__title">
+        <span class="color-primary">Courses</span> We Offer
+      </h2>
+
+      <div class="courses-section__subhead repel">
+        <p class="courses-section__description">
+          Medication Administration Provider Training for direct-care professionals who need
+          instruction related to Florida Rule 65G-7.
+        </p>
+
+        <AppButton href="/courses" variant="secondary" size="small">
+          All courses
+          <template #icon-end><AppIcon name="lucide:arrow-right" /></template>
+        </AppButton>
+      </div>
+    </header>
+
     <div
       v-if="pending"
       class="courses-section__state courses-section__state--loading"
@@ -37,7 +59,8 @@ const { courses, pending, error, refreshCourses } = useCourses();
         Check your connection and try again. If the problem continues, contact us directly.
       </Typography>
       <button
-        class="button button--secondary courses-section__retry"
+        class="button courses-section__retry"
+        data-variant="secondary"
         type="button"
         @click="refreshCourses()"
       >
@@ -45,9 +68,16 @@ const { courses, pending, error, refreshCourses } = useCourses();
       </button>
     </div>
 
-    <div v-else-if="courses?.length" class="courses-section__list">
-      <CourseGroup v-for="course in courses" :key="course.id" :course="course" />
-    </div>
+    <ul v-else-if="featuredSessions.length" class="courses-section__grid u-list-reset" role="list">
+      <li v-for="item in featuredSessions" :key="item.session.id" class="courses-section__item">
+        <CourseCard
+          :session="item.session"
+          :course-id="item.courseId"
+          :course-name="item.courseName"
+          :course-price="item.coursePrice"
+        />
+      </li>
+    </ul>
 
     <div v-else class="courses-section__state courses-section__state--empty" aria-live="polite">
       <Typography tag="p" variant="body-large">No courses are available right now.</Typography>
@@ -59,43 +89,66 @@ const { courses, pending, error, refreshCourses } = useCourses();
 </template>
 
 <style scoped>
-.courses-section {
-  display: grid;
-  gap: var(--space-xxl);
-  padding: var(--space-md) var(--space-sm);
-  border-radius: var(--radius-md);
-  background: var(--background-1-light);
-}
-
-.courses-section__list {
-  display: grid;
-  gap: var(--space-xxl);
-}
-
-.courses-section__state {
-  display: grid;
-  gap: var(--space-sm);
-  align-content: start;
-  padding: var(--space-md);
-  border-radius: var(--radius-md);
-  background: var(--surface-1);
-}
-
-.courses-section__state :deep(.type--text-large) {
-  line-height: 1.3;
-}
-
-.courses-section__state :deep(.type--text) {
-  max-width: 40rem;
-}
-
-.courses-section__retry {
-  justify-self: start;
-}
-
-@media (min-width: 960px) {
+@layer blocks {
   .courses-section {
-    padding: 1.5rem 1.25rem 1.5rem 1.625rem;
+    --button-small-height: 2.5rem;
+    --button-small-font-size: var(--text-caption);
+    --button-weight: var(--fw-regular);
+    --button-ring-size: 4px;
+
+    display: grid;
+    gap: var(--space-600);
+  }
+
+  .courses-section__header {
+    --flow-space: var(--space-400);
+  }
+
+  .courses-section__title {
+    color: var(--clr-text);
+  }
+
+  .courses-section__subhead {
+    --repel-align: center;
+    --repel-gap: var(--space-400);
+  }
+
+  .courses-section__description {
+    max-inline-size: var(--measure);
+    color: var(--clr-text-muted);
+    font-size: var(--text-caption);
+  }
+
+  .courses-section__grid {
+    display: grid;
+    gap: var(--space-450);
+
+    @media (width >= 48em) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .courses-section__item {
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .courses-section__state {
+    display: grid;
+    gap: var(--space-300);
+    align-content: start;
+    padding: var(--space-500);
+    border-radius: var(--radius-300);
+    background-color: var(--clr-surface);
+  }
+
+  .courses-section__state :deep(.body-medium) {
+    max-inline-size: var(--measure);
+    color: var(--clr-text-muted);
+  }
+
+  .courses-section__retry {
+    justify-self: start;
   }
 }
 </style>

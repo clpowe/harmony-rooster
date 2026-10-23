@@ -1,0 +1,87 @@
+/* Element defaults: component identity and page layout live in their own layers. */
+body {
+  font-family: var(--ff-base);
+  font-size: var(--text-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-body);
+  color: var(--clr-text-muted);
+  background-color: var(--clr-surface-page);
+}
+
+:where(h1, h2, h3, h4, h5, h6) {
+  font-family: inherit;
+  font-weight: var(--heading-weight, var(--fw-regular));
+  line-height: var(--heading-leading, var(--lh-heading));
+  letter-spacing: var(--heading-tracking, var(--tracking-heading));
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: var(--text-display-lg);
+}
+h2 {
+  font-size: var(--text-heading-1);
+}
+h3 {
+  font-size: var(--text-heading-2);
+}
+h4 {
+  font-size: var(--text-heading-3);
+}
+h5 {
+  font-size: var(--text-heading-4);
+}
+h6 {
+  font-size: var(--text-body);
+}
+
+p,
+li,
+dd {
+  text-wrap: pretty;
+}
+strong,
+b {
+  font-weight: var(--fw-bold);
+}
+
+a {
+  color: var(--clr-interactive);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    text-decoration-color var(--duration-fast) var(--ease-standard);
+}
+a:hover {
+  color: var(--clr-primary-600);
+  text-decoration-color: var(--clr-accent-400);
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+:where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea, select) {
+  min-block-size: var(--control-size);
+  max-inline-size: 100%;
+  padding: var(--space-300) var(--space-400);
+  border: var(--border-width) solid var(--clr-border);
+  border-radius: var(--radius-input);
+  background-color: var(--clr-surface);
+}
+textarea {
+  resize: vertical;
+}
+button {
+  cursor: pointer;
+}
+hr {
+  border: 0;
+  border-block-start: var(--border-width) solid var(--clr-border);
+}
+::selection {
+  background-color: var(--clr-primary-100);
+  color: var(--clr-primary-700);
+}

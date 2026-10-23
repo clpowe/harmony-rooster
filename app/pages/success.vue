@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
+import ReceiptHeader from "@/components/receipt/ReceiptHeader.vue";
+import { getReceiptPaymentLabel, getReceiptStatus } from "@utils/receipt-status";
+import type { ReceiptStatus } from "@utils/receipt-status";
 
 definePageMeta({
   layout: false,
@@ -29,13 +32,16 @@ const {
 } = useRegistrationReceipt(sessionId);
 const isConfirmed = computed(() => checkoutData.value?.registration.state === "confirmed");
 const copyMessage = ref("");
+const copied = ref(false);
 async function copyReceiptLink() {
   if (!token.value) return;
+  copied.value = false;
   const url = new URL("/success", window.location.origin);
   url.searchParams.set("session_id", sessionId);
   url.hash = `receipt_token=${token.value}`;
   try {
     await navigator.clipboard.writeText(url.href);
+    copied.value = true;
     copyMessage.value =
       "Receipt link copied. Keep it private; anyone with this link can view your receipt.";
   } catch {
@@ -65,6 +71,33 @@ const receiptStatusMessage = computed(() => {
   return checkoutData.value?.registration.message ?? "Registration status unavailable.";
 });
 const retryReceiptLoad = () => refreshCheckoutData();
+const headerStatus = computed<ReceiptStatus>(() => {
+  if (initialLoading.value) return { label: "Loading receipt", tone: "pending", busy: true };
+  if (error.value) return { label: "Status unavailable", tone: "warning", busy: false };
+  return getReceiptStatus(
+    checkoutData.value?.registration.state,
+    checkoutData.value?.payment.status,
+  );
+});
+const headerTitle = computed(() => {
+  if (initialLoading.value) return "Loading your receipt";
+  if (error.value) return "We could not load this receipt";
+  return checkoutData.value?.registration.title ?? "Registration status unavailable";
+});
+const headerMessage = computed(() => {
+  if (initialLoading.value) return "Payment details are loading.";
+  if (error.value) return "Open your complete receipt link or contact Harmony Roosters.";
+  return (
+    checkoutData.value?.registration.message ??
+    "Please open your complete receipt link or contact us for help."
+  );
+});
+const paymentStatusLabel = computed(() =>
+  getReceiptPaymentLabel(
+    checkoutData.value?.registration.state,
+    checkoutData.value?.payment.status,
+  ),
+);
 
 function formatClassDate(value?: string) {
   if (!value || Number.isNaN(Date.parse(value))) return "Date pending";
@@ -98,515 +131,194 @@ function formatPaymentBrand(value: string) {
 
 <template>
   <div class="success-page">
-    <header class="success-header" aria-label="Checkout confirmation">
+    <header class="success-header wrapper repel" aria-label="Checkout confirmation">
       <SiteBrand class="success-header__brand" aria-label="Harmony Roosters home" />
-
-      <NuxtLink to="/" class="success-back" aria-label="Return to Harmony Roosters home">
-        <Icon name="lucide:arrow-left" class="success-back__icon" aria-hidden="true" />
+      <AppButton href="/" variant="ghost" size="small" aria-label="Return to Harmony Roosters home">
+        <template #icon-start><AppIcon name="lucide:arrow-left" /></template>
         Return home
-      </NuxtLink>
+      </AppButton>
     </header>
 
-    <main class="success-main">
+    <main class="success-main wrapper">
       <section
         class="receipt"
         aria-labelledby="receipt-title"
         :aria-busy="pending ? 'true' : 'false'"
       >
-        <p class="u-visually-hidden" role="status" aria-live="polite" aria-atomic="true">
+        <p class="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
           {{ receiptStatusMessage }}
         </p>
+        <ReceiptHeader
+          :title="headerTitle"
+          :message="headerMessage"
+          :receipt-id="checkoutData && !error ? orderNumber : undefined"
+          :status="headerStatus"
+        />
 
-        <div v-if="initialLoading" class="receipt__status">
-          <Icon name="lucide:loader-circle" class="receipt__spinner" aria-hidden="true" />
-          <Typography
-            id="receipt-title"
-            tag="h1"
-            variant="heading-large"
-            uppercase
-            class="receipt__title"
-          >
-            Loading your receipt
-          </Typography>
-          <Typography tag="p" variant="body-large" class="receipt__lede">
-            Payment details are loading.
-          </Typography>
+        <div
+          v-if="error"
+          class="receipt-section receipt__actions cluster"
+          aria-label="Receipt recovery options"
+        >
+          <AppButton :disabled="pending" @click="retryReceiptLoad">
+            <template v-if="pending" #icon-start><AppIcon name="lucide:loader-circle" /></template>
+            {{ pending ? "Checking…" : "Try again" }}
+          </AppButton>
+          <AppButton href="/#contact" variant="accent">Contact support</AppButton>
         </div>
 
-        <div v-else-if="error" class="receipt__status">
-          <Icon name="lucide:circle-alert" class="receipt__alert-icon" aria-hidden="true" />
-          <Typography
-            id="receipt-title"
-            tag="h1"
-            variant="heading-large"
-            uppercase
-            class="receipt__title"
-          >
-            We could not load this receipt
-          </Typography>
-          <Typography tag="p" variant="body-large" class="receipt__lede">
-            Open your complete receipt link or contact Harmony Roosters.
-          </Typography>
-          <div class="receipt__actions" aria-label="Receipt recovery options">
-            <button
-              class="button button--md button--primary"
-              type="button"
-              :disabled="pending"
-              @click="retryReceiptLoad"
-            >
-              Try again
-            </button>
-            <NuxtLink class="button button--md button--secondary" to="/#contact">
-              Contact support
-            </NuxtLink>
-          </div>
-        </div>
-
-        <div v-else-if="checkoutData" class="receipt__ready">
-          <div class="receipt__top-rule" aria-hidden="true"></div>
-
-          <header class="receipt__intro">
-            <Icon
-              :name="isConfirmed ? 'lucide:badge-check' : 'lucide:info'"
-              class="receipt__seal"
-              aria-hidden="true"
-            />
-            <div>
-              <Typography tag="p" variant="heading-small" uppercase class="receipt__eyebrow">
-                Receipt {{ orderNumber }}
-              </Typography>
-              <Typography
-                id="receipt-title"
-                tag="h1"
-                variant="heading-large"
-                uppercase
-                class="receipt__title"
-              >
-                {{ checkoutData.registration.title }}
-              </Typography>
-              <Typography tag="p" variant="body-large" class="receipt__lede">
-                {{ checkoutData.registration.message }}
-              </Typography>
-            </div>
-          </header>
-
-          <section class="receipt-section" aria-label="Receipt actions">
+        <template v-else-if="checkoutData && !initialLoading">
+          <section class="receipt-section flow" aria-label="Receipt actions">
             <p v-if="autoRefreshFinished" role="status">
               Confirmation is taking longer than expected. You can check again or contact us for
               help.
             </p>
-            <div class="receipt__actions">
-              <button
+            <div class="receipt__actions cluster">
+              <AppButton
                 v-if="!isConfirmed && checkoutData.registration.state !== 'refunded'"
-                class="button button--md button--primary"
-                type="button"
                 :disabled="pending"
                 @click="retryReceiptLoad"
               >
                 {{ pending ? "Checking…" : "Check again" }}
-              </button>
-              <button
-                class="button button--md button--secondary"
-                type="button"
+              </AppButton>
+              <AppButton
+                variant="ghost"
+                :data-state="copied ? 'copied' : undefined"
+                :disabled="!token"
                 @click="copyReceiptLink"
               >
-                Copy receipt link
-              </button>
-              <NuxtLink class="button button--md button--secondary" to="/#contact"
-                >Contact support</NuxtLink
-              >
+                <template #icon-start
+                  ><AppIcon :name="copied ? 'lucide:check' : 'lucide:copy'"
+                /></template>
+                {{ copied ? "Link copied" : "Copy receipt link" }}
+              </AppButton>
+              <AppButton href="/#contact" variant="accent">Contact support</AppButton>
             </div>
             <p v-if="copyMessage" role="status" class="receipt__copy-message">{{ copyMessage }}</p>
           </section>
 
-          <section class="receipt-section receipt-section--class" aria-labelledby="class-title">
-            <div class="receipt-section__header">
-              <Typography
-                id="class-title"
-                tag="h2"
-                variant="heading-small"
-                bold
-                class="receipt-section__title"
-              >
-                Class details
-              </Typography>
-              <Typography tag="p" variant="body-large" bold class="receipt-section__meta">
-                {{ className }}
-              </Typography>
-            </div>
-
-            <dl class="class-grid">
-              <div class="class-grid__item">
-                <dt>
-                  <Icon name="lucide:calendar-days" aria-hidden="true" />
-                  Date
-                </dt>
-                <dd>{{ formattedClassDate }}</dd>
-              </div>
-
-              <div class="class-grid__item">
-                <dt>
-                  <Icon name="lucide:clock-3" aria-hidden="true" />
-                  Time
-                </dt>
-                <dd>{{ checkoutData?.session?.time ?? "Time pending" }}</dd>
-              </div>
-
-              <div class="class-grid__item">
-                <dt>
-                  <Icon name="lucide:map-pin" aria-hidden="true" />
-                  Location
-                </dt>
-                <dd>{{ checkoutData?.session?.location ?? "Location pending" }}</dd>
-              </div>
+          <section class="receipt-section flow" data-variant="class" aria-labelledby="class-title">
+            <header class="flow receipt-section__header">
+              <h2 id="class-title" class="receipt-section__title">Class details</h2>
+              <p class="receipt-section__meta">{{ className }}</p>
+            </header>
+            <dl class="receipt__details">
+              <AppDetailRow icon="lucide:calendar-days" label="Date" :value="formattedClassDate" />
+              <AppDetailRow
+                icon="lucide:clock-3"
+                label="Time"
+                :value="checkoutData.session?.time ?? 'Time pending'"
+              />
+              <AppDetailRow
+                icon="lucide:map-pin"
+                label="Location"
+                :value="checkoutData.session?.location ?? 'Location pending'"
+              />
             </dl>
           </section>
 
-          <section class="receipt-section" aria-labelledby="order-title">
-            <div class="receipt-section__header">
-              <Typography
-                id="order-title"
-                tag="h2"
-                variant="heading-small"
-                bold
-                class="receipt-section__title"
-              >
-                Order summary
-              </Typography>
-              <Typography tag="p" variant="body-large" bold class="receipt-section__meta">
-                {{ formattedTotal }}
-              </Typography>
+          <section class="receipt-section flow" aria-labelledby="order-title">
+            <div class="receipt-section__header repel">
+              <h2 id="order-title" class="receipt-section__title">Order summary</h2>
+              <p class="receipt-section__total">{{ formattedTotal }}</p>
             </div>
-
-            <dl class="summary-list">
-              <div>
-                <dt>Payment</dt>
-                <dd>{{ paymentMethod }}</dd>
-              </div>
-              <div>
-                <dt>Order number</dt>
-                <dd>{{ orderNumber }}</dd>
-              </div>
+            <dl class="receipt__summary">
+              <AppSummaryRow label="Payment status" :value="paymentStatusLabel" />
+              <AppSummaryRow label="Payment method" :value="paymentMethod" />
+              <AppSummaryRow label="Order number" :value="orderNumber" mono />
             </dl>
           </section>
-        </div>
-
-        <div v-else class="receipt__status">
-          <Icon name="lucide:clock-alert" class="receipt__alert-icon" aria-hidden="true" />
-          <Typography
-            id="receipt-title"
-            tag="h1"
-            variant="heading-large"
-            uppercase
-            class="receipt__title"
-          >
-            Registration status unavailable
-          </Typography>
-          <Typography tag="p" variant="body-large" class="receipt__lede">
-            Please open your complete receipt link or contact us for help.
-          </Typography>
-        </div>
+        </template>
       </section>
     </main>
   </div>
 </template>
 
 <style scoped>
-.success-page {
-  min-height: 100svh;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in oklch, var(--primary-100) 34%, transparent),
-      transparent 28rem
-    ),
-    var(--surface-2);
-  color: var(--secondary);
-}
-
-.success-header {
-  width: min(100% - 2rem, 72rem);
-  margin-inline: auto;
-  padding-block: clamp(1rem, 2.5vw, 1.5rem);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.success-header__brand {
-  --site-brand-wordmark-width: clamp(9.8rem, 20vw, 12.25rem);
-}
-
-.success-back:focus-visible {
-  outline: 3px solid var(--primary-400);
-  outline-offset: 4px;
-}
-
-.success-back {
-  min-height: 44px;
-  padding: 0.45rem 0.95rem 0.45rem 0.75rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  border: 1px solid color-mix(in oklch, var(--secondary) 60%, transparent);
-  border-radius: var(--radius-full);
-  background: color-mix(in oklch, var(--surface-1) 76%, transparent);
-  color: var(--text-1);
-  font-size: 0.875rem;
-  line-height: 1;
-  text-decoration: none;
-  cursor: pointer;
-  transition:
-    background-color 160ms ease,
-    transform 160ms ease;
-}
-
-.success-back:hover {
-  background: var(--surface-1);
-  transform: translateX(-2px);
-}
-
-.success-back__icon {
-  width: 1.25rem;
-  height: 1.25rem;
-  stroke-width: 2;
-}
-
-.success-main {
-  width: min(100% - 2rem, 40rem);
-  margin-inline: auto;
-  padding-block: clamp(1.75rem, 6vw, 4rem) clamp(2.5rem, 7vw, 5rem);
-}
-
-.receipt {
-  position: relative;
-  overflow: hidden;
-  border-radius: 18px;
-  background: var(--surface-1);
-  box-shadow: var(--shadow-2);
-}
-
-.receipt__top-rule {
-  height: 0.45rem;
-  background: linear-gradient(90deg, var(--primary-500) 0 72%, var(--accent-500) 72% 100%);
-}
-
-.receipt__ready {
-  display: grid;
-}
-
-.receipt__intro {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 1rem;
-  padding: clamp(1.5rem, 4vw, 2.25rem) clamp(1.5rem, 4vw, 2.5rem);
-}
-
-.receipt__seal {
-  width: 2.75rem;
-  height: 2.75rem;
-  color: var(--success-500);
-  stroke-width: 1.8;
-}
-
-.receipt__eyebrow {
-  --p-max-width: 100%;
-  color: var(--accent-600);
-  font-weight: 700;
-}
-
-.receipt__title {
-  max-width: 11ch;
-  margin-top: 0.45rem;
-  color: var(--text-1);
-}
-
-.receipt__lede {
-  --p-max-width: 31rem;
-  margin-top: 0.85rem;
-  color: var(--neutral-600);
-  font-style: italic;
-}
-
-.receipt-section {
-  padding: clamp(1.35rem, 3.5vw, 2rem) clamp(1.5rem, 4vw, 2.5rem);
-  border-top: 1px solid color-mix(in oklch, var(--neutral-200) 86%, transparent);
-}
-
-.receipt-section--class {
-  background: color-mix(in oklch, var(--primary-100) 20%, var(--surface-1));
-}
-
-.receipt-section__header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.receipt-section__title {
-  color: var(--secondary);
-  font-weight: 700;
-}
-
-.receipt-section__meta {
-  --p-max-width: 24rem;
-  color: var(--primary-600);
-  font-weight: 700;
-  line-height: 1.25;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-
-.class-grid {
-  display: grid;
-  border-top: 1px solid color-mix(in oklch, var(--neutral-200) 86%, transparent);
-}
-
-.class-grid__item {
-  min-width: 0;
-  padding-block: 0.9rem;
-  display: grid;
-  grid-template-columns: minmax(6.75rem, max-content) 1fr;
-  gap: 1rem;
-  align-items: baseline;
-  border-bottom: 1px solid color-mix(in oklch, var(--neutral-200) 86%, transparent);
-}
-
-.class-grid__item dt,
-.summary-list dt {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--neutral-600);
-  font-size: 0.82rem;
-  font-weight: 700;
-  line-height: 1.1;
-  text-transform: uppercase;
-}
-
-.class-grid__item dt svg {
-  width: 1rem;
-  height: 1rem;
-  color: var(--primary-500);
-}
-
-.class-grid__item dd {
-  color: var(--text-1);
-  font-size: clamp(1.05rem, 2.3vw, 1.22rem);
-  font-weight: 700;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
-}
-
-.summary-list {
-  display: grid;
-  gap: 0.7rem;
-}
-
-.summary-list div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.summary-list dd {
-  color: var(--text-1);
-  font-weight: 700;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-
-.receipt__status {
-  min-height: clamp(16rem, 42svh, 22rem);
-  padding: clamp(1.5rem, 4vw, 2.5rem);
-  display: grid;
-  align-content: center;
-  gap: 0.9rem;
-}
-
-.receipt__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 0.45rem;
-}
-
-.receipt__actions .button {
-  min-height: 44px;
-}
-
-.receipt__status .receipt__title {
-  max-width: 16ch;
-}
-
-.receipt__spinner,
-.receipt__alert-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  color: var(--primary-500);
-}
-
-.receipt__spinner {
-  animation: receipt-spin 900ms linear infinite;
-}
-
-@media (max-width: 34rem) {
-  .success-header {
-    align-items: flex-start;
-  }
-
-  .success-back {
-    padding-inline: 0.7rem;
-  }
-
-  .success-header__brand {
-    --site-brand-wordmark-width: 9.2rem;
-  }
-
-  .receipt__intro {
-    grid-template-columns: 1fr;
-  }
-
-  .receipt__status {
-    min-height: auto;
-    align-content: start;
-    padding-block: clamp(1.5rem, 9vw, 2rem);
-  }
-
-  .class-grid__item {
-    grid-template-columns: 1fr;
-    gap: 0.35rem;
-  }
-
-  .receipt-section__header,
-  .summary-list div {
+@layer blocks {
+  .success-page {
+    min-block-size: 100svh;
     display: grid;
-    gap: 0.35rem;
+    grid-template-rows: auto 1fr;
+    background: var(--clr-surface-page);
+    color: var(--clr-text);
   }
 
-  .receipt-section__header p,
-  .summary-list dd {
-    text-align: left;
+  .success-header {
+    padding-block: var(--space-500);
+  }
+  .success-header__brand {
+    --site-brand-wordmark-width: clamp(9.8rem, 20vw, 12.25rem);
+  }
+  .success-main {
+    --wrapper-max: var(--measure-narrow);
+    padding-block: var(--space-panel) var(--space-section);
+  }
+
+  .receipt {
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    background: var(--clr-surface);
+    box-shadow: var(--shadow-100);
+  }
+
+  .receipt-section {
+    --flow-space: var(--space-400);
+    padding: var(--space-600) var(--space-panel);
+    border-block-start: var(--border-width) solid var(--clr-border);
+  }
+
+  .receipt-section__header {
+    --flow-space: var(--space-200);
+    --repel-align: baseline;
+  }
+  .receipt-section__title {
+    color: var(--clr-text);
+    font-size: var(--text-heading-4);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-snug);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  .receipt-section__meta {
+    color: var(--clr-text-muted);
+    font-size: var(--text-body);
+    line-height: var(--lh-body);
+  }
+
+  .receipt-section__total {
+    color: var(--clr-primary-500);
+    font-size: var(--text-heading-3);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-snug);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  .receipt__details,
+  .receipt__summary {
+    display: grid;
+  }
+  .receipt__actions {
+    --cluster-gap: var(--space-300);
+  }
+  .receipt__copy-message {
+    color: var(--clr-text-muted);
+    font-size: var(--text-small);
+  }
+
+  @media (width < 34em) {
+    .success-header {
+      --repel-align: flex-start;
+    }
+    .success-header__brand {
+      --site-brand-wordmark-width: 9.2rem;
+    }
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .success-back,
-  .receipt__spinner {
-    transition-duration: 0ms;
-    animation: none;
-  }
-}
-
-@keyframes receipt-spin {
-  to {
-    transform: rotate(1turn);
+@layer exceptions {
+  .receipt-section[data-variant="class"] {
+    background: color-mix(in srgb, var(--clr-primary-100) 20%, var(--clr-surface));
   }
 }
 </style>

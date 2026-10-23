@@ -37,6 +37,11 @@ Use `:ConformInfo` to inspect the formatter and `:LspInfo` to confirm Oxlint is 
 If the editor reports missing `.nuxt/tsconfig` files, run `pnpm exec nuxt prepare`
 to regenerate Nuxt's types, then restart the language servers.
 
+## CSS and design system
+
+See [the style system guide](docs/style-system.md) for tokens, CUBE layouts, shared
+controls, and the approved hero/header/footer styling boundaries.
+
 ## Development Server
 
 Start the development server on `http://localhost:3000`:
@@ -54,6 +59,18 @@ yarn dev
 # bun
 bun run dev
 ```
+
+## Airtable environments
+
+`pnpm dev` and `pnpm dev:all` use **Course Registration (Dev)**
+(`appfunxpZDINDA3tq`). Production builds and previews use the existing production
+base (`apptCFjP3Ns4FdGGi`). The selection lives in `shared/constants/airtable.ts`
+and applies to courses, sessions, customers, registrations, and session lock keys.
+Both bases use the same table IDs and field names.
+
+The local `NUXT_AIRTABLE_KEY` in `.env` must have access to the Development base.
+Restart the dev server after changing credentials. Keep production deployment
+credentials configured separately.
 
 ## Stripe Webhooks
 
