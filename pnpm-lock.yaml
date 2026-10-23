@@ -29,6 +29,9 @@ importers:
       '@vee-validate/zod':
         specifier: ^4.15.1
         version: 4.15.1(vue@3.5.28(typescript@5.9.3))(zod@3.25.76)
+      '@vercel/speed-insights':
+        specifier: ^2.0.0
+        version: 2.0.0(nuxt@4.3.1(@parcel/watcher@2.5.6)(@types/node@25.3.0)(@upstash/redis@1.37.0)(@vue/compiler-sfc@3.5.41)(@vue/language-core@3.2.5)(cac@6.7.14)(db0@0.3.4)(ioredis@5.9.3)(magicast@0.5.2)(oxlint@1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@opentelemetry/api@1.9.0)(@types/node@25.3.0)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3(vitest@5.0.3))(@vue/language-core@3.2.5)(esbuild@0.27.3)(jiti@2.6.1)(jsdom@28.1.0)(terser@5.46.0)(typescript@5.9.3)(yaml@2.8.2)))(rolldown@1.2.13)(rollup@4.59.0)(terser@5.46.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.0)(yaml@2.8.2))(yaml@2.8.2))(vue-router@4.6.4(vue@3.5.28(typescript@5.9.3)))(vue@3.5.28(typescript@5.9.3))
       '@vercel/analytics':
         specifier: ^2.0.1
         version: 2.0.1(nuxt@4.3.1(@parcel/watcher@2.5.6)(@types/node@25.3.0)(@upstash/redis@1.37.0)(@vue/compiler-sfc@3.5.41)(@vue/language-core@3.2.5)(cac@6.7.14)(db0@0.3.4)(ioredis@5.9.3)(magicast@0.5.2)(oxlint@1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@opentelemetry/api@1.9.0)(@types/node@25.3.0)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3(vitest@5.0.3))(@vue/language-core@3.2.5)(esbuild@0.27.3)(jiti@2.6.1)(jsdom@28.1.0)(terser@5.46.0)(typescript@5.9.3)(yaml@2.8.2)))(rolldown@1.2.13)(rollup@4.59.0)(terser@5.46.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.0)(yaml@2.8.2))(yaml@2.8.2))(vue-router@4.6.4(vue@3.5.28(typescript@5.9.3)))(vue@3.5.28(typescript@5.9.3))
@@ -2616,6 +2619,32 @@ packages:
     resolution: {integrity: sha512-ihNT1rswiq3cy4WKQAV5kJi6UjWX1vLUzlLc+Vvq83G8CU9nMgfDWz5f1tOnSlS8LeC4Wp4qTB3+HGj/ccUrFQ==}
     engines: {node: '>=20'}
     hasBin: true
+
+  '@vercel/speed-insights@2.0.0':
+    resolution: {integrity: sha512-jwkNcrTeafWxjmWq4AHBaptSqZiJkYU5adLC9QBSqeim0GcqDMgN5Ievh8OG1rJ6W3A4l1oiP7qr9CWxGuzu3w==}
+    peerDependencies:
+      '@sveltejs/kit': ^1 || ^2
+      next: '>= 13'
+      nuxt: '>= 3'
+      react: ^18 || ^19 || ^19.0.0-rc
+      svelte: '>= 4'
+      vue: ^3
+      vue-router: ^4
+    peerDependenciesMeta:
+      '@sveltejs/kit':
+        optional: true
+      next:
+        optional: true
+      nuxt:
+        optional: true
+      react:
+        optional: true
+      svelte:
+        optional: true
+      vue:
+        optional: true
+      vue-router:
+        optional: true
 
   '@vitejs/plugin-vue-jsx@5.1.4':
     resolution: {integrity: sha512-70LmoVk9riR7qc4W2CpjsbNMWTPnuZb9dpFKX1emru0yP57nsc9k8nhLA6U93ngQapv5VDIUq2JatNfLbBIkrA==}
@@ -9474,6 +9503,12 @@ snapshots:
       - encoding
       - rollup
       - supports-color
+
+  '@vercel/speed-insights@2.0.0(nuxt@4.3.1(@parcel/watcher@2.5.6)(@types/node@25.3.0)(@upstash/redis@1.37.0)(@vue/compiler-sfc@3.5.41)(@vue/language-core@3.2.5)(cac@6.7.14)(db0@0.3.4)(ioredis@5.9.3)(magicast@0.5.2)(oxlint@1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@opentelemetry/api@1.9.0)(@types/node@25.3.0)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3(vitest@5.0.3))(@vue/language-core@3.2.5)(esbuild@0.27.3)(jiti@2.6.1)(jsdom@28.1.0)(terser@5.46.0)(typescript@5.9.3)(yaml@2.8.2)))(rolldown@1.2.13)(rollup@4.59.0)(terser@5.46.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.0)(yaml@2.8.2))(yaml@2.8.2))(vue-router@4.6.4(vue@3.5.28(typescript@5.9.3)))(vue@3.5.28(typescript@5.9.3))':
+    optionalDependencies:
+      nuxt: 4.3.1(@parcel/watcher@2.5.6)(@types/node@25.3.0)(@upstash/redis@1.37.0)(@vue/compiler-sfc@3.5.41)(@vue/language-core@3.2.5)(cac@6.7.14)(db0@0.3.4)(ioredis@5.9.3)(magicast@0.5.2)(oxlint@1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@opentelemetry/api@1.9.0)(@types/node@25.3.0)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3(vitest@5.0.3))(@vue/language-core@3.2.5)(esbuild@0.27.3)(jiti@2.6.1)(jsdom@28.1.0)(terser@5.46.0)(typescript@5.9.3)(yaml@2.8.2)))(rolldown@1.2.13)(rollup@4.59.0)(terser@5.46.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.46.0)(yaml@2.8.2))(yaml@2.8.2)
+      vue: 3.5.28(typescript@5.9.3)
+      vue-router: 4.6.4(vue@3.5.28(typescript@5.9.3))
 
   '@vitejs/plugin-vue-jsx@5.1.4(@voidzero-dev/vite-plus-core@1.1.0(@types/node@25.3.0)(@vue/language-core@3.2.5)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.46.0)(typescript@5.9.3)(yaml@2.8.2))(vue@3.5.28(typescript@5.9.3))':
     dependencies:
