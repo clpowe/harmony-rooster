@@ -72,28 +72,24 @@
    by element defaults and the old hero stylesheet. Keep them local to this block. */
 .new-hero h2 {
   font-size: 1.5em;
+  color: var(--clr-neutral-100);
 }
 .new-hero .hero__art {
-  grid-row: 1 / span 2;
-  grid-column: 1;
-  z-index: -10;
-  opacity: 0.1;
-  height: 25cqh;
-  justify-self: end;
-  margin-right: -25%;
+  display: block;
+  width: auto;
+  height: 5rem;
+  margin-bottom: var(--space-300);
 }
-@media (width >= 400px) {
-  .new-hero .hero__art {
-    margin-right: -10%;
-  }
+/* The SVG ships with a 20% group opacity and dark fills; invert for the dark overlay. */
+.new-hero .hero__art g {
+  opacity: 1;
+}
+.new-hero .hero__art path {
+  fill: var(--clr-neutral-100);
 }
 @media (width >= 768px) {
   .new-hero .hero__art {
-    justify-self: center;
-    margin-right: 30%;
-    height: 15rem;
-    margin-top: -10%;
-    grid-row: 2;
+    height: 7rem;
   }
 }
 
