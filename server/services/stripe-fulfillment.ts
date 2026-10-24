@@ -3,6 +3,7 @@ import { AirtableTs, type Table } from "airtable-ts";
 import Stripe from "stripe";
 import { AIRTABLE_BASE_ID, AIRTABLE_TABLE_IDS } from "../../shared/constants/airtable";
 import { captureServerError, createRequestLogger, createServerLogger } from "../utils/logger";
+import { useServerStripe } from "../utils/stripe";
 import { createError } from "h3";
 import type {
   StripeWebhookRefundEvent,
@@ -37,6 +38,8 @@ return 0
 
 type H3Event = any;
 let redisClient: Redis | null = null;
+// SubtleCrypto verifies signatures on Node and Workers alike; Node's sync crypto is unavailable on Workers.
+const webhookCryptoProvider = Stripe.createSubtleCryptoProvider();
 const fulfillmentLogger = createServerLogger({
   defaults: {
     source: "stripe-fulfillment",
@@ -183,10 +186,7 @@ export const stripeFulfillmentDependencies: FulfillmentDependencies = {
     return redisClient;
   },
   getRuntimeConfig: (event) => useRuntimeConfig(event) as SafeRuntimeConfig,
-  getStripeClient: async (event) => {
-    const { useServerStripe } = await import("#stripe/server");
-    return useServerStripe(event);
-  },
+  getStripeClient: async (event) => useServerStripe(event),
   sendReceiptEmail,
 };
 
@@ -242,7 +242,13 @@ export async function verifyStripeWebhook(
   }
 
   try {
-    const stripeEvent = stripe.webhooks.constructEvent(rawBody, signature, secret);
+    const stripeEvent = await stripe.webhooks.constructEventAsync(
+      rawBody,
+      signature,
+      secret,
+      undefined,
+      webhookCryptoProvider,
+    );
     logger.info("Verified Stripe webhook signature", {
       eventId: stripeEvent.id,
       eventType: stripeEvent.type,

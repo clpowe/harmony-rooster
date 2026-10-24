@@ -84,6 +84,9 @@ pnpm dev:all
 `pnpm stripe:listen` runs the forwarder alone. It forwards all snapshot events to
 `http://harmony-rooster.localhost:1355/api/stripe/webhook`.
 
+Set `NUXT_STRIPE_SECRET_KEY` in `.env` to your Stripe test secret key. It is read at
+runtime, so production sets it as a deployment environment variable.
+
 Set `NUXT_STRIPE_WEBHOOK_SECRET_KEY` in `.env` to the signing secret printed by
 `stripe listen`, then restart the dev server so Nuxt loads the new value. If the
 Stripe CLI fails with `api_key_expired`, run `stripe login` again.

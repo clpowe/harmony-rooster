@@ -78,7 +78,6 @@ export default defineNuxtConfig({
     "@vee-validate/nuxt",
     "nuxt-security",
     "@nuxt/fonts",
-    "@unlok-co/nuxt-stripe",
     "@posthog/nuxt",
     "@vercel/speed-insights/nuxt",
     "@vercel/analytics",
@@ -90,6 +89,7 @@ export default defineNuxtConfig({
     posthogLogEndpoint: `${posthogHost}/i/v1/logs`,
     posthogProjectApiKey,
     posthogServerLogEnabled,
+    stripeSecretKey: "",
     stripeWebhookSecretKey: "",
     resendApiKey: "",
     public: {
@@ -126,12 +126,6 @@ export default defineNuxtConfig({
       enabled: true,
       project: process.env.POSTHOG_PROJECTID,
       personalApiKey: process.env.POSTHOG_KEY ?? "",
-    },
-  },
-  stripe: {
-    server: {
-      key: process.env.STRIPE_SECRET_KEY,
-      options: {},
     },
   },
   vite: {

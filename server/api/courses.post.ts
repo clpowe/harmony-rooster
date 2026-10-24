@@ -1,7 +1,7 @@
-import { useServerStripe } from "#stripe/server";
 import { AirtableTs } from "airtable-ts";
 import * as z from "zod";
 import { issueReceiptAccess } from "../services/registration-outcome";
+import { useServerStripe } from "../utils/stripe";
 import {
   checkoutSessionsTable,
   customersTable,
@@ -40,7 +40,7 @@ function getConfiguredSiteOrigin(siteUrl: string | undefined): string | null {
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
-  const stripe = await useServerStripe(event);
+  const stripe = useServerStripe(event);
 
   if (!config.airtableKey) {
     throw createError({

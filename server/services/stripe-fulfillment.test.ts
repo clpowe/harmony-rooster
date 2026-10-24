@@ -288,13 +288,13 @@ function createRefund(overrides: Partial<Stripe.Refund> = {}): Stripe.Refund {
 function createDependencies(options?: {
   airtable?: FakeAirtable;
   checkoutSession?: Stripe.Checkout.Session;
-  constructEvent?: ReturnType<typeof vi.fn>;
+  constructEventAsync?: ReturnType<typeof vi.fn>;
 }) {
   const redis = new FakeRedis();
   const airtable = options?.airtable ?? new FakeAirtable();
   const checkoutSession = options?.checkoutSession ?? createCheckoutSession();
   const retrieve = vi.fn().mockResolvedValue(checkoutSession);
-  const constructEvent = options?.constructEvent ?? vi.fn();
+  const constructEventAsync = options?.constructEventAsync ?? vi.fn();
   const refundCreate = vi.fn(
     async (params: Stripe.RefundCreateParams, _options?: Stripe.RequestOptions) =>
       createRefund({
@@ -345,7 +345,7 @@ function createDependencies(options?: {
             list: refundList,
           },
           webhooks: {
-            constructEvent,
+            constructEventAsync,
           },
         }) as never,
     ),
@@ -354,7 +354,7 @@ function createDependencies(options?: {
 
   return {
     airtable,
-    constructEvent,
+    constructEventAsync,
     dependencies,
     redis,
     refundCreate,
@@ -429,8 +429,8 @@ describe("verifyStripeWebhook", () => {
       id: "evt_123",
       type: "checkout.session.completed",
     } as Stripe.Event;
-    const constructEvent = vi.fn().mockReturnValue(stripeEvent);
-    const { dependencies } = createDependencies({ constructEvent });
+    const constructEventAsync = vi.fn().mockResolvedValue(stripeEvent);
+    const { dependencies } = createDependencies({ constructEventAsync });
 
     const result = await verifyStripeWebhook(
       {
@@ -441,7 +441,13 @@ describe("verifyStripeWebhook", () => {
     );
 
     expect(result).toBe(stripeEvent);
-    expect(constructEvent).toHaveBeenCalledWith("raw=request-body", "sig_test", WEBHOOK_SECRET);
+    expect(constructEventAsync).toHaveBeenCalledWith(
+      "raw=request-body",
+      "sig_test",
+      WEBHOOK_SECRET,
+      undefined,
+      expect.any(Object),
+    );
   });
 
   it.each([
@@ -452,7 +458,7 @@ describe("verifyStripeWebhook", () => {
     { label: "the whsec_ prefix and whitespace", secret: "whsec_ " },
     { label: "a placeholder", secret: "whsec_changeme" },
   ])("fails closed with a 500 when the webhook secret is $label", async ({ secret }) => {
-    const { dependencies, constructEvent } = createDependencies();
+    const { dependencies, constructEventAsync } = createDependencies();
     dependencies.getRuntimeConfig = () =>
       ({
         airtableKey: "airtable_test_key",
@@ -471,13 +477,13 @@ describe("verifyStripeWebhook", () => {
       message: "Stripe webhook secret is not configured",
       statusCode: 500,
     });
-    expect(constructEvent).not.toHaveBeenCalled();
+    expect(constructEventAsync).not.toHaveBeenCalled();
   });
 
   it("trims the configured secret before constructing the event", async () => {
     const stripeEvent = { id: "evt_123", type: "checkout.session.completed" } as Stripe.Event;
-    const constructEvent = vi.fn().mockReturnValue(stripeEvent);
-    const { dependencies } = createDependencies({ constructEvent });
+    const constructEventAsync = vi.fn().mockResolvedValue(stripeEvent);
+    const { dependencies } = createDependencies({ constructEventAsync });
     dependencies.getRuntimeConfig = () =>
       ({
         airtableKey: "airtable_test_key",
@@ -493,14 +499,20 @@ describe("verifyStripeWebhook", () => {
     );
 
     expect(result).toBe(stripeEvent);
-    expect(constructEvent).toHaveBeenCalledWith("raw=request-body", "sig_test", WEBHOOK_SECRET);
+    expect(constructEventAsync).toHaveBeenCalledWith(
+      "raw=request-body",
+      "sig_test",
+      WEBHOOK_SECRET,
+      undefined,
+      expect.any(Object),
+    );
   });
 
   it("returns a safe 400 error when signature verification fails", async () => {
-    const constructEvent = vi.fn(() => {
+    const constructEventAsync = vi.fn(async () => {
       throw new Error("signature mismatch");
     });
-    const { dependencies } = createDependencies({ constructEvent });
+    const { dependencies } = createDependencies({ constructEventAsync });
 
     await expect(
       verifyStripeWebhook(

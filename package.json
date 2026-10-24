@@ -46,7 +46,6 @@
     "@nuxt/image": "^1.11.0",
     "@nuxt/kit": "^4.6.2",
     "@nuxt/schema": "^4.6.2",
-    "@unlok-co/nuxt-stripe": "5.0.0",
     "@vitest/coverage-v8": "5.0.3",
     "concurrently": "^10.0.6",
     "nuxt": "^4.6.2",

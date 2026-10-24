@@ -7,6 +7,7 @@ import type {
   RegistrationState,
 } from "../../shared/types/registration-outcome";
 import { sessionDetailsTable } from "../data/airtable-tables";
+import { useServerStripe } from "../utils/stripe";
 import {
   getFulfillmentRecordKey,
   readFulfillmentRecord,
@@ -28,9 +29,7 @@ export type RegistrationOutcomeDependencies = {
 function productionDependencies(event: H3Event): RegistrationOutcomeDependencies {
   return {
     async retrieveCheckout(id) {
-      const { useServerStripe } = await import("#stripe/server");
-      const stripe = await useServerStripe(event);
-      return stripe.checkout.sessions.retrieve(id, {
+      return useServerStripe(event).checkout.sessions.retrieve(id, {
         expand: ["payment_intent.payment_method", "payment_intent.latest_charge"],
       });
     },
