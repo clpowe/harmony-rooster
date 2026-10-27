@@ -1,0 +1,30 @@
+# Vercel CLI uploads ignore .gitignore, so mirror it here.
+# Stale local build output (.nuxt/.output) broke CLI deploys with mismatched build IDs.
+
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+coverage
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files (set env vars in the Vercel dashboard instead)
+.env
+.env.*
+.envrc
+.fallow/
+.vercel
