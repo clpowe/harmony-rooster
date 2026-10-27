@@ -62,13 +62,14 @@ bun run dev
 
 ## Airtable environments
 
-`pnpm dev` and `pnpm dev:all` use **Course Registration (Dev)**
-(`appfunxpZDINDA3tq`). Production builds and previews use the existing production
-base (`apptCFjP3Ns4FdGGi`). The selection lives in `shared/constants/airtable.ts`
+`pnpm dev`, `pnpm dev:all` and Vercel preview deployments (`VERCEL_ENV=preview`) use
+**Course Registration (Dev)** (`appfunxpZDINDA3tq`). Production deployments use the
+existing production base (`apptCFjP3Ns4FdGGi`). The selection lives in `shared/constants/airtable.ts`
 and applies to courses, sessions, customers, registrations, and session lock keys.
 Both bases use the same table IDs and field names.
 
-The local `NUXT_AIRTABLE_KEY` in `.env` must have access to the Development base.
+The local `NUXT_AIRTABLE_KEY` in `.env` and the Preview `NUXT_AIRTABLE_KEY` in Vercel
+must have access to the Development base.
 Restart the dev server after changing credentials. Keep production deployment
 credentials configured separately.
 
