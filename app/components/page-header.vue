@@ -60,7 +60,9 @@ watch(() => route.fullPath, closeNav);
         </ul>
 
         <div class="nav-actions cluster">
-          <AppButton href="/#contact" @click="closeNav">Apply now</AppButton>
+          <AppButton href="https://applynow.apd.myflorida.com/" @click="closeNav"
+            >Apply now</AppButton
+          >
           <AppButton href="tel:+18134340447" variant="accent">
             <template #icon-start><AppIcon name="lucide:phone" /></template>
             813-434-0447

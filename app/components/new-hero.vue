@@ -85,8 +85,8 @@
         <div class="link apply">
           <h3>Apply for Care</h3>
           <p>Nursing and Foster Home For Individuals with developmental disabilities.</p>
-          <AppButton href="#courses" variant="inverse" size="small">
-            All courses
+          <AppButton href="https://applynow.apd.myflorida.com/" variant="inverse" size="small">
+            Apply for care
             <template #icon-end><AppIcon name="lucide:arrow-right" /></template>
           </AppButton>
         </div>
