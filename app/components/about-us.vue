@@ -1,11 +1,17 @@
 <template>
   <AppPanel id="about-us" class="wrapper about" aria-labelledby="about-us-title">
     <div class="split about-layout">
-      <img
-        src="/asiannurse.jpg"
-        alt="Caregiver providing in-home nursing support to a client"
-        width="7728"
-        height="5152"
+      <!-- Nuxt Image v1's inline SSR error handler conflicts with the site's CSP. -->
+      <NuxtImg
+        :onerror="undefined"
+        src="/about-us.webp"
+        alt="Five adults playing a board game together around a table in a bright living room."
+        width="1254"
+        height="1254"
+        sizes="320:80vw sm:85vw 896:40vw xl:43vw 1480:616px"
+        densities="x1 x2"
+        format="webp"
+        quality="82"
         loading="lazy"
         decoding="async"
         class="about-image"
@@ -49,7 +55,7 @@
   .about-image {
     inline-size: 100%;
     block-size: auto;
-    aspect-ratio: var(--ratio-photo);
+    aspect-ratio: 1;
     object-fit: cover;
     border-radius: var(--radius-nested);
   }

@@ -13,8 +13,8 @@ const companyLinks = [
 ];
 
 const legalLinks = [
-  { label: "Privacy", to: "/#privacy" },
-  { label: "Accessibility", to: "/#accessibility" },
+  { label: "Privacy", to: "/privacy-accessibility#privacy" },
+  { label: "Accessibility", to: "/privacy-accessibility#accessibility" },
 ];
 </script>
 

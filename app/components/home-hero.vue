@@ -6,7 +6,7 @@ import Rooster from "@/assets/icons/icon-rooster.svg";
   <new-hero></new-hero>
   <section class="hero">
     <div class="hero__body">
-      <Typography tag="h1" variant="heading-small" uppercase class=""
+      <Typography tag="h1" variant="heading-small" class=""
         >Home Care & Residential Habilitation in Riverview/Brandon</Typography
       >
       <Typography tag="h2" uppercase variant="heading-2xl">

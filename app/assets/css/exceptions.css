@@ -70,7 +70,8 @@
 
 /* Existing hero eyebrow and decorative mark were previously supplied implicitly
    by element defaults and the old hero stylesheet. Keep them local to this block. */
-.new-hero h2 {
+.new-hero h1 {
+  max-width: 36ch;
   font-size: 1.5em;
   color: var(--clr-neutral-100);
 }
