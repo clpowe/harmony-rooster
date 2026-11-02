@@ -1,6 +1,15 @@
 <template>
   <section class="new-hero wrapper">
-    <NuxtImg class="image" src="caregiver-and-senior-woman-laughing-together.jpg" />
+    <NuxtImg
+      class="image"
+      src="/caregiver-and-senior-woman-laughing-together.webp"
+      width="2400"
+      height="1635"
+      sizes="sm:960px lg:100vw 2xl:1440px"
+      alt="A caregiver in blue scrubs and an older woman in a cream cardigan sit side by side on a couch, holding hands and laughing together."
+      fetchpriority="high"
+      loading="eager"
+    />
     <div class="overlay"></div>
     <div class="content flow">
       <svg
