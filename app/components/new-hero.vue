@@ -85,14 +85,14 @@
           </clipPath>
         </defs>
       </svg>
-      <h2 class="">Home care & residential habilitation</h2>
+      <h1>Home care for adults with disabilities in Riverview & Brandon, FL</h1>
       <p>Care you can <span>trust</span></p>
     </div>
 
     <div class="section-2">
       <div class="actions">
         <div class="link apply">
-          <h3>Apply for Care</h3>
+          <h2>Apply for Care</h2>
           <p>Nursing and Foster Home For Individuals with developmental disabilities.</p>
           <AppButton href="https://applynow.apd.myflorida.com/" variant="inverse" size="small">
             Apply for care
@@ -101,7 +101,7 @@
         </div>
 
         <div class="link train">
-          <h3>Caregiver training</h3>
+          <h2>Caregiver training</h2>
           <p>Medication Administration Provider training for direct-care professionals</p>
           <AppButton href="#courses" variant="secondary" size="small">
             All courses
@@ -239,7 +239,7 @@
         border-radius: var(--radius-300);
         padding: var(--space-500);
 
-        h3 {
+        h2 {
           margin: 0;
           color: inherit;
           font-size: var(--text-compact-heading);
