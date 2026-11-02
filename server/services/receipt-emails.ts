@@ -1,7 +1,9 @@
 import { Resend } from "resend";
 import { render } from "@vue-email/render";
-import { defineComponent, h, type PropType } from "vue";
+import { ReceiptEmail } from "./receipt-email-template";
 import type { H3Event } from "h3";
+
+const PRODUCTION_SITE_URL = "https://www.harmonyroosters.com";
 
 export type ReceiptEmailInput = {
   to: string;
@@ -17,72 +19,13 @@ export type ReceiptEmailInput = {
   idempotencyKey: string;
 };
 
-const ReceiptEmail = defineComponent({
-  name: "ReceiptEmail",
-  props: {
-    amountFormatted: {
-      default: "",
-      type: String,
-    },
-    firstName: {
-      required: true,
-      type: String,
-    },
-    receiptUrl: {
-      default: null,
-      type: String as PropType<string | null>,
-    },
-    registrationId: {
-      required: true,
-      type: String,
-    },
-    sessionDate: {
-      required: true,
-      type: String,
-    },
-    sessionLocation: {
-      required: true,
-      type: String,
-    },
-    sessionName: {
-      required: true,
-      type: String,
-    },
-    sessionTime: {
-      required: true,
-      type: String,
-    },
-    supportEmail: {
-      required: true,
-      type: String,
-    },
-  },
-  setup(props) {
-    return () =>
-      h("html", [
-        h("body", [
-          h("h1", `Receipt for ${props.sessionName}`),
-          h("p", `Hi ${props.firstName}, your registration is confirmed.`),
-          h("p", `Date: ${props.sessionDate}`),
-          h("p", `Time: ${props.sessionTime}`),
-          h("p", `Location: ${props.sessionLocation}`),
-          h("p", `Amount paid: ${props.amountFormatted}`),
-          h("p", `Registration ID: ${props.registrationId}`),
-          props.receiptUrl
-            ? h("p", [h("a", { href: props.receiptUrl }, "View Stripe receipt")])
-            : null,
-          h("p", `Questions? Contact ${props.supportEmail}.`),
-        ]),
-      ]);
-  },
-});
-
 export type ReceiptEmailDependencies = {
   getRuntimeConfig: (event: H3Event) => {
     resendApiKey: string;
     public: {
       contactFromEmail: string;
       receiptFromEmail?: string;
+      siteUrl?: string;
     };
   };
   getResendClient: (apiKey: string) => {
@@ -106,22 +49,11 @@ export async function sendReceiptEmail(
     throw new Error("Receipt email dependencies not configured");
   }
 
-  const props = {
-    firstName: receipt.firstName,
-    sessionName: receipt.sessionName,
-    sessionDate: receipt.sessionDate,
-    sessionTime: receipt.sessionTime,
-    sessionLocation: receipt.sessionLocation,
-    amountFormatted: formatAmount(receipt.amountMinor, receipt.currency),
-    receiptUrl: receipt.receiptUrl,
-    registrationId: receipt.registrationId,
-    supportEmail: config.public.contactFromEmail || "contact@harmonyroosters.com",
-  };
-
-  const [html, text] = await Promise.all([
-    render(ReceiptEmail as any, props),
-    render(ReceiptEmail as any, props, { plainText: true }),
-  ]);
+  const { subject, html, text } = await renderReceiptEmail(
+    receipt,
+    config.public.contactFromEmail || "contact@harmonyroosters.com",
+    config.public.siteUrl || PRODUCTION_SITE_URL,
+  );
 
   const resend = deps.getResendClient(config.resendApiKey);
   const payload = {
@@ -130,7 +62,7 @@ export async function sendReceiptEmail(
       config.public.contactFromEmail ||
       "contact@harmonyroosters.com",
     to: receipt.to,
-    subject: `Receipt for ${receipt.sessionName} - ${receipt.sessionDate}`.replace(/[\r\n]+/g, " "),
+    subject,
     html,
     text,
   };
@@ -147,6 +79,37 @@ export async function sendReceiptEmail(
   }
 
   return { id: response.data.id };
+}
+
+/** Renders the receipt email without sending it. Used by sendReceiptEmail and the dev preview route. */
+export async function renderReceiptEmail(
+  receipt: Omit<ReceiptEmailInput, "to" | "idempotencyKey">,
+  supportEmail: string,
+  siteUrl: string,
+): Promise<{ subject: string; html: string; text: string }> {
+  const props = {
+    firstName: receipt.firstName,
+    sessionName: receipt.sessionName,
+    sessionDate: receipt.sessionDate,
+    sessionTime: receipt.sessionTime,
+    sessionLocation: receipt.sessionLocation,
+    amountFormatted: formatAmount(receipt.amountMinor, receipt.currency),
+    receiptUrl: receipt.receiptUrl,
+    registrationId: receipt.registrationId,
+    supportEmail,
+    logoUrl: new URL("/email/logo.png", siteUrl).href,
+  };
+
+  const [html, text] = await Promise.all([
+    render(ReceiptEmail as any, props),
+    render(ReceiptEmail as any, props, { plainText: true }),
+  ]);
+
+  return {
+    subject: `Receipt for ${receipt.sessionName} - ${receipt.sessionDate}`.replace(/[\r\n]+/g, " "),
+    html,
+    text,
+  };
 }
 
 function formatAmount(amountMinor: number | null, currency: string | null): string {

@@ -7,7 +7,7 @@ import type { ReceiptStatus } from "@utils/receipt-status";
 
 definePageMeta({
   layout: false,
-  key: (route) => String(route.query.session_id ?? ""),
+  key: (route) => `${route.query.session_id ?? ""}:${route.query.preview ?? ""}`,
 });
 
 useHead({
@@ -20,7 +20,15 @@ useHead({
 });
 
 const route = useRoute();
-const sessionId = typeof route.query.session_id === "string" ? route.query.session_id : "";
+// Dev-only: /success?preview=<state> renders fixture data without a real checkout.
+const previewState =
+  import.meta.dev && typeof route.query.preview === "string" ? route.query.preview : "";
+const sessionId =
+  typeof route.query.session_id === "string"
+    ? route.query.session_id
+    : previewState
+      ? "cs_test_preview1234"
+      : "";
 const {
   data: checkoutData,
   error,
@@ -29,7 +37,7 @@ const {
   token,
   refresh: refreshCheckoutData,
   autoRefreshFinished,
-} = useRegistrationReceipt(sessionId);
+} = previewState ? useReceiptPreview(previewState) : useRegistrationReceipt(sessionId);
 const isConfirmed = computed(() => checkoutData.value?.registration.state === "confirmed");
 const copyMessage = ref("");
 const copied = ref(false);
@@ -50,6 +58,20 @@ async function copyReceiptLink() {
 }
 
 const className = computed(() => checkoutData.value?.session?.name ?? "Class details pending");
+// Mirrors the course title split on /course/register: last words get the primary accent.
+const classTitleParts = computed(() => {
+  const words = className.value.trim().split(/\s+/);
+  const accentCount = words.length >= 4 ? 2 : words.length >= 2 ? 1 : 0;
+  return {
+    leading: words.slice(0, words.length - accentCount).join(" "),
+    accent: words.slice(words.length - accentCount).join(" "),
+  };
+});
+const directionsUrl = computed(() => {
+  const location = checkoutData.value?.session?.location;
+  if (!location) return undefined;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${location}, FL`)}`;
+});
 const orderNumber = computed(() => {
   if (!sessionId) return "Unavailable";
   return `...${sessionId.slice(-8)}`;
@@ -71,6 +93,12 @@ const receiptStatusMessage = computed(() => {
   return checkoutData.value?.registration.message ?? "Registration status unavailable.";
 });
 const retryReceiptLoad = () => refreshCheckoutData();
+// Only states where the seat is still held pending verification.
+const showSeatNote = computed(() => {
+  if (error.value || initialLoading.value) return false;
+  const state = checkoutData.value?.registration.state;
+  return state === "confirming" || state === "payment_pending" || state === "unavailable";
+});
 const headerStatus = computed<ReceiptStatus>(() => {
   if (initialLoading.value) return { label: "Loading receipt", tone: "pending", busy: true };
   if (error.value) return { label: "Status unavailable", tone: "warning", busy: false };
@@ -131,13 +159,7 @@ function formatPaymentBrand(value: string) {
 
 <template>
   <div class="success-page">
-    <header class="success-header wrapper repel" aria-label="Checkout confirmation">
-      <SiteBrand class="success-header__brand" aria-label="Harmony Roosters home" />
-      <AppButton href="/" variant="ghost" size="small" aria-label="Return to Harmony Roosters home">
-        <template #icon-start><AppIcon name="lucide:arrow-left" /></template>
-        Return home
-      </AppButton>
-    </header>
+    <PageHeader />
 
     <main class="success-main wrapper">
       <section
@@ -168,7 +190,7 @@ function formatPaymentBrand(value: string) {
         </div>
 
         <template v-else-if="checkoutData && !initialLoading">
-          <section class="receipt-section flow" aria-label="Receipt actions">
+          <section class="receipt__toolbar flow" aria-label="Receipt actions">
             <p v-if="autoRefreshFinished" role="status">
               Confirmation is taking longer than expected. You can check again or contact us for
               help.
@@ -188,19 +210,31 @@ function formatPaymentBrand(value: string) {
                 @click="copyReceiptLink"
               >
                 <template #icon-start
-                  ><AppIcon :name="copied ? 'lucide:check' : 'lucide:copy'"
+                  ><AppIcon :name="copied ? 'lucide:check' : 'lucide:mail'"
                 /></template>
                 {{ copied ? "Link copied" : "Copy receipt link" }}
               </AppButton>
-              <AppButton href="/#contact" variant="accent">Contact support</AppButton>
+              <AppButton href="/#contact" variant="accent">
+                <template #icon-start><AppIcon name="lucide:phone" /></template>
+                Contact support
+              </AppButton>
             </div>
             <p v-if="copyMessage" role="status" class="receipt__copy-message">{{ copyMessage }}</p>
           </section>
 
-          <section class="receipt-section flow" data-variant="class" aria-labelledby="class-title">
+          <section
+            class="receipt-section panel u-surface-muted flow"
+            data-variant="class"
+            aria-labelledby="class-title"
+          >
             <header class="flow receipt-section__header">
-              <h2 id="class-title" class="receipt-section__title">Class details</h2>
-              <p class="receipt-section__meta">{{ className }}</p>
+              <p class="receipt-section__meta">Class details</p>
+              <h2 id="class-title" class="receipt-section__title">
+                {{ classTitleParts.leading }}
+                <span v-if="classTitleParts.accent" class="color-primary">{{
+                  classTitleParts.accent
+                }}</span>
+              </h2>
             </header>
             <dl class="receipt__details">
               <AppDetailRow icon="lucide:calendar-days" label="Date" :value="formattedClassDate" />
@@ -213,6 +247,9 @@ function formatPaymentBrand(value: string) {
                 icon="lucide:map-pin"
                 label="Location"
                 :value="checkoutData.session?.location ?? 'Location pending'"
+                :href="directionsUrl"
+                link-label="Directions"
+                external
               />
             </dl>
           </section>
@@ -223,13 +260,27 @@ function formatPaymentBrand(value: string) {
               <p class="receipt-section__total">{{ formattedTotal }}</p>
             </div>
             <dl class="receipt__summary">
-              <AppSummaryRow label="Payment status" :value="paymentStatusLabel" />
-              <AppSummaryRow label="Payment method" :value="paymentMethod" />
+              <AppSummaryRow
+                v-if="checkoutData.registrant"
+                label="Registrant"
+                :value="checkoutData.registrant.name"
+              />
+              <AppSummaryRow label="Payment" :value="paymentMethod" />
+              <AppSummaryRow
+                label="Status"
+                :value="paymentStatusLabel"
+                :status="headerStatus.tone"
+              />
               <AppSummaryRow label="Order number" :value="orderNumber" mono />
             </dl>
           </section>
         </template>
       </section>
+
+      <p v-if="showSeatNote" class="success-note u-text-muted measure">
+        Your seat is not released while we confirm your payment. Questions? Call
+        <a href="tel:+18134340447">813-434-0447</a>.
+      </p>
     </main>
   </div>
 </template>
@@ -244,15 +295,17 @@ function formatPaymentBrand(value: string) {
     color: var(--clr-text);
   }
 
-  .success-header {
-    padding-block: var(--space-500);
-  }
-  .success-header__brand {
-    --site-brand-wordmark-width: clamp(9.8rem, 20vw, 12.25rem);
-  }
   .success-main {
     --wrapper-max: var(--measure-narrow);
     padding-block: var(--space-panel) var(--space-section);
+  }
+
+  .success-note {
+    margin-block-start: var(--space-500);
+    margin-inline: auto;
+    font-size: var(--text-small);
+    line-height: var(--lh-body);
+    text-align: center;
   }
 
   .receipt {
@@ -265,7 +318,12 @@ function formatPaymentBrand(value: string) {
   .receipt-section {
     --flow-space: var(--space-400);
     padding: var(--space-600) var(--space-panel);
-    border-block-start: var(--border-width) solid var(--clr-border);
+  }
+
+  /* Actions sit directly under the header copy, sharing its inline padding. */
+  .receipt__toolbar {
+    --flow-space: var(--space-400);
+    padding: 0 var(--space-panel) var(--space-600);
   }
 
   .receipt-section__header {
@@ -282,14 +340,14 @@ function formatPaymentBrand(value: string) {
 
   .receipt-section__meta {
     color: var(--clr-text-muted);
-    font-size: var(--text-body);
-    line-height: var(--lh-body);
+    font-size: var(--text-caption);
+    line-height: var(--lh-snug);
   }
 
   .receipt-section__total {
-    color: var(--clr-primary-500);
-    font-size: var(--text-heading-3);
-    font-weight: var(--fw-medium);
+    color: var(--clr-text);
+    font-size: var(--text-heading-2);
+    font-weight: var(--fw-regular);
     line-height: var(--lh-snug);
     letter-spacing: var(--tracking-heading);
   }
@@ -298,6 +356,9 @@ function formatPaymentBrand(value: string) {
   .receipt__summary {
     display: grid;
   }
+  .receipt__details {
+    border-block-start: var(--border-width) solid var(--clr-border);
+  }
   .receipt__actions {
     --cluster-gap: var(--space-300);
   }
@@ -305,20 +366,19 @@ function formatPaymentBrand(value: string) {
     color: var(--clr-text-muted);
     font-size: var(--text-small);
   }
-
-  @media (width < 34em) {
-    .success-header {
-      --repel-align: flex-start;
-    }
-    .success-header__brand {
-      --site-brand-wordmark-width: 9.2rem;
-    }
-  }
 }
 
 @layer exceptions {
+  /* Inset muted card (bg + radius come from .panel.u-surface-muted). */
   .receipt-section[data-variant="class"] {
-    background: color-mix(in srgb, var(--clr-primary-100) 20%, var(--clr-surface));
+    --detail-icon-bg: var(--clr-surface);
+    margin-inline: var(--space-400);
+    padding: var(--space-600) var(--space-500);
+  }
+
+  .receipt-section[data-variant="class"] .receipt-section__title {
+    font-size: var(--text-heading-2);
+    font-weight: var(--fw-regular);
   }
 }
 </style>

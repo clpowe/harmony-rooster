@@ -4,7 +4,7 @@ const navId = "primary-nav";
 const navLinks = [
   { label: "Our Services", to: "/#our-services" },
   { label: "About Us", to: "/#about-us" },
-  { label: "Courses", to: "/#courses" },
+  { label: "Courses", to: "/courses" },
   { label: "FAQ", to: "/#faq" },
 ];
 

@@ -118,6 +118,15 @@ const outcomes: Record<RegistrationState, RegistrationOutcome["registration"]> =
   },
 };
 
+/** Full name from checkout metadata written by POST /api/courses. */
+function registrantName(metadata: Stripe.Metadata | null): string | null {
+  const name = [metadata?.first_name, metadata?.last_name]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
+  return name || null;
+}
+
 function registrationState(
   checkout: Stripe.Checkout.Session,
   record: FulfillmentRecord | null,
@@ -208,8 +217,10 @@ export async function loadRegistrationOutcome(
   const state = registrationState(checkout, record, storageAvailable, dependencies.now());
   const intent = typeof checkout.payment_intent === "object" ? checkout.payment_intent : null;
   const method = typeof intent?.payment_method === "object" ? intent.payment_method : null;
+  const name = registrantName(checkout.metadata);
   return {
     registration: { ...outcomes[state] },
+    registrant: name ? { name } : null,
     payment: {
       status: checkout.payment_status,
       brand: method?.card?.brand ?? null,

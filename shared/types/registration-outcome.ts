@@ -15,6 +15,8 @@ export type RegistrationOutcome = {
     message: string;
     canRefresh: boolean;
   };
+  /** Name entered at registration; only returned after receipt-token verification. */
+  registrant: { name: string } | null;
   payment: {
     status: string;
     brand: string | null;

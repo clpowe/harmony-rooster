@@ -10,6 +10,11 @@ if (process.env.NODE_ENV === "production") {
   process.env.NUXT_PUBLIC_SITE_URL = productionSiteUrl;
 }
 
+// Dev-only routes are stripped from Vercel production builds (VERCEL_ENV=production).
+// Local dev and Vercel preview (staging) deployments keep them.
+const isProductionDeployment = process.env.VERCEL_ENV === "production";
+const devOnlyRoutes = ["/design-system"];
+
 const posthogHost = process.env.NUXT_POSTHOG_HOST ?? "https://us.i.posthog.com";
 const posthogProjectApiKey =
   process.env.NUXT_POSTHOG_PROJECT_API_KEY ??
@@ -56,6 +61,14 @@ export default defineNuxtConfig({
     "/design-system": {
       robots: false,
       headers: { "X-Robots-Tag": "noindex, nofollow" },
+    },
+  },
+  hooks: {
+    "pages:extend"(pages) {
+      if (!isProductionDeployment) return;
+      for (let i = pages.length - 1; i >= 0; i--) {
+        if (devOnlyRoutes.includes(pages[i]!.path)) pages.splice(i, 1);
+      }
     },
   },
   future: {

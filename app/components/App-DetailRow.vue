@@ -5,6 +5,8 @@ defineProps<{
   value?: string | number;
   href?: string;
   linkLabel?: string;
+  /** Opens the link in a new tab and shows an outbound (↗) icon. */
+  external?: boolean;
 }>();
 </script>
 
@@ -19,7 +21,14 @@ defineProps<{
       <slot>{{ value }}</slot>
     </dd>
     <dd v-if="href" class="detail-row__link">
-      <AppTextLink :href="href">{{ linkLabel ?? "View details" }}</AppTextLink>
+      <AppTextLink
+        :href="href"
+        :icon="external ? 'lucide:arrow-up-right' : undefined"
+        :target="external ? '_blank' : undefined"
+        :rel="external ? 'noopener noreferrer' : undefined"
+        >{{ linkLabel ?? "View details"
+        }}<span v-if="external" class="visually-hidden"> (opens in new tab)</span></AppTextLink
+      >
     </dd>
   </div>
 </template>
@@ -58,7 +67,8 @@ defineProps<{
     block-size: var(--detail-icon-size);
     border-radius: var(--radius-pill);
     color: var(--clr-primary-500);
-    background: var(--clr-primary-100);
+    /* --detail-icon-bg: set on a parent surface, e.g. white circles on a muted panel. */
+    background: var(--detail-icon-bg, var(--clr-primary-100));
     transform: translateY(-50%);
   }
 

@@ -178,3 +178,7 @@ Sample registration links are intercepted and never create a checkout.
 
 The route has `noindex, nofollow` metadata and an `X-Robots-Tag` header, is excluded
 from the sitemap, and is not linked from the public navigation or footer.
+
+The page is only available locally (`pnpm dev`) and on Vercel preview (staging)
+deployments. Vercel production builds (`VERCEL_ENV=production`) remove the route
+entirely via the `pages:extend` hook in `nuxt.config.ts`, so it returns a 404.

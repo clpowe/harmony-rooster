@@ -556,19 +556,43 @@ function preventDemoNavigation(event: MouseEvent) {
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-details">
         <h3 id="ds-details" class="ds-heading">Detail row &amp; summary row</h3>
-        <p>Icon disc with label/value for class facts; two-column rows for order data.</p>
+        <p>
+          Icon disc with label/value for class facts (supports <code>--detail-icon-bg</code> for
+          muted surfaces and <code>external</code> outbound links); two-column rows for order data
+          with semantic <code>status</code> tones.
+        </p>
         <p class="ds-pages">Course · Receipt</p>
-        <dl>
+        <dl class="ds-detail-muted panel u-surface-muted">
           <AppDetailRow
+            icon="lucide:calendar-days"
+            label="Date"
+            value="Friday, October 16, 2026"
+          /><AppDetailRow
             icon="lucide:map-pin"
             label="Location"
             value="St. Mary Baptist Church"
             href="#ds-details"
             link-label="Directions"
-          /><AppSummaryRow label="Order number" value="…WD4Wjdlx" mono /><AppSummaryRow
-            label="Total"
-            value="$95.00"
+            external
           />
+        </dl>
+        <dl>
+          <AppSummaryRow label="Registrant" value="Jordan Ellis" /><AppSummaryRow
+            label="Payment"
+            value="Visa ending in 4242"
+          /><AppSummaryRow
+            label="Status (confirmed)"
+            value="Payment received"
+            status="success"
+          /><AppSummaryRow
+            label="Status (pending)"
+            value="Not yet paid"
+            status="pending"
+          /><AppSummaryRow
+            label="Status (warning)"
+            value="Review required"
+            status="warning"
+          /><AppSummaryRow label="Order number" value="…WD4Wjdlx" mono />
         </dl>
         <CourseRegistrationDetail
           icon="lucide:clock-4"
@@ -866,7 +890,7 @@ function preventDemoNavigation(event: MouseEvent) {
             <tr>
               <th scope="row">Site navigation</th>
               <td>Approved wordmark, links, Apply and phone actions; responsive menu.</td>
-              <td>Home · Course</td>
+              <td>Home · Course · Receipt</td>
             </tr>
             <tr>
               <th scope="row">Photo hero</th>
@@ -1158,6 +1182,9 @@ function preventDemoNavigation(event: MouseEvent) {
     border-radius: var(--radius-card);
     background: var(--clr-surface);
     box-shadow: var(--shadow-100);
+  }
+  .ds-detail-muted {
+    --detail-icon-bg: var(--clr-surface);
   }
   .ds-registration {
     --flow-space: var(--space-500);

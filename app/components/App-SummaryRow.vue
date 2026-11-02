@@ -4,14 +4,20 @@ withDefaults(
     label: string;
     value?: string | number;
     mono?: boolean;
+    /** Colours the value to match AppStatusPill tones. */
+    status?: "neutral" | "success" | "pending" | "warning";
   }>(),
-  { mono: false },
+  { mono: false, status: "neutral" },
 );
 </script>
 
 <template>
   <!-- A definition-list group: render this component inside a dl. -->
-  <div class="summary-row" :data-mono="mono || undefined">
+  <div
+    class="summary-row"
+    :data-mono="mono || undefined"
+    :data-status="status !== 'neutral' ? status : undefined"
+  >
     <dt class="summary-row__label">{{ label }}</dt>
     <dd class="summary-row__value">
       <slot>{{ value }}</slot>
@@ -47,6 +53,17 @@ withDefaults(
   .summary-row[data-mono] .summary-row__value {
     font-family: var(--ff-mono);
     font-size: var(--text-caption);
+  }
+
+  /* Same text colours AppStatusPill uses per tone. */
+  .summary-row[data-status="success"] .summary-row__value {
+    color: var(--clr-success-500);
+  }
+  .summary-row[data-status="pending"] .summary-row__value {
+    color: var(--clr-primary-500);
+  }
+  .summary-row[data-status="warning"] .summary-row__value {
+    color: var(--clr-accent-600);
   }
 }
 </style>
