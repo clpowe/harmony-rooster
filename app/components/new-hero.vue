@@ -135,6 +135,10 @@
     grid-column: 1/-1;
     aspect-ratio: unset;
 
+    @container hero (width <= 800px) {
+      object-position: 67% center;
+    }
+
     @container hero (width > 800px) {
       height: 100%;
       grid-row: 1/-2;
