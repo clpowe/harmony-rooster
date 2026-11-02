@@ -18,8 +18,8 @@ const stripe = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("#stripe/server", () => ({
-  useServerStripe: vi.fn(async () => stripe),
+vi.mock("../utils/stripe", () => ({
+  useServerStripe: vi.fn(() => stripe),
 }));
 
 vi.mock("airtable-ts", () => ({

@@ -45,90 +45,62 @@ const variantClass = computed((): string => {
 </template>
 
 <style scoped>
-.type {
-  color: inherit;
-}
-
-.heading-2xl {
-  font-size: clamp(var(--text-2xl), 1px + 10vw, var(--text-5xl));
-  line-height: 1em;
-
-  :deep(span:first-of-type) {
-    color: var(--primary-500);
+@layer blocks {
+  .type {
+    color: inherit;
   }
-
-  :deep(span) {
-    color: var(--accent-500);
+  :where(.heading-2xl, .heading-xl, .heading-large, .heading-medium, .heading-small) {
+    font-weight: var(--type-weight, var(--fw-regular));
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--type-leading, var(--lh-heading));
   }
-}
-
-.heading-large {
-  line-break: auto;
-  font-size: clamp(var(--text-2xl), 1px + 10vw, var(--text-4xl));
-  line-height: 1em;
-
-  :deep(span:first-of-type) {
-    color: var(--primary-500);
+  .heading-2xl {
+    font-size: var(--type-size, var(--text-display-xl));
+    line-height: 0.94;
+    letter-spacing: var(--tracking-display);
   }
-
-  :deep(span) {
-    color: var(--accent-500);
+  .heading-xl {
+    font-size: var(--type-size, var(--text-display-lg));
+    line-height: var(--lh-display);
+    letter-spacing: var(--tracking-display);
   }
-}
-
-.heading-medium {
-  line-break: auto;
-  font-size: clamp(var(--text-2xl), 1px + 10vw, var(--text-3xl));
-  line-height: 0.9em;
-  font-weight: 400;
-
-  :deep(span:first-of-type) {
-    color: var(--primary-500);
+  .heading-large {
+    font-size: var(--type-size, var(--text-heading-1));
+    line-height: var(--type-leading, 1);
   }
-
-  :deep(span) {
-    color: var(--accent-500);
+  .heading-medium {
+    font-size: var(--type-size, var(--text-heading-2));
   }
-}
-
-.heading-small {
-  line-break: auto;
-  font-size: var(--text-lg);
-  line-height: 0.9em;
-  font-weight: 400;
-
-  :deep(span:first-of-type) {
-    color: var(--primary-500);
+  .heading-small {
+    font-size: var(--type-size, var(--text-heading-4));
+    font-weight: var(--type-weight, var(--fw-medium));
   }
-
-  :deep(span) {
-    color: var(--accent-500);
+  :where(.heading-2xl, .heading-xl, .heading-large, .heading-medium, .heading-small) :deep(span) {
+    color: var(--clr-accent-500);
   }
-}
-
-.body-large {
-  max-width: 65ch;
-  line-height: 120%;
-  font-size: var(--text-lg);
-  text-wrap: balance;
-}
-
-.bodv-medium {
-  max-width: 65ch;
-  line-height: 120%;
-  font-size: var(--text-md);
-  text-wrap: balance;
-}
-
-.body-small {
-  font-size: var(--text-sm);
-}
-
-.uppercase {
-  text-transform: uppercase;
-}
-
-.bold {
-  font-weight: bold;
+  :where(.heading-2xl, .heading-xl, .heading-large, .heading-medium, .heading-small)
+    :deep(span:first-of-type) {
+    color: var(--clr-primary-500);
+  }
+  :where(.body-large, .body-medium, .body-small) {
+    max-inline-size: var(--measure-readable);
+    line-height: var(--lh-body);
+  }
+  .body-large {
+    font-size: var(--text-body-lg);
+  }
+  .body-medium {
+    font-size: var(--text-body);
+  }
+  .body-small {
+    font-size: var(--text-small);
+  }
+  .uppercase {
+    text-transform: var(--type-transform, uppercase);
+    letter-spacing: var(--type-tracking, var(--tracking-eyebrow));
+  }
+  .bold {
+    font-weight: var(--fw-semibold);
+  }
 }
 </style>

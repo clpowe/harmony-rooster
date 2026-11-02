@@ -1,0 +1,21 @@
+.panel {
+  padding: var(--space-panel);
+  background-color: var(--panel-background, var(--clr-surface));
+  border-radius: var(--radius-panel);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-100);
+  padding: var(--space-100) var(--space-300);
+  font-family: var(--ff-mono);
+  font-size: var(--text-caption);
+  line-height: var(--lh-snug);
+  color: var(--clr-primary-500);
+  background-color: var(--clr-primary-100);
+  border-radius: var(--radius-pill);
+}
+.tag .icon {
+  --icon-size: 1em;
+}

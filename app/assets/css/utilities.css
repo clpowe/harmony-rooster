@@ -1,0 +1,37 @@
+.visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.u-list-reset {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.color-primary {
+  color: var(--clr-primary-500);
+}
+.color-accent {
+  color: var(--clr-accent-400);
+}
+.u-text-muted {
+  color: var(--clr-text-muted);
+}
+.u-surface-muted {
+  --panel-background: var(--clr-surface-muted);
+  background-color: var(--clr-surface-muted);
+}
+.u-width-full {
+  width: 100%;
+}
+.measure {
+  max-inline-size: var(--measure-readable);
+}

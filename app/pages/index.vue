@@ -7,22 +7,20 @@ useSeoMeta({
 </script>
 
 <template>
-  <main class="l-container l-flow">
-    <HomeHero></HomeHero>
+  <main class="home-page flow">
+    <new-hero></new-hero>
     <our-services />
     <about-us />
     <Courses />
     <FAQSection />
-    <ContactSection />
+    <ApplyBand />
   </main>
 </template>
 
 <style scoped>
-main > * + * {
-  --flow-space: var(--space-sm);
-
-  @media (min-width: 768px) {
-    --flow-space: var(--space-xxl);
+@layer blocks {
+  .home-page {
+    --flow-space: var(--space-section);
   }
 }
 </style>

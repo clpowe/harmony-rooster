@@ -3,22 +3,15 @@ import Rooster from "@/assets/icons/icon-rooster.svg";
 </script>
 
 <template>
+  <new-hero></new-hero>
   <section class="hero">
-    <Rooster
-      src="../assets/images/Rooster.svg"
-      alt=""
-      aria-hidden="true"
-      :fontControlled="false"
-      class="hero__art"
-    />
     <div class="hero__body">
       <Typography tag="h1" variant="heading-small" uppercase class=""
         >Home Care & Residential Habilitation in Riverview/Brandon</Typography
       >
       <Typography tag="h2" uppercase variant="heading-2xl">
         Care you can
-        <span>Trust</span> in
-        <span>your Home</span>
+        <span>Trust</span>
       </Typography>
     </div>
     <div class="hero__lede">
@@ -28,96 +21,74 @@ import Rooster from "@/assets/icons/icon-rooster.svg";
       >
       <div class="hero__actions">
         <NuxtLink
-          class="button button--lg button--primary"
+          class="button"
+          data-size="large"
+          data-variant="primary"
           to="https://applynow.apd.myflorida.com/"
         >
           Apply For Services
         </NuxtLink>
-        <NuxtLink class="button button--lg button--secondary" to="/#contact"> Contact us </NuxtLink>
+        <NuxtLink class="button" data-size="large" data-variant="secondary" to="/#contact">
+          Contact us
+        </NuxtLink>
       </div>
     </div>
   </section>
 </template>
 
-<style>
-.hero {
-  display: grid;
-  position: relative;
-  grid-template-columns: 1fr;
-  gap: var(--space-md);
-  margin-block: var(--space-lg) var(--space-xl);
-  container-type: inline-size;
-  color: var(--text-1);
-
-  @media (min-width: 768px) {
-    gap: var(--space-xl);
-  }
-}
-
-.hero__art {
-  grid-row: 1 / span 2;
-  grid-column: 1;
-  z-index: -10;
-  opacity: 0.1;
-  height: 25cqh;
-  justify-self: end;
-  margin-right: -25%;
-
-  @media (min-width: 400px) {
-    margin-right: -10%;
+<style scoped>
+@layer blocks {
+  .hero {
+    display: grid;
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-600);
+    margin-block: var(--space-700) var(--space-800);
+    color: var(--clr-text);
   }
 
-  @media (min-width: 768px) {
-    justify-self: center;
-    margin-right: 30%;
-    height: 15rem;
-    margin-top: -10%;
-    grid-row: 2;
+  .hero__body {
+    display: grid;
+    gap: var(--space-300);
+    max-inline-size: 90ch;
   }
-}
 
-.hero__body {
-  max-width: 90ch;
-  display: grid;
-  grid-column: 1;
-  grid-row: 1;
-  gap: var(--space-xs);
-}
-
-.hero__body :where(h1, h2) {
-  margin: 0;
-}
-
-.hero__lede {
-  grid-row: 2;
-  grid-column: 1;
-  display: grid;
-  gap: var(--space-md);
-  justify-items: start;
-  color: var(--text-2);
-  font-style: italic;
-
-  @media (min-width: 768px) {
-    grid-row: 2;
-    grid-column: 1 / -1;
-    gap: var(--space-lg);
-    align-self: flex-end;
-    margin-left: 50%;
+  .hero__body :deep(h1) {
+    font-size: var(--text-eyebrow);
+    line-height: var(--lh-body);
+    font-weight: var(--fw-regular);
+    letter-spacing: var(--tracking-eyebrow);
   }
-}
 
-.hero__actions {
-  display: flex;
-  gap: var(--space-sm);
-}
+  .hero__body :deep(h2) {
+    font-size: var(--text-display-lg);
+    line-height: var(--lh-display);
+    letter-spacing: var(--tracking-display);
+  }
 
-.hero__lede p {
-  font-size: 0.875rem;
-  max-width: 28rem;
+  .hero__lede {
+    display: grid;
+    gap: var(--space-500);
+    justify-items: start;
+    color: var(--clr-text-muted);
+  }
 
-  @media (min-width: 768px) {
-    font-size: 1.25rem;
-    max-width: 32rem;
+  .hero__lede :deep(p) {
+    max-inline-size: var(--measure);
+    font-size: var(--text-lede);
+    font-style: italic;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-300);
+  }
+
+  @media (width >= 48em) {
+    .hero__lede {
+      margin-inline-start: 50%;
+    }
   }
 }
 </style>

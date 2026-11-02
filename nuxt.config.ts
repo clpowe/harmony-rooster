@@ -1,5 +1,6 @@
 import postcssNesting from "postcss-nesting";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
 const siteName = "Harmony Roosters";
 const productionSiteUrl = "https://www.harmonyroosters.com";
@@ -8,6 +9,11 @@ if (process.env.NODE_ENV === "production") {
   process.env.NUXT_PUBLIC_SITE_NAME = siteName;
   process.env.NUXT_PUBLIC_SITE_URL = productionSiteUrl;
 }
+
+// Dev-only routes are stripped from Vercel production builds (VERCEL_ENV=production).
+// Local dev and Vercel preview (staging) deployments keep them.
+const isProductionDeployment = process.env.VERCEL_ENV === "production";
+const devOnlyRoutes = ["/design-system"];
 
 const posthogHost = process.env.NUXT_POSTHOG_HOST ?? "https://us.i.posthog.com";
 const posthogProjectApiKey =
@@ -26,6 +32,14 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: siteName,
+      // Keep layer order ahead of route CSS during SSR, hydration and Vite HMR.
+      style: [
+        {
+          key: "style-layer-order",
+          tagPriority: "critical",
+          innerHTML: readFileSync(new URL("./app/assets/css/layers.css", import.meta.url), "utf8"),
+        },
+      ],
       htmlAttrs: {
         lang: "en",
       },
@@ -40,6 +54,23 @@ export default defineNuxtConfig({
     "~": fileURLToPath(new URL("./", import.meta.url)),
   },
   css: ["@/assets/css/main.css"],
+  sitemap: {
+    exclude: ["/design-system"],
+  },
+  routeRules: {
+    "/design-system": {
+      robots: false,
+      headers: { "X-Robots-Tag": "noindex, nofollow" },
+    },
+  },
+  hooks: {
+    "pages:extend"(pages) {
+      if (!isProductionDeployment) return;
+      for (let i = pages.length - 1; i >= 0; i--) {
+        if (devOnlyRoutes.includes(pages[i]!.path)) pages.splice(i, 1);
+      }
+    },
+  },
   future: {
     compatibilityVersion: 4,
   },
@@ -60,7 +91,6 @@ export default defineNuxtConfig({
     "@vee-validate/nuxt",
     "nuxt-security",
     "@nuxt/fonts",
-    "@unlok-co/nuxt-stripe",
     "@posthog/nuxt",
     "@vercel/speed-insights/nuxt",
     "@vercel/analytics",
@@ -72,6 +102,7 @@ export default defineNuxtConfig({
     posthogLogEndpoint: `${posthogHost}/i/v1/logs`,
     posthogProjectApiKey,
     posthogServerLogEnabled,
+    stripeSecretKey: "",
     stripeWebhookSecretKey: "",
     resendApiKey: "",
     public: {
@@ -108,12 +139,6 @@ export default defineNuxtConfig({
       enabled: true,
       project: process.env.POSTHOG_PROJECTID,
       personalApiKey: process.env.POSTHOG_KEY ?? "",
-    },
-  },
-  stripe: {
-    server: {
-      key: process.env.STRIPE_SECRET_KEY,
-      options: {},
     },
   },
   vite: {

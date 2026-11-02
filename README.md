@@ -37,6 +37,11 @@ Use `:ConformInfo` to inspect the formatter and `:LspInfo` to confirm Oxlint is 
 If the editor reports missing `.nuxt/tsconfig` files, run `pnpm exec nuxt prepare`
 to regenerate Nuxt's types, then restart the language servers.
 
+## CSS and design system
+
+See [the style system guide](docs/style-system.md) for tokens, CUBE layouts, shared
+controls, and the approved hero/header/footer styling boundaries.
+
 ## Development Server
 
 Start the development server on `http://localhost:3000`:
@@ -55,6 +60,19 @@ yarn dev
 bun run dev
 ```
 
+## Airtable environments
+
+`pnpm dev`, `pnpm dev:all` and Vercel preview deployments (`VERCEL_ENV=preview`) use
+**Course Registration (Dev)** (`appfunxpZDINDA3tq`). Production deployments use the
+existing production base (`apptCFjP3Ns4FdGGi`). The selection lives in `shared/constants/airtable.ts`
+and applies to courses, sessions, customers, registrations, and session lock keys.
+Both bases use the same table IDs and field names.
+
+The local `NUXT_AIRTABLE_KEY` in `.env` and the Preview `NUXT_AIRTABLE_KEY` in Vercel
+must have access to the Development base.
+Restart the dev server after changing credentials. Keep production deployment
+credentials configured separately.
+
 ## Stripe Webhooks
 
 Start Nuxt and the Stripe CLI webhook forwarder together (Ctrl+C stops both; if
@@ -66,6 +84,9 @@ pnpm dev:all
 
 `pnpm stripe:listen` runs the forwarder alone. It forwards all snapshot events to
 `http://harmony-rooster.localhost:1355/api/stripe/webhook`.
+
+Set `NUXT_STRIPE_SECRET_KEY` in `.env` to your Stripe test secret key. It is read at
+runtime, so production sets it as a deployment environment variable.
 
 Set `NUXT_STRIPE_WEBHOOK_SECRET_KEY` in `.env` to the signing secret printed by
 `stripe listen`, then restart the dev server so Nuxt loads the new value. If the

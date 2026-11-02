@@ -31,6 +31,8 @@ beforeEach(() => {
       sessionID: "course_1",
       customerID: "customer_1",
       email: "private@example.com",
+      first_name: "Jordan",
+      last_name: "Ellis",
     },
     payment_intent: { payment_method: { card: { brand: "visa", last4: "4242" } } },
   } as unknown as Stripe.Checkout.Session;
@@ -60,6 +62,18 @@ beforeEach(() => {
 });
 
 describe("registration outcome", () => {
+  it("trims the registrant name and tolerates a missing last name", async () => {
+    checkout.metadata = { ...checkout.metadata, first_name: "  Jordan ", last_name: "" };
+    expect((await load()).registrant).toEqual({ name: "Jordan" });
+  });
+  it.each([
+    ["missing", {}],
+    ["blank", { first_name: " ", last_name: "" }],
+  ])("returns no registrant when the name is %s", async (_label, name) => {
+    const { first_name: _first, last_name: _last, ...rest } = checkout.metadata!;
+    checkout.metadata = { ...rest, ...name };
+    expect((await load()).registrant).toBeNull();
+  });
   it.each([
     ["processing", "confirming"],
     ["fulfilled", "confirmed"],
@@ -76,6 +90,7 @@ describe("registration outcome", () => {
   it("returns only receipt fields and verified registration confirmation", async () => {
     const result = await load();
     expect(result.registration.state).toBe("confirmed");
+    expect(result.registrant).toEqual({ name: "Jordan Ellis" });
     expect(result.payment).toEqual({
       status: "paid",
       total: 12000,

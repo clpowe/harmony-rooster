@@ -1,0 +1,98 @@
+/* Small explicit variants and states; no second palette or component system. */
+.panel[data-tone="primary"] {
+  --ring-gap: var(--clr-primary-500);
+  --focus-ring-color: var(--clr-neutral-100);
+  position: relative;
+  overflow: hidden;
+  color: var(--clr-neutral-100);
+  background-color: var(--clr-primary-500);
+}
+.panel[data-tone="primary"] :where(h1, h2, h3, a:not(.button)) {
+  color: inherit;
+}
+.panel[data-tone="primary"] :where(.form-field__label, .contact-form__label) {
+  color: var(--clr-neutral-100);
+}
+.panel[data-tone="primary"] :where(.text-field__hint, .contact-form__status--success) {
+  color: var(--clr-primary-100);
+}
+.panel[data-tone="primary"]
+  :where(.form-field__error, .contact-form__error, .contact-form__status--error) {
+  color: var(--clr-status-full);
+}
+.tag[data-variant="full"] {
+  color: var(--clr-status-full-strong);
+  background-color: var(--clr-status-full);
+}
+.tag[data-variant="seats"] {
+  font-family: var(--ff-base);
+}
+
+:where(.is-invalid, [aria-invalid="true"]),
+:where(.is-invalid, [aria-invalid="true"]):focus-visible {
+  border-color: var(--clr-danger-500);
+}
+
+/* Approved brand components retain their existing typography and dimensions.
+   These inherited parameters configure the same shared controls and compositions. */
+:where(.new-hero, .page-header, .page-footer) {
+  --wrapper-max: var(--wrapper-brand-max);
+  --wrapper-gutter: var(--wrapper-brand-gutter);
+  --heading-weight: var(--fw-light);
+  --heading-leading: var(--lh-tight);
+  --heading-tracking: normal;
+  --button-height: 2.5rem;
+  --button-font-size: var(--text-caption);
+  --button-weight: var(--fw-regular);
+  --button-small-height: 2rem;
+  --button-small-font-size: var(--text-meta);
+  --button-ring-size: 4px;
+  --button-accent: var(--clr-accent-400);
+  font-family: var(--ff-brand);
+  font-size: var(--protected-font-size, var(--text-eyebrow));
+  line-height: var(--lh-base);
+}
+
+.page-footer {
+  --protected-font-size: var(--text-caption);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Existing hero eyebrow and decorative mark were previously supplied implicitly
+   by element defaults and the old hero stylesheet. Keep them local to this block. */
+.new-hero h2 {
+  font-size: 1.5em;
+  color: var(--clr-neutral-100);
+}
+.new-hero .hero__art {
+  display: block;
+  width: auto;
+  height: 5rem;
+  margin-bottom: var(--space-300);
+}
+/* The SVG ships with a 20% group opacity and dark fills; invert for the dark overlay. */
+.new-hero .hero__art g {
+  opacity: 1;
+}
+.new-hero .hero__art path {
+  fill: var(--clr-neutral-100);
+}
+@media (width >= 768px) {
+  .new-hero .hero__art {
+    height: 7rem;
+  }
+}
+
+:where(.new-hero, .page-header, .page-footer) .button {
+  --button-pressed-bg: var(--button-bg);
+}
