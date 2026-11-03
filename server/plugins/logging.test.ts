@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const errorLog = vi.hoisted(() => vi.fn());
+const warnLog = vi.hoisted(() => vi.fn());
 const createRequestLogger = vi.hoisted(() =>
   vi.fn(() => ({
     error: errorLog,
+    warn: warnLog,
   })),
 );
 const getRequestId = vi.hoisted(() => vi.fn());
@@ -105,7 +107,8 @@ describe("server logging plugin", () => {
         source: "nitro",
       },
     });
-    expect(errorLog).toHaveBeenCalledWith("Unhandled API error", {
+    expect(errorLog).toHaveBeenCalledWith("Server request failed", {
+      statusCode: 500,
       errorMessage: "boom",
       errorName: "TypeError",
     });
@@ -116,7 +119,8 @@ describe("server logging plugin", () => {
 
     error({ reason: "unknown" }, { event: { context: {} } });
 
-    expect(errorLog).toHaveBeenCalledWith("Unhandled API error", {
+    expect(errorLog).toHaveBeenCalledWith("Server request failed", {
+      statusCode: 500,
       errorMessage: "Unknown error",
       errorName: "UnknownError",
     });
@@ -129,5 +133,37 @@ describe("server logging plugin", () => {
 
     expect(createRequestLogger).not.toHaveBeenCalled();
     expect(errorLog).not.toHaveBeenCalled();
+  });
+
+  it("ignores missing pages from crawlers", async () => {
+    const { error } = await registerHooks();
+    error(Object.assign(new Error("Page not found"), { statusCode: 404 }), {
+      event: { path: "/wp-admin/install.php?step=1", context: {} },
+    });
+    expect(createRequestLogger).not.toHaveBeenCalled();
+  });
+
+  it.each([400, 401, 403, 404, 429])("logs API %i responses as warnings", async (statusCode) => {
+    const { error } = await registerHooks();
+    error(Object.assign(new Error("Request rejected"), { statusCode }), {
+      event: { path: "/api/courses", context: {} },
+    });
+    expect(errorLog).not.toHaveBeenCalled();
+    expect(warnLog).toHaveBeenCalledWith("Client request rejected", {
+      statusCode,
+      errorMessage: "Request rejected",
+      errorName: "Error",
+    });
+  });
+
+  it("retains upstream failures as server errors", async () => {
+    const { error } = await registerHooks();
+    error(Object.assign(new Error("Airtable unavailable"), { statusCode: 502 }), {
+      event: { path: "/api/courses", context: {} },
+    });
+    expect(errorLog).toHaveBeenCalledWith(
+      "Server request failed",
+      expect.objectContaining({ statusCode: 502 }),
+    );
   });
 });
