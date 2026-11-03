@@ -39,6 +39,17 @@ describe("logger utilities", () => {
     expect(shouldSendServerLogs()).toBe(false);
   });
 
+  it("keeps prerender failures out of runtime telemetry even when shipping is enabled", () => {
+    vi.stubEnv("NODE_ENV", "prerender");
+    process.env.POSTHOG_SERVER_LOG_ENABLED = "true";
+    process.env.NUXT_POSTHOG_PROJECT_API_KEY = "phc_test";
+    try {
+      expect(shouldSendServerLogs()).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("sends logs when transport is enabled and config is present", async () => {
     process.env.POSTHOG_SERVER_LOG_ENABLED = "true";
     process.env.NUXT_POSTHOG_PROJECT_API_KEY = "phc_test";

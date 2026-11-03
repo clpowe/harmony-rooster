@@ -78,6 +78,8 @@ function normalizeRuntimeConfig(event?: H3Event): RuntimeLogConfig {
 }
 
 export function shouldSendServerLogs(event?: H3Event): boolean {
+  // Build failures remain visible in build output, separate from runtime health.
+  if (process.env.NODE_ENV === "prerender") return false;
   const config = normalizeRuntimeConfig(event);
   return (
     normalizeBoolean(config.posthogServerLogEnabled) &&

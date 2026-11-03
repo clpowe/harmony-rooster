@@ -17,11 +17,15 @@ const devOnlyRoutes = ["/design-system"];
 
 const posthogHost = process.env.NUXT_POSTHOG_HOST ?? "https://us.i.posthog.com";
 const posthogProjectApiKey =
-  process.env.NUXT_POSTHOG_PROJECT_API_KEY ??
-  process.env.NUXT_PUBLIC_POSTHOG_KEY ??
-  "phc_qTwFbI32FdKblt68dmmYUaStTr4e0s3dzXdnlWc0AP9";
+  process.env.NUXT_POSTHOG_PROJECT_API_KEY ?? process.env.NUXT_PUBLIC_POSTHOG_KEY ?? "";
+if (isProductionDeployment && !posthogProjectApiKey) {
+  throw new Error("Set NUXT_POSTHOG_PROJECT_API_KEY for the production PostHog project.");
+}
 const posthogServerLogEnabled =
   process.env.POSTHOG_SERVER_LOG_ENABLED === "true" || process.env.NODE_ENV === "production";
+const posthogSourcemapProjectId =
+  process.env.NUXT_POSTHOG_PROJECTID ?? process.env.POSTHOG_PROJECTID;
+const posthogPersonalApiKey = process.env.NUXT_POSTHOG_KEY ?? process.env.POSTHOG_KEY ?? "";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -137,8 +141,8 @@ export default defineNuxtConfig({
     },
     sourcemaps: {
       enabled: true,
-      project: process.env.POSTHOG_PROJECTID,
-      personalApiKey: process.env.POSTHOG_KEY ?? "",
+      projectId: posthogSourcemapProjectId,
+      personalApiKey: posthogPersonalApiKey,
     },
   },
   vite: {

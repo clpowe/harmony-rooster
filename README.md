@@ -73,6 +73,29 @@ must have access to the Development base.
 Restart the dev server after changing credentials. Keep production deployment
 credentials configured separately.
 
+## PostHog environments
+
+Set `NUXT_POSTHOG_PROJECT_API_KEY` explicitly in each deployment environment:
+
+- Vercel Production: use **Harmony Rooster - Production** (project `320092`).
+- Vercel Preview and Development, and local `.env`: use **Harmony Rooster - Dev**
+  (project `319614`).
+
+The browser SDK and server logger share this token. There is no built-in project
+token fallback; Vercel production builds fail if no token is configured. After
+changing the Vercel variable, rebuild production so the browser uses the new token.
+
+Server logs omit missing-page 404s, classify API 4xx responses as warnings, and
+retain server failures as errors with their HTTP status. Prerender failures remain
+in build output and are excluded from the PostHog runtime log stream.
+
+Source-map uploads use `NUXT_POSTHOG_PROJECTID` (Production: `320092`; Preview,
+Development and local: `319614`) and `NUXT_POSTHOG_KEY` (a private personal API key
+with `organization:read` and `error_tracking:write` scopes). Keep the personal key
+in local environment files and Vercel environment variables. It is separate from
+the public ingestion token and is used only during builds. The legacy
+`POSTHOG_PROJECTID` and `POSTHOG_KEY` names remain supported as fallbacks.
+
 ## Stripe Webhooks
 
 Start Nuxt and the Stripe CLI webhook forwarder together (Ctrl+C stops both; if
