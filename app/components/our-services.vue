@@ -95,13 +95,16 @@ const services: Service[] = [
   .service-text {
     color: var(--clr-text-muted);
   }
+}
 
+@layer exceptions {
   .service[data-featured="true"] {
     background-color: var(--clr-primary-500);
     color: var(--clr-neutral-100);
   }
 
-  .service[data-featured="true"] :is(.service-title, .service-text) {
+  .service[data-featured="true"] .service-title,
+  .service[data-featured="true"] .service-text {
     color: inherit;
   }
 }
