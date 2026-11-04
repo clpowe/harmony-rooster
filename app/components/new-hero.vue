@@ -6,6 +6,7 @@
       width="2400"
       height="1635"
       sizes="sm:960px lg:100vw 2xl:1440px"
+      quality="60"
       alt="A caregiver in blue scrubs and an older woman in a cream cardigan sit side by side on a couch, holding hands and laughing together."
       fetchpriority="high"
       loading="eager"
