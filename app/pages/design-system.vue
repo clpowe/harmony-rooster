@@ -11,6 +11,8 @@ useSeoMeta({
   robots: "noindex, nofollow",
 });
 
+const navDialogOpen = ref(false);
+
 const primaryColors = [
   {
     name: "Primary 100",
@@ -694,6 +696,21 @@ function preventDemoNavigation(event: MouseEvent) {
             heading-tag="h3"
           />
         </div>
+      </section>
+      <section class="ds-specimen flow" aria-labelledby="ds-nav-dialog">
+        <h3 id="ds-nav-dialog" class="ds-heading">Navigation dialog</h3>
+        <p>
+          Floating mobile menu built on a native modal dialog: focus trap, Esc and backdrop dismiss,
+          CSS enter and exit animation.
+        </p>
+        <AppButton @click="navDialogOpen = true">Open navigation dialog</AppButton>
+        <AppNavDialog v-model="navDialogOpen" label="Example menu">
+          <ul role="list" class="u-list-reset">
+            <li><AppTextLink href="#ds-nav-dialog" :icon="undefined">Our Services</AppTextLink></li>
+            <li><AppTextLink href="#ds-nav-dialog" :icon="undefined">Courses</AppTextLink></li>
+          </ul>
+          <AppButton href="#ds-nav-dialog" @click="navDialogOpen = false">Apply now</AppButton>
+        </AppNavDialog>
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-wordmark">
         <h3 id="ds-wordmark" class="ds-heading">Wordmark</h3>
