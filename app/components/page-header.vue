@@ -1,6 +1,4 @@
 <script setup lang="ts">
-const navId = "primary-nav";
-
 const navLinks = [
   { label: "Our Services", to: "/#our-services" },
   { label: "About Us", to: "/#about-us" },
@@ -19,10 +17,18 @@ const closeNav = () => {
 };
 
 watch(() => route.fullPath, closeNav);
+
+// Dialog is mobile-only; dismiss it if the viewport grows into the inline nav.
+onMounted(() => {
+  const mq = window.matchMedia("(width >= 56em)");
+  const onChange = (e: MediaQueryListEvent) => e.matches && closeNav();
+  mq.addEventListener("change", onChange);
+  onBeforeUnmount(() => mq.removeEventListener("change", onChange));
+});
 </script>
 
 <template>
-  <header class="page-header" @keydown.esc="closeNav">
+  <header class="page-header">
     <div class="wrapper page-header-layout">
       <NuxtLink to="/" class="logo" aria-label="Harmony Roosters home">
         <SvgoIconRooster class="logo-mark" :fontControlled="false" aria-hidden="true" />
@@ -32,27 +38,21 @@ watch(() => route.fullPath, closeNav);
       <button
         class="nav-toggle"
         type="button"
-        :aria-controls="navId"
+        aria-haspopup="dialog"
         :aria-expanded="isOpen ? 'true' : 'false'"
-        @click="isOpen = !isOpen"
+        @click="isOpen = true"
       >
-        <AppIcon :name="isOpen ? 'lucide:x' : 'lucide:menu'" />
+        <AppIcon name="lucide:menu" />
         <span class="visually-hidden">Menu</span>
       </button>
 
-      <nav
-        :id="navId"
-        class="primary-nav"
-        :data-state="isOpen ? 'open' : 'closed'"
-        aria-label="Primary"
-      >
+      <nav class="primary-nav" aria-label="Primary">
         <ul role="list">
           <li v-for="link in navLinks" :key="link.to">
             <NuxtLink
               :to="link.to"
               class="nav-link"
               :aria-current="isCurrent(link.to) ? 'page' : undefined"
-              @click="closeNav"
             >
               {{ link.label }}
             </NuxtLink>
@@ -60,15 +60,48 @@ watch(() => route.fullPath, closeNav);
         </ul>
 
         <div class="nav-actions cluster">
-          <AppButton href="https://applynow.apd.myflorida.com/" @click="closeNav"
-            >Apply now</AppButton
-          >
+          <AppButton href="https://applynow.apd.myflorida.com/">
+            <template #icon-start><AppIcon name="lucide:clipboard-pen-line" /></template>
+            Apply now
+          </AppButton>
           <AppButton href="tel:+18134340447" variant="accent">
             <template #icon-start><AppIcon name="lucide:phone" /></template>
             813-434-0447
           </AppButton>
         </div>
       </nav>
+
+      <AppNavDialog v-model="isOpen" label="Menu">
+        <nav aria-label="Mobile">
+          <ul role="list" class="u-list-reset">
+            <li v-for="link in navLinks" :key="link.to">
+              <NuxtLink
+                :to="link.to"
+                class="nav-link"
+                :aria-current="isCurrent(link.to) ? 'page' : undefined"
+                @click="closeNav"
+              >
+                {{ link.label }}
+              </NuxtLink>
+            </li>
+          </ul>
+        </nav>
+        <hr class="nav-divider" />
+        <div class="nav-actions cluster">
+          <AppButton
+            class="u-width-full"
+            href="https://applynow.apd.myflorida.com/"
+            @click="closeNav"
+          >
+            <template #icon-start><AppIcon name="lucide:clipboard-pen-line" /></template>
+            Apply now
+          </AppButton>
+          <AppButton class="u-width-full" href="tel:+18134340447" variant="accent">
+            <template #icon-start><AppIcon name="lucide:phone" /></template>
+            813-434-0447
+          </AppButton>
+        </div>
+      </AppNavDialog>
     </div>
   </header>
 </template>
@@ -131,28 +164,22 @@ watch(() => route.fullPath, closeNav);
     cursor: pointer;
   }
 
-  /* Block · primary-nav. Below 56em it collapses to a column under the logo row. */
+  /* Block · primary-nav. Inline from 56em; below that the dialog carries the links. */
   .primary-nav {
-    flex-basis: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-400);
-
-    &[data-state="closed"] {
-      display: none;
-    }
-
-    &[data-state="open"] {
-      display: flex;
-    }
+    display: none;
 
     & ul {
       display: flex;
-      flex-direction: column;
       margin: 0;
       padding: 0;
       list-style: none;
     }
+  }
+
+  .nav-divider {
+    margin: 0;
+    border: 0;
+    border-block-start: var(--border-width) solid var(--clr-border);
   }
 
   .nav-link {
@@ -177,11 +204,8 @@ watch(() => route.fullPath, closeNav);
       display: none;
     }
 
-    .primary-nav,
-    .primary-nav[data-state] {
+    .primary-nav {
       display: flex;
-      flex-basis: auto;
-      flex-direction: row;
       align-items: center;
       gap: var(--space-600);
 
