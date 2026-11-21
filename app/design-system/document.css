@@ -1,0 +1,129 @@
+@layer blocks {
+  .document-page {
+    page: harmony-sheet;
+    isolation: isolate;
+    --flow-space: var(--space-500);
+    margin-inline: auto;
+    max-inline-size: 8.5in;
+    padding: var(--space-500);
+    background: var(--clr-surface);
+    color: var(--clr-text);
+    border: var(--border-width) solid var(--clr-border);
+    font-family: var(--ff-base);
+    font-size: var(--text-small);
+    line-height: var(--lh-body);
+  }
+
+  .document-page__band {
+    padding: var(--space-400);
+    border-block-end: var(--space-100) solid var(--clr-accent-500);
+    background: var(--clr-primary-500);
+    color: var(--clr-neutral-100);
+  }
+
+  .document-page__band h1,
+  .document-page__band h2 {
+    font-size: var(--text-heading-4);
+    font-weight: var(--fw-regular);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  .document-page__band p {
+    font-family: var(--ff-mono);
+    font-size: var(--text-caption);
+  }
+
+  .document-page__section-title {
+    padding-block-end: var(--space-200);
+    border-block-end: var(--border-width) solid var(--clr-border);
+    color: var(--clr-text);
+    font-size: var(--text-small);
+    font-weight: var(--fw-medium);
+    letter-spacing: normal;
+  }
+
+  .signature-fields {
+    --auto-grid-min: 11rem;
+    --auto-grid-gap: var(--space-500);
+  }
+
+  .signature-field {
+    display: grid;
+    gap: var(--space-100);
+    min-inline-size: 0;
+    color: var(--clr-text);
+    font-size: var(--text-caption);
+    font-weight: var(--fw-medium);
+  }
+
+  .signature-field__line {
+    inline-size: 100%;
+    min-block-size: var(--touch-target);
+    padding: 0 var(--space-100);
+    border: 0;
+    border-block-end: var(--border-width) solid var(--clr-text-muted);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  input.signature-field__line:focus-visible {
+    border-block-end-color: var(--clr-primary-500);
+  }
+
+  .signature-field__line[aria-invalid="true"] {
+    border-block-end-color: var(--clr-danger-500);
+  }
+
+  .signature-field__line:disabled {
+    color: var(--clr-text-subtle);
+    background: var(--clr-surface-muted);
+  }
+
+  .signature-field__line--paper {
+    padding: 0;
+  }
+}
+
+@page harmony-sheet {
+  size: letter portrait;
+  margin: 0.65in;
+}
+
+@media print {
+  @layer blocks {
+    .document-page {
+      padding: 0;
+      border: 0;
+      max-inline-size: none;
+    }
+
+    .document-page__band {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+      border-block-start: var(--border-width) solid var(--clr-primary-500);
+    }
+
+    .document-page__band,
+    .signature-fields,
+    .document-page tr {
+      break-inside: avoid;
+    }
+
+    .document-page__section-title {
+      break-after: avoid;
+    }
+
+    .document-page .data-table-wrap {
+      overflow: visible;
+    }
+
+    .document-page thead {
+      display: table-header-group;
+    }
+
+    .document-page__print-action {
+      display: none;
+    }
+  }
+}

@@ -1,0 +1,131 @@
+@layer blocks {
+  .reference-content {
+    --flow-space: var(--space-600);
+  }
+  .reference-content > * + * {
+    padding-block-start: var(--space-500);
+    border-block-start: var(--border-width) solid var(--clr-border);
+  }
+  .reference-content .ds-heading {
+    color: var(--clr-text);
+    font-size: var(--text-heading-2);
+    font-weight: var(--fw-regular);
+  }
+  .reference-brand-card .ds-heading {
+    font-size: var(--text-heading-4);
+    font-weight: var(--fw-medium);
+  }
+  .reference-nav {
+    --cluster-gap: var(--space-300);
+  }
+  .reference-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--touch-target);
+  }
+  .reference-list {
+    --auto-grid-min: 13rem;
+    --auto-grid-gap: var(--space-200);
+  }
+  .reference-list div {
+    min-inline-size: 0;
+    padding: var(--space-300) var(--space-400);
+    background: var(--clr-surface-muted);
+    border-radius: var(--radius-input);
+  }
+  .reference-list dt {
+    color: var(--clr-text);
+    font-weight: var(--fw-medium);
+  }
+  .reference-list dd,
+  .reference-subtle {
+    color: var(--clr-text-muted);
+    font-size: var(--text-small);
+  }
+  .reference-table-scroll {
+    max-inline-size: 100%;
+    overflow: auto;
+  }
+  .reference-table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    color: var(--clr-text);
+    font-size: var(--text-small);
+  }
+  .reference-table :is(th, td) {
+    padding: var(--space-300) var(--space-200);
+    border-block-end: var(--border-width) solid var(--clr-border);
+    text-align: start;
+    vertical-align: top;
+    font-weight: var(--fw-regular);
+  }
+  .reference-table thead {
+    color: var(--clr-text-muted);
+    background: var(--clr-surface-muted);
+  }
+  .reference-table thead th {
+    font-weight: var(--fw-medium);
+  }
+  .reference-table .reference-ratio {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .reference-swatch {
+    display: inline-block;
+    inline-size: 1rem;
+    block-size: 1rem;
+    margin-inline-end: var(--space-100);
+    border: var(--border-width) solid var(--clr-border);
+    border-radius: var(--space-100);
+    vertical-align: middle;
+  }
+  .reference-list code,
+  .reference-table code,
+  .reference-copy code {
+    font-family: var(--ff-mono);
+    font-size: var(--text-meta);
+    overflow-wrap: anywhere;
+  }
+  .reference-table code {
+    display: inline;
+  }
+  .reference-table--wide {
+    min-inline-size: 39rem;
+  }
+  .reference-group {
+    --flow-space: var(--space-300);
+  }
+  .reference-group h3 {
+    font-size: var(--text-heading-4);
+    font-weight: var(--fw-medium);
+    color: var(--clr-text);
+  }
+  .reference-brand-grid {
+    --auto-grid-min: 14rem;
+  }
+  .reference-brand-card {
+    display: grid;
+    align-content: start;
+    gap: var(--space-300);
+    min-inline-size: 0;
+  }
+  .reference-brand-preview {
+    display: grid;
+    place-items: center;
+    min-block-size: 8rem;
+    padding: var(--space-400);
+    border: var(--border-width) solid var(--clr-border);
+    border-radius: var(--radius-nested);
+    background: var(--clr-surface);
+  }
+  .reference-brand-preview[data-mode="dark"] {
+    background: var(--clr-text);
+  }
+  .reference-brand-preview img {
+    max-block-size: 5rem;
+    object-fit: contain;
+  }
+  .reference-brand-card .cluster {
+    --cluster-gap: var(--space-300);
+  }
+}

@@ -63,6 +63,7 @@ export default defineNuxtConfig({
   },
   routeRules: {
     "/design-system": {
+      prerender: false,
       robots: false,
       headers: { "X-Robots-Tag": "noindex, nofollow" },
     },
@@ -120,9 +121,15 @@ export default defineNuxtConfig({
     client: "hidden",
   },
   nitro: {
+    serverAssets: [
+      {
+        baseName: "design-css",
+        dir: fileURLToPath(new URL("./app/assets/css/", import.meta.url)),
+      },
+    ],
     prerender: {
       crawlLinks: true,
-      routes: ["/"],
+      routes: ["/", "/design-tokens.css", "/design-tokens.json", "/design-foundation.css"],
     },
     rollupConfig: {
       output: {

@@ -170,11 +170,17 @@ refund, and attention states.
 
 ## Hidden specimen page
 
-Open `/design-system` directly to review the component library. It follows the
-PDF's cover → colors → typography → spacing/radii/elevation → components → states
-→ page patterns order. It uses actual components and isolated sample data, with
-working filters, fields, accordions, session choices, and registration-step previews.
-Sample registration links are intercepted and never create a checkout.
+Open `/design-system` directly for the quick start, resolved token and contrast
+tables, fonts, brand downloads, live component examples, and copyable recipes.
+The page uses isolated sample data and intercepts sample registration links.
+The table, grouped form, signature lines, and printable sample show patterns for
+new layouts.
+
+`/design-tokens.css` serves the same stylesheet that the app imports.
+`/design-tokens.json` reads that stylesheet and provides each declaration and its
+resolved value, including the reduced-motion overrides. `/design-foundation.css`
+combines the app's shared layers for the standalone component recipes. Brand
+downloads are available under `/brand/`.
 
 The route has `noindex, nofollow` metadata and an `X-Robots-Tag` header, is excluded
 from the sitemap, and is not linked from the public navigation or footer.
