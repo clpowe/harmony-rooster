@@ -4,7 +4,7 @@ const accordionItems = [
     value: "question-1",
     question: "What services does Harmony Roosters provide?",
     answer:
-      "Harmony Roosters is a licensed foster home and home care provider serving individuals with developmental disabilities in the Riverview/Brandon area of Hillsborough County. We provide Residential Habilitation (ResHab) services through the APD iBudget Waiver program, including support with daily living, personal care, medication reminders, community integration, and skilled overnight care for consumers with complex medical needs.",
+      "Harmony Roosters is a licensed foster home and home care provider serving individuals with developmental disabilities on Florida's Suncoast. We provide Residential Habilitation (ResHab) services through the APD iBudget Waiver program, including support with daily living, personal care, medication reminders, community integration, and skilled overnight care for consumers with complex medical needs.",
   },
   {
     value: "question-2",
@@ -58,7 +58,7 @@ const accordionItems = [
     value: "question-10",
     question: "What areas do you serve?",
     answer:
-      "We serve the Riverview/Brandon area of Hillsborough County, Florida. Contact our team to confirm availability for your specific location.",
+      "We serve Florida's Suncoast. Contact our team to confirm availability for your specific location.",
   },
   {
     value: "question-11",
@@ -74,7 +74,7 @@ const accordionItems = [
     <section-header class="faq-section__intro">
       <template #title>
         <span>Frequently</span> Asked
-        <span>Questions</span>
+        <span>Questions, Answered</span>
       </template>
       <template #description> Find answers to common questions about our services </template>
     </section-header>

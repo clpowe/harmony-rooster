@@ -35,10 +35,11 @@
           </figure>
         </div>
         <p class="about-description">
-          Harmony Roosters, LLC is a locally owned and operated care provider founded by Derek and
-          Cynthia Robinson. Their goal is to help individuals with developmental disabilities live
-          with greater independence while giving families confidence in the support their loved one
-          receives.
+          Harmony Roosters, LLC is a locally owned and operated care provider that Derek and Cynthia
+          Robinson started because they saw how hard it was for families to find reliable,
+          respectful support. Their goal is to help individuals with developmental disabilities in
+          the local community live with greater independence through in-home and foster home
+          support, while giving families confidence in the care their loved one receives.
         </p>
       </div>
     </div>

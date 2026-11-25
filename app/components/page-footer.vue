@@ -31,10 +31,7 @@ const legalLinks = [
               aria-hidden="true"
             />
           </NuxtLink>
-          <p>
-            A locally owned and operated care provider serving Riverview, Brandon and the Tampa Bay
-            area.
-          </p>
+          <p>A locally owned and operated care provider serving Florida's Suncoast.</p>
         </div>
 
         <nav class="page-footer-col flow" aria-labelledby="footer-services-heading">
@@ -61,7 +58,7 @@ const legalLinks = [
             <ul class="page-footer-list flow" role="list">
               <li><a href="tel:+18134340447">813-434-0447</a></li>
               <li><NuxtLink to="/#contact">Apply for care</NuxtLink></li>
-              <li>Riverview/Brandon, FL</li>
+              <li>Florida Suncoast</li>
             </ul>
           </address>
         </div>

@@ -86,7 +86,7 @@
           </clipPath>
         </defs>
       </svg>
-      <h1>Home care for adults with disabilities in Riverview & Brandon, FL</h1>
+      <h1>Home care for adults with disabilities on Florida's Suncoast.</h1>
       <p>Care you can <span>trust</span></p>
     </div>
 
@@ -94,7 +94,7 @@
       <div class="actions">
         <div class="link apply">
           <h2>Apply for Care</h2>
-          <p>Nursing and Foster Home For Individuals with developmental disabilities.</p>
+          <p>Nursing and Foster Home Care for Individuals with Developmental Disabilities.</p>
           <AppButton href="https://applynow.apd.myflorida.com/" variant="inverse" size="small">
             Apply for care
             <template #icon-end><AppIcon name="lucide:arrow-right" /></template>

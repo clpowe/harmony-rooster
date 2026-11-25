@@ -1,6 +1,14 @@
 import postcssNesting from "postcss-nesting";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { createRequire } from "node:module";
+import { promisify } from "node:util";
+import { resolve } from "node:path";
+import { useNuxt } from "@nuxt/kit";
+import { randomUUID } from "node:crypto";
+
+const require = createRequire(import.meta.url);
 
 const siteName = "Harmony Roosters";
 const productionSiteUrl = "https://www.harmonyroosters.com";
@@ -26,6 +34,21 @@ const posthogServerLogEnabled =
 const posthogSourcemapProjectId =
   process.env.NUXT_POSTHOG_PROJECTID ?? process.env.POSTHOG_PROJECTID;
 const posthogPersonalApiKey = process.env.NUXT_POSTHOG_KEY ?? process.env.POSTHOG_KEY ?? "";
+const runPosthogCli = async (...args: string[]) => {
+  await promisify(execFile)(
+    process.execPath,
+    [require.resolve("@posthog/cli/run-posthog-cli.js"), "sourcemap", ...args],
+    {
+      env: {
+        ...process.env,
+        POSTHOG_CLI_HOST: "https://us.posthog.com",
+        POSTHOG_CLI_PROJECT_ID: posthogSourcemapProjectId,
+        POSTHOG_CLI_API_KEY: posthogPersonalApiKey,
+      },
+    },
+  );
+};
+let posthogBuildOutput: { dir: string; serverDir: string } | undefined;
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -34,6 +57,9 @@ export default defineNuxtConfig({
     url: productionSiteUrl,
   },
   app: {
+    // Source-map IDs change file contents after bundling; isolate each build so
+    // returning browsers cannot reuse an older asset with a different SRI hash.
+    buildAssetsDir: `/_nuxt/${process.env.VERCEL_DEPLOYMENT_ID ?? randomUUID()}/`,
     head: {
       title: siteName,
       // Keep layer order ahead of route CSS during SSR, hydration and Vite HMR.
@@ -69,6 +95,28 @@ export default defineNuxtConfig({
     },
   },
   hooks: {
+    async "nitro:build:before"(nitro) {
+      if (nitro.options.dev) return;
+      // Inject once before nuxt-security hashes the assets. Injecting into copied
+      // public assets later changes the IDs and invalidates both SRI and CSP.
+      await runPosthogCli(
+        "inject",
+        "--directory",
+        resolve(useNuxt().options.buildDir, "dist/client"),
+      );
+      posthogBuildOutput = nitro.options.output;
+    },
+    async close() {
+      if (!posthogBuildOutput) return;
+      await runPosthogCli(
+        "inject",
+        "--ignore",
+        "**/node_modules/**",
+        "--directory",
+        posthogBuildOutput.serverDir,
+      );
+      await runPosthogCli("upload", "--directory", posthogBuildOutput.dir, "--delete-after");
+    },
     "pages:extend"(pages) {
       if (!isProductionDeployment) return;
       for (let i = pages.length - 1; i >= 0; i--) {
@@ -119,6 +167,7 @@ export default defineNuxtConfig({
   },
   sourcemap: {
     client: "hidden",
+    server: "hidden",
   },
   nitro: {
     serverAssets: [
@@ -141,15 +190,12 @@ export default defineNuxtConfig({
     publicKey: posthogProjectApiKey,
     host: posthogHost,
     clientConfig: {
+      capture_pageview: "history_change",
+      capture_pageleave: true,
       capture_exceptions: true,
     },
     serverConfig: {
       enableExceptionAutocapture: true,
-    },
-    sourcemaps: {
-      enabled: true,
-      projectId: posthogSourcemapProjectId,
-      personalApiKey: posthogPersonalApiKey,
     },
   },
   vite: {

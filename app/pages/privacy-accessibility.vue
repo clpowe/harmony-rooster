@@ -104,7 +104,7 @@ useSeoMeta({
       <Typography id="contact-heading" tag="h2" variant="heading-medium" class="color-primary">
         Contact us
       </Typography>
-      <p>Harmony Roosters, LLC · Riverview/Brandon, Florida</p>
+      <p>Harmony Roosters, LLC · Florida Suncoast</p>
       <ul class="u-list-reset flow" role="list">
         <li><a href="tel:+18134340447">813-434-0447</a></li>
         <li><a href="mailto:harmonyroosters@gmail.com">harmonyroosters@gmail.com</a></li>

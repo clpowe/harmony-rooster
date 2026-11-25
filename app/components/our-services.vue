@@ -36,9 +36,9 @@ const services: Service[] = [
     <SectionHeader id="our-services-title">
       <template #title>Our Services</template>
       <template #description>
-        Harmony Roosters provides support for individuals with developmental disabilities in the
-        Riverview/Brandon area, designed to promote independence, dignity, safety, and meaningful
-        participation in daily life.
+        For families managing limited local options, Harmony Roosters provides individualized
+        assistance for clients with developmental disabilities in the Suncoast of Florida, designed
+        to promote independence, dignity, safety, and meaningful participation in daily life.
       </template>
       <AppButton href="https://applynow.apd.myflorida.com/" variant="secondary" size="small">
         Apply for services

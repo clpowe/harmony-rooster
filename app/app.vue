@@ -7,7 +7,7 @@ const organizationSchema = {
   name: "Harmony Roosters, LLC",
   url: "https://www.harmonyroosters.com/",
   description:
-    "Harmony Roosters provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities in the Riverview/Brandon area of Hillsborough County, Florida.",
+    "Harmony Roosters provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities on Florida's Suncoast.",
   email: "harmonyroosters@gmail.com",
 
   founder: [
@@ -23,16 +23,8 @@ const organizationSchema = {
 
   areaServed: [
     {
-      "@type": "City",
-      name: "Riverview",
-    },
-    {
-      "@type": "City",
-      name: "Brandon",
-    },
-    {
-      "@type": "AdministrativeArea",
-      name: "Hillsborough County, Florida",
+      "@type": "Place",
+      name: "Florida Suncoast",
     },
   ],
 
@@ -60,7 +52,7 @@ useSchemaOrg([
     name: "Harmony Roosters, LLC",
     url: "https://www.harmonyroosters.com/",
     description:
-      "Harmony Roosters provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities in the Riverview/Brandon area of Hillsborough County, Florida.",
+      "Harmony Roosters provides personalized home care, respite, nursing support, and licensed foster home services for individuals with developmental disabilities on Florida's Suncoast.",
     email: "harmonyroosters@gmail.com",
     founder: [
       {
@@ -74,16 +66,8 @@ useSchemaOrg([
     ],
     areaServed: [
       {
-        "@type": "City",
-        name: "Riverview",
-      },
-      {
-        "@type": "City",
-        name: "Brandon",
-      },
-      {
-        "@type": "AdministrativeArea",
-        name: "Hillsborough County, Florida",
+        "@type": "Place",
+        name: "Florida Suncoast",
       },
     ],
     hasOfferCatalog: {
