@@ -5,7 +5,7 @@ import { useCourseFilters } from "@/composables/useCourseFilters";
 useSeoMeta({
   title: "Caregiver Training Courses | Harmony Roosters",
   description:
-    "Browse upcoming Medication Administration Provider Training and caregiver courses in Riverview and Brandon, FL. Choose a course and date to register.",
+    "Browse upcoming Medication Administration Provider Training and caregiver courses on Florida's Suncoast. Choose a course and date to register.",
 });
 
 const { courses, pending, error, refreshCourses } = useCourses();

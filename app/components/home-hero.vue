@@ -7,7 +7,7 @@ import Rooster from "@/assets/icons/icon-rooster.svg";
   <section class="hero">
     <div class="hero__body">
       <Typography tag="h1" variant="heading-small" class=""
-        >Home Care & Residential Habilitation in Riverview/Brandon</Typography
+        >Home Care & Residential Habilitation on Florida's Suncoast</Typography
       >
       <Typography tag="h2" uppercase variant="heading-2xl">
         Care you can

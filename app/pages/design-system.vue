@@ -2,162 +2,21 @@
 import type { Session, Course } from "@types/courses";
 import { getReceiptStatus } from "@utils/receipt-status";
 import ReceiptHeader from "@/components/receipt/ReceiptHeader.vue";
+import { examples } from "@/design-system/component-examples";
 
 definePageMeta({ layout: false });
 
 useSeoMeta({
-  title: "Design system | Harmony Roosters",
+  title: "Design system",
   description: "Harmony Roosters design tokens, component specimens, states, and page patterns.",
   robots: "noindex, nofollow",
 });
 
 const navDialogOpen = ref(false);
 
-const primaryColors = [
-  {
-    name: "Primary 100",
-    token: "--clr-primary-100",
-    use: "Date chips, selected sessions, focus halo",
-  },
-  {
-    name: "Primary 300",
-    token: "--clr-primary-300",
-    use: "Highlights and flourishes on dark surfaces",
-  },
-  { name: "Primary 400", token: "--clr-primary-400", use: "Interactive highlights" },
-  {
-    name: "Primary 500",
-    token: "--clr-primary-500",
-    use: "Primary actions, links, icons, Apply band",
-  },
-  { name: "Primary 600", token: "--clr-primary-600", use: "Text-link hover and pressed actions" },
-];
-const supportingColors = [
-  { name: "Button accent", token: "--clr-accent-300", use: "Phone and support actions" },
-  { name: "Accent ink", token: "--clr-accent-900", use: "Text on amber buttons" },
-  { name: "Accent 500", token: "--clr-accent-500", use: "Step numerals, receipt rule" },
-  { name: "Accent 600", token: "--clr-accent-600", use: "Eyebrows and warning text" },
-  { name: "Text", token: "--clr-text", use: "Headings, values, navigation" },
-  { name: "Muted text", token: "--clr-text-muted", use: "Body, labels, metadata" },
-  { name: "Surface", token: "--clr-surface", use: "Panels and cards" },
-  { name: "Page surface", token: "--clr-surface-page", use: "Page background and nested cards" },
-  { name: "Border", token: "--clr-border", use: "Inputs, dividers, rules" },
-  { name: "Success", token: "--clr-success-500", use: "Confirmed outcomes" },
-  { name: "Danger", token: "--clr-danger-500", use: "Invalid fields and errors" },
-];
-const typeSpecimens = [
-  {
-    label: "Display XL · Hero",
-    sample: "Care you can trust",
-    token: "--text-display-xl",
-    leading: "0.94",
-    details: "48–112px · 400 · −0.045em",
-    tracking: "var(--tracking-display)",
-  },
-  {
-    label: "Display L · Page title, Apply band",
-    sample: "Provider Training",
-    token: "--text-display-lg",
-    leading: "0.98",
-    details: "44–96px · 400 · −0.045em",
-    tracking: "var(--tracking-display)",
-  },
-  {
-    label: "H2 · Section title",
-    sample: "Our Services",
-    token: "--text-heading-1",
-    leading: "1",
-    details: "44–84px · 400 · −0.04em",
-    tracking: "-0.04em",
-  },
-  {
-    label: "Display M · Receipt status",
-    sample: "You’re registered",
-    token: "--text-display-md",
-    leading: "0.98",
-    details: "40–72px · 400 · −0.045em",
-    tracking: "var(--tracking-display)",
-  },
-  {
-    label: "H3 · Subsection, form title",
-    sample: "About this course",
-    token: "--text-heading-2",
-    leading: "1.05",
-    details: "30–42px · 400 · −0.03em",
-    tracking: "var(--tracking-heading)",
-  },
-  {
-    label: "H4 · Card title",
-    sample: "Medication Administration Provider Training",
-    token: "--text-heading-3",
-    leading: "1.1",
-    details: "24–32px · 400 · −0.03em",
-    tracking: "var(--tracking-heading)",
-  },
-  {
-    label: "H5 · Small heading",
-    weight: 500,
-    sample: "Upcoming sessions",
-    token: "--text-heading-4",
-    leading: "1.2",
-    details: "20–24px · 500",
-  },
-  {
-    label: "Lede",
-    sample: "We offer compassionate, non-emergency in-home care services.",
-    token: "--text-lede",
-    leading: "1.55",
-    details: "18–22px · 400 · italic",
-    italic: true,
-  },
-  {
-    label: "Body L · Section intro",
-    sample: "Medication Administration Provider Training for direct-care professionals.",
-    token: "--text-body-lg",
-    leading: "1.6",
-    details: "17–20px · 400",
-  },
-  {
-    label: "Body · Cards, buttons, values",
-    sample: "Short-term relief care to give primary caregivers a break.",
-    token: "--text-body",
-    leading: "1.55",
-    details: "17px · 400",
-  },
-  {
-    label: "Small · Helper, form label",
-    sample: "Secure payment by Stripe. You’ll get a receipt by email.",
-    token: "--text-small",
-    leading: "1.5",
-    details: "15px · 400 / 500",
-  },
-  {
-    label: "Caption · Detail-row label",
-    sample: "Location",
-    token: "--text-caption",
-    leading: "1.4",
-    details: "14px · 400",
-  },
-];
-const spacing = [
-  { token: "--space-100", label: "4", use: "Tight label/value stacks" },
-  { token: "--space-200", label: "8", use: "Icon-to-label and field-label gaps" },
-  { token: "--space-300", label: "12", use: "Button groups and detail-row icons" },
-  { token: "--space-400", label: "16", use: "Heading-to-paragraph and field gaps" },
-  { token: "--space-450", label: "20", use: "Card grid gap and form stack" },
-  { token: "--space-500", label: "24", use: "Card padding and inner stacks" },
-  { token: "--space-panel", label: "32–56", use: "Panel padding and header-to-content" },
-  { token: "--space-layout", label: "32–96", use: "Two-column panel gap" },
-  { token: "--space-section", label: "64–128", use: "Between page sections" },
-];
-const shapes = [
-  { token: "--radius-input", label: "14", use: "Input" },
-  { token: "--radius-nested", label: "16", use: "Nested image and banner" },
-  { token: "--radius-inner", label: "24", use: "Inner card and session tile" },
-  { token: "--radius-card", label: "28", use: "Course and step card" },
-  { token: "--radius-panel", label: "20–32", use: "Section panel" },
-  { token: "--radius-pill", label: "999", use: "Buttons, chips, icon discs" },
-];
+const route = useRoute();
+const printOnly = computed(() => route.query.print === "sample");
+
 const sessions: Session[] = [
   {
     id: "specimen-open",
@@ -245,221 +104,70 @@ async function copySampleLink() {
     copyError.value = "Clipboard unavailable. You can copy this page’s address from your browser.";
   }
 }
+function preventDemoSubmission(event: SubmitEvent) {
+  if (event.target instanceof HTMLFormElement && event.target.matches(".contact-form")) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+}
 function preventDemoNavigation(event: MouseEvent) {
-  if (event.target instanceof Element && event.target.closest("a")) event.preventDefault();
+  if (!(event.target instanceof Element)) return;
+  const link = event.target.closest("a[href]");
+  if (!link || link.closest(".reference-content") || link.matches("[data-print-link]")) return;
+  if (!link.getAttribute("href")?.startsWith("#")) event.preventDefault();
 }
 </script>
 
 <template>
-  <main class="design-system" @click.capture="preventDemoNavigation">
+  <main v-if="printOnly">
+    <DesignSystemPatterns print-only />
+  </main>
+  <main
+    v-else
+    class="design-system"
+    @click.capture="preventDemoNavigation"
+    @submit.capture="preventDemoSubmission"
+  >
     <header class="ds-sheet ds-cover flow">
-      <p class="ds-eyebrow">Design system · V1</p>
-      <h1>Harmony Roosters<br /><span>UI system</span></h1>
+      <h1>Harmony Roosters<br /><span>Design system</span></h1>
       <p class="ds-intro">
-        Tokens and components collected from the Home, Course and Receipt pages.
+        Resolved design tokens, brand assets, and reusable examples from the Harmony Roosters
+        application.
       </p>
-      <p class="ds-note">Live specimens · Sample content · Interactive component states</p>
     </header>
 
-    <section id="ds-color" class="ds-sheet flow" aria-labelledby="ds-color-title">
-      <header class="ds-section-heading flow">
-        <p class="ds-eyebrow">01</p>
-        <h2 id="ds-color-title">Color</h2>
-        <p>
-          Teal carries actions and highlights. Amber is the single warm accent. Neutrals carry text,
-          dividers and surfaces.
-        </p>
-      </header>
-      <h3 class="ds-heading">Primary</h3>
-      <div class="ds-table-scroll" tabindex="0" role="region" aria-label="Primary color tokens">
-        <table class="ds-table">
-          <thead>
-            <tr>
-              <th scope="col"><span class="visually-hidden">Swatch</span></th>
-              <th scope="col">Name</th>
-              <th scope="col">Token</th>
-              <th scope="col">Used for</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="color in primaryColors" :key="color.token">
-              <td>
-                <span class="ds-swatch" :style="{ backgroundColor: `var(${color.token})` }" />
-              </td>
-              <th scope="row">{{ color.name }}</th>
-              <td>
-                <code>{{ color.token }}</code>
-              </td>
-              <td>{{ color.use }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <h3 class="ds-heading">Accent, text &amp; surface</h3>
-      <div class="ds-table-scroll" tabindex="0" role="region" aria-label="Supporting color tokens">
-        <table class="ds-table">
-          <thead>
-            <tr>
-              <th scope="col"><span class="visually-hidden">Swatch</span></th>
-              <th scope="col">Name</th>
-              <th scope="col">Token</th>
-              <th scope="col">Used for</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="color in supportingColors" :key="color.token">
-              <td>
-                <span class="ds-swatch" :style="{ backgroundColor: `var(${color.token})` }" />
-              </td>
-              <th scope="row">{{ color.name }}</th>
-              <td>
-                <code>{{ color.token }}</code>
-              </td>
-              <td>{{ color.use }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <h3 class="ds-heading">Status</h3>
-      <div class="cluster">
-        <AppStatusPill label="Payment confirmed" tone="success" /><AppStatusPill
-          label="Confirming payment"
-          tone="pending"
-          busy
-        /><AppStatusPill label="Status unavailable" tone="warning" /><AppTag variant="full"
-          >FULL</AppTag
-        >
-      </div>
-    </section>
-
-    <section id="ds-type" class="ds-sheet flow" aria-labelledby="ds-type-title">
-      <header class="ds-section-heading flow">
-        <p class="ds-eyebrow">02</p>
-        <h2 id="ds-type-title">Type scale</h2>
-        <p>
-          Geist for everything, Geist Mono for eyebrows, dates and order numbers. Headings use
-          regular weight and tight tracking. Sizes are fluid.
-        </p>
-      </header>
-      <div class="ds-fonts auto-grid">
-        <div>
-          <p class="ds-font-example">Aa</p>
-          <h3 class="ds-heading">Geist</h3>
-          <p>400 · 500 · 600 — headings, body, UI</p>
-        </div>
-        <div class="ds-mono">
-          <p class="ds-font-example">Aa</p>
-          <h3 class="ds-heading">Geist Mono</h3>
-          <p>400 — eyebrows, dates, receipt IDs, step counters</p>
-        </div>
-      </div>
-      <div v-for="specimen in typeSpecimens" :key="specimen.token" class="ds-type-row">
-        <p
-          class="ds-type-sample"
-          :class="{ 'ds-type-sample--italic': specimen.italic }"
-          :style="{
-            '--specimen-size': `var(${specimen.token})`,
-            '--specimen-leading': specimen.leading,
-            '--specimen-tracking': specimen.tracking ?? 'normal',
-            '--specimen-weight': specimen.weight ?? 400,
-          }"
-        >
-          {{ specimen.sample }}
-        </p>
-        <div class="ds-type-meta">
-          <span>{{ specimen.label }}</span
-          ><code>{{ specimen.token }}<br />{{ specimen.details }}</code>
-        </div>
-      </div>
-      <div class="ds-type-row">
-        <p class="ds-mono ds-eyebrow">Caregiver training · Florida Rule 65G-7</p>
-        <div class="ds-type-meta">
-          <span>Eyebrow / mono label</span><code>16px · uppercase · +0.04em</code>
-        </div>
-      </div>
-      <div class="cluster ds-numerals"><span>1</span><span>16</span><span>$95</span></div>
-      <div class="ds-specimen flow">
-        <h3 class="ds-heading">Typography component</h3>
-        <Typography tag="p" variant="heading-medium">Care you can <span>trust</span></Typography
-        ><Typography tag="p" variant="body-medium"
-          >Body text follows the shared type scale.</Typography
-        ><Typography tag="p" variant="body-small">Small text and helper copy.</Typography>
-      </div>
-    </section>
-
-    <section id="ds-spacing" class="ds-sheet flow" aria-labelledby="ds-spacing-title">
-      <header class="ds-section-heading flow">
-        <p class="ds-eyebrow">03</p>
-        <h2 id="ds-spacing-title">Spacing, radii &amp; elevation</h2>
-        <p>
-          A 4px base. Small steps space content inside components; large steps are fluid and space
-          sections.
-        </p>
-      </header>
-      <div class="ds-table-scroll" tabindex="0" role="region" aria-label="Spacing scale">
-        <table class="ds-table">
-          <thead>
-            <tr>
-              <th scope="col">Step</th>
-              <th scope="col">Scale</th>
-              <th scope="col">Used for</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="space in spacing" :key="space.token">
-              <td><span class="ds-space-bar" :style="{ inlineSize: `var(${space.token})` }" /></td>
-              <th scope="row">{{ space.label }}</th>
-              <td>
-                {{ space.use }}<br /><code>{{ space.token }}</code>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <h3 class="ds-heading">Layout</h3>
-      <div class="ds-layout-values auto-grid">
-        <p><code>min(100% − 2.5rem, 90rem)</code><br />Page container</p>
-        <p><code>46rem</code><br />Narrow column · receipt</p>
-      </div>
-      <h3 class="ds-heading">Radii</h3>
-      <div class="ds-shapes auto-grid">
-        <div v-for="shape in shapes" :key="shape.token">
-          <div class="ds-shape" :style="{ borderRadius: `var(${shape.token})` }">
-            {{ shape.label }}
-          </div>
-          <p>{{ shape.use }}</p>
-          <code>{{ shape.token }}</code>
-        </div>
-      </div>
-      <h3 class="ds-heading">Elevation</h3>
-      <div class="ds-elevations auto-grid">
-        <div class="ds-elevation">
-          <p>None</p>
-          <p class="ds-note">Panels and cards</p>
-        </div>
-        <div class="ds-elevation ds-elevation--one">
-          <code>--shadow-100</code>
-          <p class="ds-note">Subtle lift</p>
-        </div>
-        <div class="ds-elevation ds-elevation--two">
-          <code>--shadow-200</code>
-          <p class="ds-note">Summary, receipt</p>
-        </div>
-      </div>
-    </section>
+    <div class="ds-sheet ds-reference flow">
+      <DesignSystemReference />
+    </div>
 
     <section id="ds-components" class="ds-sheet flow" aria-labelledby="ds-components-title">
       <header class="ds-section-heading flow">
-        <p class="ds-eyebrow">04</p>
         <h2 id="ds-components-title">Components</h2>
         <p>
-          Hover, press, or use the Tab key to inspect the shared interaction states. Each specimen
-          uses the actual Vue component.
+          Hover, press or use Tab to inspect interactive states. Recipes use the same CSS as the
+          application and link to the shared foundation. To use a recipe on another host, serve the
+          foundation, token CSS and font files at the paths shown, or point the links at the
+          corresponding deployed files.
         </p>
       </header>
+      <section class="ds-specimen flow" aria-labelledby="ds-typography-component">
+        <h3 id="ds-typography-component" class="ds-heading">Typography</h3>
+        <p>
+          Display XL uses 0.94 leading, and display LG uses 0.98. Section headings use 1.0,
+          subsection and compact headings use 1.05, and body variants use 1.55. Heading weights are
+          400 except for the compact heading at 500. Display tracking is −0.045em and other heading
+          tracking is −0.03em. The uppercase modifier uses +0.04em and the bold modifier uses weight
+          600.
+        </p>
+        <Typography tag="p" variant="heading-medium">Care you can <span>trust</span></Typography>
+        <Typography tag="p" variant="body-medium"
+          >Body text follows the shared type scale.</Typography
+        >
+        <DesignSystemCode title="Typography HTML + CSS" :code="examples.typography" />
+      </section>
       <section class="ds-specimen flow" aria-labelledby="ds-buttons">
         <h3 id="ds-buttons" class="ds-heading">Button</h3>
-        <p>Pill actions: primary, accent, outline and ghost chip.</p>
+        <p>Five variants share the same pill geometry.</p>
         <p class="ds-pages">Home · Course · Receipt</p>
         <div class="cluster">
           <AppButton @click="previewNotice = 'Primary action selected.'">Apply now</AppButton
@@ -474,6 +182,13 @@ function preventDemoNavigation(event: MouseEvent) {
           >
         </div>
         <p v-if="previewNotice" role="status" class="ds-note">{{ previewNotice }}</p>
+        <p>
+          Default 48px minimum, 0 × 24px padding, 17px size and weight 500. Small is 44px with 16px
+          inline padding and 15px type. Large is 56px with 32px inline padding. All use a 1px border
+          and 999px radius. The coarse-pointer rule changes the default minimum to 44px. Loading
+          retains the variant colors, shows a one-second spinner and disables activation.
+        </p>
+        <DesignSystemCode title="Button HTML + CSS" :code="examples.buttons" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-arrows">
         <h3 id="ds-arrows" class="ds-heading">Arrow button</h3>
@@ -483,12 +198,18 @@ function preventDemoNavigation(event: MouseEvent) {
         ><AppPanel as="div" tone="primary"
           ><AppArrowButton variant="inverse">Apply now</AppArrowButton></AppPanel
         >
+        <p>
+          Minimum height 64px, with 8px top, right and bottom padding and 24px at the inline start.
+          The 1px border can make the rendered height 66px around the 48px disc. The shared pill
+          radius and variant focus outline apply.
+        </p>
+        <DesignSystemCode title="Arrow button HTML + CSS" :code="examples.arrows" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-links">
         <h3 id="ds-links" class="ds-heading">Text link &amp; icon button</h3>
         <p>Arrow link with amber underline on hover. A 48px round button for scrolling controls.</p>
         <div class="cluster">
-          <AppTextLink href="#ds-components">Learn more</AppTextLink
+          <AppTextLink href="#ds-components">Explore component examples</AppTextLink
           ><AppTextLink href="#ds-components" icon="lucide:arrow-up-right"
             >Get directions</AppTextLink
           ><AppIconButton label="Previous example" icon="lucide:arrow-left" /><AppIconButton
@@ -502,6 +223,12 @@ function preventDemoNavigation(event: MouseEvent) {
             label="Location"
           /><AppIcon name="lucide:shield-check" label="Verified" />
         </div>
+        <p>
+          Text links use a 44px minimum height, 8px icon gap, 17px type and weight 500. Icon buttons
+          are 48px wide and 48px tall on fine pointers, with zero padding, a 1px border and a 999px
+          radius. The coarse-pointer height is 44px.
+        </p>
+        <DesignSystemCode title="Text link and icon button HTML + CSS" :code="examples.links" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-tags">
         <h3 id="ds-tags" class="ds-heading">Pills &amp; tags</h3>
@@ -521,13 +248,15 @@ function preventDemoNavigation(event: MouseEvent) {
             tone="neutral"
           />
         </div>
+        <p>
+          Tags use 4px × 12px padding, a 4px gap and 14px type with 1.2 leading. Status pills use
+          8px × 12px padding and an 8px gap with the same type metrics. Both have a 999px radius and
+          no border. The busy status icon rotates every 960ms and rests with reduced motion.
+        </p>
+        <DesignSystemCode title="Tags and status pills HTML + CSS" :code="examples.tags" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-fields">
         <h3 id="ds-fields" class="ds-heading">Text field</h3>
-        <p>
-          56px tall, 14px radius. Focus uses a teal border and 3px halo. Error text is associated
-          with its field.
-        </p>
         <p class="ds-pages">Course · Contact</p>
         <div class="ds-fields auto-grid">
           <AppTextField
@@ -555,6 +284,12 @@ function preventDemoNavigation(event: MouseEvent) {
         /><AppButton variant="ghost" size="small" @click="focusField?.focus()"
           >Focus email example</AppButton
         >
+        <p>
+          Inputs use a 56px minimum height, 12px × 16px padding, a 14px radius and 1px border.
+          Textareas have a 160px minimum. The 3px teal 100 focus halo has zero offset. Error borders
+          use danger and remain on focus.
+        </p>
+        <DesignSystemCode title="Text field HTML + CSS" :code="examples.fields" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-details">
         <h3 id="ds-details" class="ds-heading">Detail row &amp; summary row</h3>
@@ -601,6 +336,12 @@ function preventDemoNavigation(event: MouseEvent) {
           label="Compact course detail"
           value="8:30 AM – 2:30 PM"
         />
+        <p>
+          Detail rows have an 80px minimum, 16px vertical padding, a 48px icon disc and a 1px bottom
+          rule. Summary rows use 16px vertical padding, a 16px gap and a 1px top rule. Both grow
+          with content.
+        </p>
+        <DesignSystemCode title="Detail and summary rows HTML + CSS" :code="examples.details" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-sessions">
         <h3 id="ds-sessions" class="ds-heading">Session tile</h3>
@@ -612,6 +353,7 @@ function preventDemoNavigation(event: MouseEvent) {
         <CourseSessionSelector
           v-model="selectedSession"
           :sessions="sessions"
+          selected-variant="tint"
           legend="Selected · Tint"
         /><CourseSessionSelector
           v-model="solidSession"
@@ -620,6 +362,12 @@ function preventDemoNavigation(event: MouseEvent) {
           legend="Selected · Solid"
         />
         <p class="ds-note" role="status">Selected example: {{ selectedSession }}</p>
+        <p>
+          Tiles use 16px padding, 20px radius, a 1px outline border and 8px content gaps. The strip
+          uses 152–180px columns with a 12px gap. Its scroll controls are 36px square, with zero
+          padding and a 1px pill border. Keyboard focus outlines the whole tile.
+        </p>
+        <DesignSystemCode title="Session tile and selector HTML + CSS" :code="examples.selection" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-session-rows">
         <h3 id="ds-session-rows" class="ds-heading">Session row &amp; seat meter</h3>
@@ -631,10 +379,14 @@ function preventDemoNavigation(event: MouseEvent) {
           course-id="specimen-course"
           :course-name="sampleCourse.course_name"
         /><AppSeatMeter :available="6" :capacity="20" />
+        <p>
+          Use 16px row padding and gaps, with a 1px bottom rule. The meter track is 6px tall, at
+          least 48px wide and fully rounded.
+        </p>
+        <DesignSystemCode title="Session row and seat meter HTML + CSS" :code="examples.rows" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-course-card">
         <h3 id="ds-course-card" class="ds-heading">Course card</h3>
-        <p>28px radius, date chip, price, seat meter and 4px primary outline on hover.</p>
         <p class="ds-pages">Home</p>
         <div class="ds-card-grid auto-grid">
           <CourseCard
@@ -649,6 +401,12 @@ function preventDemoNavigation(event: MouseEvent) {
             :course-price="95"
           />
         </div>
+        <p>
+          Course cards have a 20px radius, 32px padding, 16px gaps, and the full shadow-100. Their
+          small actions use a 40px minimum height, 14px type, weight 400 and a 4px hover-ring
+          spread.
+        </p>
+        <DesignSystemCode title="Course card HTML + CSS" :code="examples.cards" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-steps">
         <h3 id="ds-steps" class="ds-heading">Step card &amp; trust badge</h3>
@@ -666,6 +424,12 @@ function preventDemoNavigation(event: MouseEvent) {
         </ol>
         <AppTrustBadge icon="lucide:shield-check">State-licensed provider</AppTrustBadge
         ><AppTrust />
+        <p>
+          Step cards have 24px padding, 28px radius and 16px content gaps. Trust badges have a 48px
+          pill disc, a 12px gap and 15px type.
+        </p>
+        <DesignSystemCode title="Step card and trust badge HTML + CSS" :code="examples.steps" />
+        <DesignSystemCode title="Trust list HTML + CSS" :code="examples.trust" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-accordion">
         <h3 id="ds-accordion" class="ds-heading">Accordion row</h3>
@@ -682,6 +446,12 @@ function preventDemoNavigation(event: MouseEvent) {
             daily living.
           </p></AppAccordion
         >
+        <p>
+          The summary has 20px vertical padding, a 16px gap and a 1px top rule on the row. The 52px
+          disc has a 1px border, pill radius and a 45° rotation when open. The answer has 24px
+          bottom padding.
+        </p>
+        <DesignSystemCode title="Accordion HTML + CSS" :code="examples.accordion" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-receipt">
         <h3 id="ds-receipt" class="ds-heading">Receipt header</h3>
@@ -696,6 +466,11 @@ function preventDemoNavigation(event: MouseEvent) {
             heading-tag="h3"
           />
         </div>
+        <p>
+          The rule is 8px tall, with 75% teal and 25% amber. Content padding is clamp(2rem, 4vw,
+          3.5rem), with a 20px stack gap.
+        </p>
+        <DesignSystemCode title="Receipt header HTML + CSS" :code="examples.receipt" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-nav-dialog">
         <h3 id="ds-nav-dialog" class="ds-heading">Navigation dialog</h3>
@@ -711,12 +486,19 @@ function preventDemoNavigation(event: MouseEvent) {
           </ul>
           <AppButton href="#ds-nav-dialog" @click="navDialogOpen = false">Apply now</AppButton>
         </AppNavDialog>
+        <p>
+          Width is capped at 512px and height at calc(100dvh - 2rem). Set a 16px top margin, 24px
+          inner padding, panel radius and shadow-200. The scrim uses oklch(21.46% 0 0 / 0.55). Entry
+          and exit use 480ms and cubic-bezier(0.22, 1, 0.36, 1).
+        </p>
+        <DesignSystemCode title="Navigation dialog HTML + CSS" :code="examples.dialog" />
       </section>
       <section class="ds-specimen flow" aria-labelledby="ds-wordmark">
         <h3 id="ds-wordmark" class="ds-heading">Wordmark</h3>
         <p>Two-line brand wordmark, teal over amber.</p>
         <p class="ds-pages">All pages</p>
         <SiteBrand />
+        <DesignSystemCode title="Wordmark HTML + CSS" :code="examples.wordmark" />
       </section>
     </section>
 
@@ -792,11 +574,17 @@ function preventDemoNavigation(event: MouseEvent) {
       </section>
       <section class="ds-specimen flow">
         <h3 class="ds-heading">Filter tabs</h3>
+        <p>
+          Solid and tinted filters are native pressed buttons. They use 44px minimum height, 1px
+          borders and 999px radius. Padding is 8px × 20px in solid mode and 8px × 16px in tint mode.
+          Use 17px type for solid and 15px for tint, weight 500 and leading 1.2.
+        </p>
         <AppFilterGroup
           v-model="courseFilter"
           label="Course"
           :options="courseOptions"
         /><AppFilterGroup v-model="monthFilter" label="Month" :options="monthOptions" tone="tint" />
+        <DesignSystemCode title="Filter tabs HTML + CSS" :code="examples.filters" />
         <p class="ds-note" role="status">
           {{ courseOptions.find((option) => option.value === courseFilter)?.label }} ·
           {{ monthOptions.find((option) => option.value === monthFilter)?.label }}
@@ -873,6 +661,12 @@ function preventDemoNavigation(event: MouseEvent) {
             >Reset preview</AppButton
           >
         </div>
+        <p>
+          The live registration card uses 32px padding, 20px radius and shadow-100. Its arrow action
+          uses a 52px minimum, a 36px disc and 14px type. The contact step uses 16px field gaps and
+          a teal-tint banner with a 16px radius and 12px × 16px padding.
+        </p>
+        <DesignSystemCode title="Registration card HTML + CSS" :code="examples.registration" />
       </section>
       <section class="ds-specimen flow">
         <h3 class="ds-heading">Receipt status</h3>
@@ -887,6 +681,11 @@ function preventDemoNavigation(event: MouseEvent) {
           /><AppStatusPill label="Registration needs attention" tone="warning" />
         </div>
       </section>
+    </section>
+
+    <section class="ds-sheet flow" aria-labelledby="ds-new-patterns">
+      <DesignSystemPatterns />
+      <DesignSystemCode title="Existing contact form HTML + CSS" :code="examples.contact" />
     </section>
 
     <section id="ds-patterns" class="ds-sheet flow" aria-labelledby="ds-patterns-title">
@@ -944,10 +743,17 @@ function preventDemoNavigation(event: MouseEvent) {
             title="Our Services"
             description="A shared heading and body introduction on the default surface."
         /></AppPanel>
+        <DesignSystemCode title="Panel HTML + CSS" :code="examples.panel" />
       </section>
       <section class="ds-specimen flow">
         <h3 class="ds-heading">Course group</h3>
         <CourseGroup :course="sampleCourse" />
+        <p>
+          Each panel uses a 20px radius, 32px padding and shadow-100. Session rows use 16px gaps and
+          block padding, with 1px separators. Compact Register buttons share the 40px minimum height
+          and 4px hover ring of course cards.
+        </p>
+        <DesignSystemCode title="Course group HTML + CSS" :code="examples.courseGroup" />
       </section>
     </section>
 
@@ -958,8 +764,14 @@ function preventDemoNavigation(event: MouseEvent) {
       <NewHero />
       <h2 class="ds-wide-title">Process section</h2>
       <CareSteps />
+      <div class="ds-wide-title ds-wide-code">
+        <DesignSystemCode title="Care steps HTML + CSS" :code="examples.careSteps" />
+      </div>
       <h2 class="ds-wide-title">Apply band</h2>
       <ApplyBand />
+      <div class="ds-wide-title ds-wide-code">
+        <DesignSystemCode title="Apply band HTML + CSS" :code="examples.applyBand" />
+      </div>
       <h2 class="ds-wide-title">Footer</h2>
       <PageFooter />
     </section>
@@ -978,14 +790,14 @@ function preventDemoNavigation(event: MouseEvent) {
     padding: var(--space-section) var(--space-panel);
     background: var(--clr-surface);
   }
-  .ds-sheet + .ds-sheet {
+  .ds-sheet + .ds-sheet:not(.ds-reference) {
     margin-block-start: var(--space-600);
   }
-  .ds-cover {
-    min-block-size: min(70svh, 46rem);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+  .ds-sheet.ds-cover {
+    padding-block-end: var(--space-500);
+  }
+  .ds-sheet.ds-reference {
+    padding-block-start: var(--space-500);
   }
   .ds-cover h1 {
     max-inline-size: 14ch;
@@ -1001,16 +813,10 @@ function preventDemoNavigation(event: MouseEvent) {
     max-inline-size: var(--measure-readable);
     font-size: var(--text-body-lg);
   }
-  .ds-eyebrow,
   .ds-pages {
     font-family: var(--ff-mono);
     font-size: var(--text-caption);
     font-weight: var(--fw-regular);
-  }
-  .ds-eyebrow {
-    color: var(--clr-accent-600);
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-eyebrow);
   }
   .ds-section-heading {
     --flow-space: var(--space-400);
@@ -1027,8 +833,7 @@ function preventDemoNavigation(event: MouseEvent) {
     font-weight: var(--fw-medium);
     line-height: var(--lh-snug);
   }
-  .ds-note,
-  .ds-type-meta {
+  .ds-note {
     color: var(--clr-text-muted);
     font-size: var(--text-small);
   }
@@ -1063,102 +868,9 @@ function preventDemoNavigation(event: MouseEvent) {
   .ds-table :is(td, th):last-child {
     padding-inline-end: 0;
   }
-  .ds-table code,
-  .ds-shapes code {
-    font-size: var(--text-meta);
-    overflow-wrap: anywhere;
-  }
-  .ds-swatch {
-    display: block;
-    inline-size: 3rem;
-    block-size: 2.25rem;
-    border: var(--border-width) solid color-mix(in srgb, var(--clr-border) 35%, transparent);
-    border-radius: var(--radius-input);
-  }
   .ds-mono,
   code {
     font-family: var(--ff-mono);
-  }
-  .ds-fonts {
-    --auto-grid-min: 14rem;
-    --auto-grid-gap: var(--space-600);
-  }
-  .ds-font-example {
-    color: var(--clr-text);
-    font-size: var(--text-display-md);
-  }
-  .ds-type-row {
-    padding-block: var(--space-500);
-    border-block-end: var(--border-width) solid var(--clr-border);
-  }
-  .ds-type-sample {
-    color: var(--clr-text);
-    font-size: var(--specimen-size, var(--text-body));
-    font-weight: var(--specimen-weight, var(--fw-regular));
-    line-height: var(--specimen-leading, var(--lh-body));
-    letter-spacing: var(--specimen-tracking, normal);
-    overflow-wrap: anywhere;
-  }
-  .ds-type-sample--italic {
-    font-style: italic;
-  }
-  .ds-type-meta {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: var(--space-300) var(--space-500);
-    margin-block-start: var(--space-400);
-  }
-  .ds-type-meta code {
-    font-size: var(--text-meta);
-  }
-  .ds-numerals {
-    color: var(--clr-text);
-    font-size: var(--text-numeral);
-    line-height: var(--lh-display);
-    letter-spacing: var(--tracking-display);
-    --cluster-gap: var(--space-600);
-  }
-  .ds-space-bar {
-    display: block;
-    max-inline-size: 8rem;
-    min-inline-size: var(--space-100);
-    block-size: var(--space-300);
-    border-radius: var(--radius-pill);
-    background: var(--clr-primary-500);
-  }
-  .ds-layout-values {
-    --auto-grid-min: 16rem;
-  }
-  .ds-shapes {
-    --auto-grid-min: 9rem;
-    --auto-grid-gap: var(--space-600);
-  }
-  .ds-shape {
-    display: grid;
-    place-items: center;
-    inline-size: 6rem;
-    block-size: 5rem;
-    margin-block-end: var(--space-300);
-    background: var(--clr-primary-100);
-    color: var(--clr-primary-500);
-    font-size: var(--text-heading-4);
-  }
-  .ds-elevations {
-    --auto-grid-min: 12rem;
-    --auto-grid-gap: var(--space-500);
-  }
-  .ds-elevation {
-    padding: var(--space-500);
-    border-radius: var(--radius-inner);
-    background: var(--clr-surface);
-  }
-  .ds-elevation--one {
-    box-shadow: var(--shadow-100);
-  }
-  .ds-elevation--two {
-    box-shadow: var(--shadow-200);
   }
   .ds-specimen {
     --flow-space: var(--space-400);
@@ -1224,6 +936,9 @@ function preventDemoNavigation(event: MouseEvent) {
     margin-inline: auto;
     color: var(--clr-text);
     font-size: var(--text-heading-2);
+  }
+  .ds-wide-code {
+    font-size: var(--text-body);
   }
   @media print {
     .ds-sheet {

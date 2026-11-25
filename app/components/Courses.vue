@@ -80,9 +80,10 @@ const featuredSessions = computed(() =>
     </ul>
 
     <div v-else class="courses-section__state courses-section__state--empty" aria-live="polite">
-      <Typography tag="p" variant="body-large">No courses are available right now.</Typography>
+      <Typography tag="p" variant="body-large">No courses are scheduled at this time.</Typography>
       <Typography tag="p" variant="body-medium">
-        We’re updating the schedule. Check back soon or contact us for upcoming training dates.
+        We're updating the schedule, so check back soon or contact us directly for upcoming dates.
+        Check back soon or contact us for upcoming training dates.
       </Typography>
     </div>
   </section>

@@ -7,8 +7,8 @@
   >
     <SvgoIconRooster class="apply-band__flourish" :fontControlled="false" aria-hidden="true" />
     <div class="apply-band__content flow">
-      <h2 id="apply-band-heading">Ready to get <span>started?</span></h2>
-      <p>Let’s talk about the care and support your loved one needs.</p>
+      <h2 id="apply-band-heading">Ready to get <span>the care process</span> started?</h2>
+      <p>Let's talk about the care and support your loved one needs. We respond quickly.</p>
       <div class="cluster">
         <AppButton href="tel:+18134340447" variant="accent"
           ><template #icon-start><AppIcon name="lucide:phone" /></template>813-434-0447</AppButton

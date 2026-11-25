@@ -85,6 +85,9 @@ The browser SDK and server logger share this token. There is no built-in project
 token fallback; Vercel production builds fail if no token is configured. After
 changing the Vercel variable, rebuild production so the browser uses the new token.
 
+Visitor pageviews include the first page load and navigation between pages. View
+production traffic at https://us.posthog.com/project/320092/web.
+
 Server logs omit missing-page 404s, classify API 4xx responses as warnings, and
 retain server failures as errors with their HTTP status. Prerender failures remain
 in build output and are excluded from the PostHog runtime log stream.
@@ -95,6 +98,14 @@ with `organization:read` and `error_tracking:write` scopes). Keep the personal k
 in local environment files and Vercel environment variables. It is separate from
 the public ingestion token and is used only during builds. The legacy
 `POSTHOG_PROJECTID` and `POSTHOG_KEY` names remain supported as fallbacks.
+
+Source-map processing runs through build hooks in `nuxt.config.ts`: inject client
+IDs before `nuxt-security` calculates integrity hashes, then inject server IDs and
+upload at build close. Keep the Nuxt PostHog module's built-in source-map upload
+disabled: its later client injection changes the assets after hashing, causing
+browsers to block JavaScript and preventing visitor tracking.
+Each build also uses a unique asset directory so browsers cannot reuse cached
+JavaScript with source-map IDs from an older deployment.
 
 ## Stripe Webhooks
 
